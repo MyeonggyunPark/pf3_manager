@@ -104,6 +104,7 @@ INSTALLED_APPS = [
     # 6. Local Apps
     # Add project apps 
     # 프로젝트 앱
+    "tutor.apps.TutorConfig",
 ]
 
 # Unique ID for the current site (Required by sites framework)
@@ -211,3 +212,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Configure Custom User Model
+# 커스텀 유저 모델 설정
+AUTH_USER_MODEL = "tutor.Tutor"
