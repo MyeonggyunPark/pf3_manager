@@ -4,4 +4,16 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13.9"
-dependencies = []
+dependencies = [
+    "django>=6.0",
+    "django-allauth[socialaccount]>=65.13.1",
+    "django-braces>=1.17.0",
+    "django-extensions>=4.1",
+    "django-seed>=0.3.1",
+    "djangorestframework>=3.16.1",
+    "gunicorn>=23.0.0",
+    "ipython>=9.8.0",
+    "pillow>=12.0.0",
+    "python-dotenv>=1.2.1",
+    "whitenoise>=6.11.0",
+]
