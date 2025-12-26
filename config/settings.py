@@ -156,10 +156,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+def get_env_variable(var_name):
+    try:
+        return os.environ[var_name]
+    except KeyError:
+        error_msg = f"Set the {var_name} environment variable in your .env file."
+        raise ImproperlyConfigured(error_msg)
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': get_env_variable('DB_NAME'),       
+        'USER': get_env_variable('DB_USER'),         
+        'PASSWORD': get_env_variable('DB_PASSWORD'), 
+        'HOST': os.getenv('DB_HOST', 'localhost'),      
+        'PORT': os.getenv('DB_PORT', '5432'),           
     }
 }
 
