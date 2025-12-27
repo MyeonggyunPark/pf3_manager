@@ -213,6 +213,10 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Media Files (User Uploads)
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
+
 # Configure Custom User Model
 # 커스텀 유저 모델 설정
 AUTH_USER_MODEL = "tutor.Tutor"
