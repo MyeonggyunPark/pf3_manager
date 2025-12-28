@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
@@ -220,3 +221,91 @@ MEDIA_URL = "/media/"
 # Configure Custom User Model
 # 커스텀 유저 모델 설정
 AUTH_USER_MODEL = "tutor.Tutor"
+
+# ==========================================
+# Extended Configuration (Auth, CORS, API)
+# ==========================================
+
+# 1. Authentication Backends
+# Configure backends for both standard Admin login and Allauth social login
+# 관리자 페이지 로그인과 Allauth 소셜 로그인을 위한 백엔드 설정
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+# 2. Allauth Account Settings
+# Configure authentication method using Email instead of Username
+# Username 대신 이메일을 사용하도록 인증 방식 설정
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+
+# Email verification settings (Set to 'mandatory' in production)
+# 이메일 인증 설정 (배포 시 'mandatory'로 변경 권장)
+ACCOUNT_EMAIL_VERIFICATION = "none"
+
+# Redirect URLs after login/logout
+# 로그인/로그아웃 후 리다이렉트 URL
+LOGIN_REDIRECT_URL = "/"
+ACCOUNT_LOGOUT_REDIRECT_URL = "/"
+
+# 3. JWT Configuration (dj-rest-auth)
+# Enable JWT authentication and configure cookie names
+# JWT 인증 활성화 및 쿠키 이름 설정
+REST_USE_JWT = True
+JWT_AUTH_COOKIE = "my-app-auth"
+JWT_AUTH_REFRESH_COOKIE = "my-app-refresh-token"
+
+# Simple JWT Settings (Token Expiration)
+# Simple JWT 설정 (토큰 만료 시간)
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+# 4. Social Account Providers
+# Configure Google and Kakao providers using keys from .env
+# .env 파일의 키를 사용하여 구글 및 카카오 제공자 설정
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
+            "secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
+            "key": "",
+        },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+        "OAUTH_PKCE_ENABLED": True,
+    },
+    "kakao": {
+        "APP": {
+            "client_id": os.environ.get("KAKAO_CLIENT_ID"),
+            "secret": os.environ.get("KAKAO_CLIENT_SECRET"),
+            "key": "",
+        },
+        "SCOPE": ["account_email", "profile_nickname"],
+        "AUTH_PARAMS": {"auth_type": "reauthenticate"},
+    },
+}
+
+# 5. CORS & REST Framework
+# Configure CORS for React frontend and DRF permissions
+# React 프론트엔드를 위한 CORS 및 DRF 권한 설정
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+}

@@ -12,6 +12,7 @@ dependencies = [
     "django-extensions>=4.1",
     "django-seed>=0.3.1",
     "djangorestframework>=3.16.1",
+    "djangorestframework-simplejwt>=5.5.1",
     "gunicorn>=23.0.0",
     "ipython>=9.8.0",
     "pillow>=12.0.0",
