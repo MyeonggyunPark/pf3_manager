@@ -1,5 +1,371 @@
 from django.contrib import admin
-from tutor.models import Tutor 
+from django.contrib.auth.admin import UserAdmin
+from .models import (
+    Tutor,
+    Student,
+    CourseRegistration,
+    ExamStandard,
+    ExamModule,
+    ExamSection,
+    ExamRecord,
+    ExamAttachment,
+    ExamDetailResult,
+    ExamScoreInput,
+)
 
 
-admin.site.register(Tutor)
+# ==========================================
+# 1. Tutor (Custom User) Configuration
+# ==========================================
+@admin.register(Tutor)
+class TutorAdmin(UserAdmin):
+    """
+    Tutor Admin Configuration.
+    Displays custom fields like 'provider' in the admin panel.
+    Inherits from UserAdmin to handle password hashing correctly.
+
+    튜터(관리자) 관리 설정.
+    'provider'와 같은 커스텀 필드를 관리자 패널에 표시함.
+    UserAdmin을 상속받아 비밀번호 해싱 등을 올바르게 처리함.
+    """
+
+    list_display = ("email", "name", "provider", "is_staff", "created_at")
+    list_filter = ("provider", "is_staff", "is_active")
+    search_fields = ("email", "name")
+    ordering = ("email",)
+
+    # Organize fields into logical groups
+    # 필드를 논리적인 그룹으로 정리 (UserAdmin 기본셋 재정의)
+    fieldsets = (
+        (None, {"fields": ("email", "password")}),
+        ("Personal Info", {"fields": ("name", "provider")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+
+# ==========================================
+# 2. Student & Course Management
+# ==========================================
+class CourseRegistrationInline(admin.TabularInline):
+    """
+    Inline view for Course Registration.
+    Allows adding course history directly within the Student detail page.
+
+    수강 등록 인라인 뷰.
+    학생 상세 페이지 내에서 수강 이력을 직접 추가할 수 있도록 함.
+    """
+
+    model = CourseRegistration
+
+    # No empty rows by default (깔끔한 UI를 위해 빈 줄 숨김)
+    extra = 0 
+
+
+@admin.register(Student)
+class StudentAdmin(admin.ModelAdmin):
+    """
+    Student Admin Interface.
+    Optimized to fetch Tutor data efficiently using select_related.
+    Provides search fields for autocomplete widgets in other models.
+
+    학생 관리 인터페이스.
+    select_related를 사용하여 튜터 데이터를 효율적으로 가져오도록 최적화됨.
+    다른 모델의 자동 완성 위젯을 위한 검색 필드를 제공함.
+    """
+
+    list_display = (
+        "name",
+        "tutor",
+        "current_level",
+        "target_level",
+        "target_exam_mode",
+    )
+    list_filter = ("current_level", "target_level", "gender")
+    search_fields = ("name", "tutor__name")
+
+    # Optimization: Fetch tutor data in a single query (N+1 Problem Fix)
+    # 최적화: 튜터 정보를 한 번의 쿼리로 가져옴
+    list_select_related = ("tutor",)
+
+    # Add CourseRegistration table inside Student page
+    # 학생 페이지 내부에 수강 등록 테이블 삽입
+    inlines = [CourseRegistrationInline]
+
+
+@admin.register(CourseRegistration)
+class CourseRegistrationAdmin(admin.ModelAdmin):
+    """
+    Course Registration List.
+    Useful for checking total sales or active students at a glance.
+    Uses autocomplete_fields for better UX with many students.
+
+    수강 등록 전체 목록.
+    전체 매출이나 활성 학생 현황을 한눈에 파악하기 위해 등록.
+    학생 수가 많을 때의 UX 개선을 위해 자동 완성 필드 사용.
+    """
+
+    list_display = (
+        "student",
+        "status",
+        "start_date",
+        "end_date",
+        "total_fee",
+        "is_paid",
+    )
+    list_filter = ("status", "is_paid")
+    search_fields = ("student__name",)
+
+    # Optimization: Fetch student data efficiently
+    # 최적화: 학생 데이터 효율적 로딩
+    list_select_related = ("student",)
+
+    # UI Improvement: Searchable dropdown for Student
+    # UI 개선: 학생 검색 선택 기능
+    autocomplete_fields = ["student"]
+
+
+# ==========================================
+# 3. Exam Meta Data (Hierarchy Visualization)
+# ==========================================
+class ExamSectionInline(admin.TabularInline):
+    """
+    Inline view for Exam Sections.
+    Used within ExamModule to manage sections (e.g., Teil 1, Teil 2).
+
+    시험 섹션 인라인 뷰.
+    ExamModule 내에서 섹션(예: Teil 1, Teil 2)을 관리하기 위해 사용됨.
+    """
+
+    model = ExamSection
+    extra = 0
+    fields = (
+        "category",
+        "name",
+        "is_question_based",
+        "points_per_question",
+        "section_max_score",
+    )
+
+
+@admin.register(ExamStandard)
+class ExamStandardAdmin(admin.ModelAdmin):
+    """
+    Exam Standard Admin.
+    Manages high-level exam definitions (e.g., Telc B1).
+    Provides search fields for autocomplete usage.
+
+    시험 표준 관리.
+    상위 레벨의 시험 정의를 관리함 (예: Telc B1).
+    자동 완성을 위한 검색 필드 제공.
+    """
+
+    list_display = ("name", "level", "total_score")
+    list_filter = ("level",)
+    search_fields = ("name",)
+
+
+@admin.register(ExamModule)
+class ExamModuleAdmin(admin.ModelAdmin):
+    """
+    Exam Module Admin.
+    Manages specific modules and their sections inline.
+    Optimized with select_related for ExamStandard.
+
+    시험 모듈 관리.
+    개별 모듈을 관리하며 하위 섹션을 인라인으로 포함함.
+    ExamStandard에 대한 select_related 최적화 적용.
+    """
+
+    list_display = ("__str__", "exam_standard", "module_type", "max_score")
+    list_filter = ("exam_standard", "module_type")
+    search_fields = ("exam_standard__name",)
+
+    # Optimization
+    list_select_related = ("exam_standard",)
+
+    # Manage sections directly inside the module page
+    # 모듈 페이지 내부에서 섹션을 직접 관리
+    inlines = [ExamSectionInline]
+
+
+@admin.register(ExamSection)
+class ExamSectionAdmin(admin.ModelAdmin):
+    """
+    Exam Section List Configuration.
+    Displays hierarchy (Module -> Category -> Name) for easy identification.
+    Uses autocomplete for selecting Exam Module.
+
+    시험 섹션 목록 설정.
+    계층 구조(모듈 -> 카테고리 -> 이름)를 표시하여 쉽게 식별 가능하게 함.
+    시험 모듈 선택 시 자동 완성 기능 사용.
+    """
+
+    list_display = (
+        "exam_module",
+        "category",
+        "name",
+        "is_question_based",
+        "section_max_score",
+    )
+    list_filter = ("exam_module__exam_standard", "category", "is_question_based")
+    search_fields = ("name", "category")
+    ordering = ("exam_module", "id")
+
+    # Optimization: Double hop (Module -> Standard) pre-fetching
+    # 최적화: 모듈 및 표준 정보 미리 가져오기
+    list_select_related = ("exam_module", "exam_module__exam_standard")
+
+    # UI Improvement
+    autocomplete_fields = ["exam_module"]
+
+
+# ==========================================
+# 4. Exam Records (Results & Attachments)
+# ==========================================
+class ExamAttachmentInline(admin.TabularInline):
+    """
+    Inline for File Attachments.
+    Allows uploading scanned exam papers directly in the Exam Record page.
+
+    파일 첨부 인라인.
+    시험 기록 페이지 내에서 스캔된 시험지를 직접 업로드할 수 있게 함.
+    """
+
+    model = ExamAttachment
+
+    # Show one empty row for quick upload (빠른 업로드를 위해 빈 줄 1개 표시)
+    extra = 1
+
+
+@admin.register(ExamRecord)
+class ExamRecordAdmin(admin.ModelAdmin):
+    """
+    Exam Record Admin.
+    Tracks student attempts, scores, and file attachments.
+    Highly optimized for large datasets using autocomplete and select_related.
+
+    시험 응시 기록 관리.
+    학생의 응시 내역, 점수, 첨부파일을 추적함.
+    자동 완성 및 select_related를 사용하여 대용량 데이터셋에 고도로 최적화됨.
+    """
+
+    list_display = (
+        "student",
+        "exam_standard",
+        "exam_date",
+        "exam_mode",
+        "total_score",
+        "grade",
+    )
+    list_filter = ("exam_standard", "exam_mode", "exam_date")
+    search_fields = ("student__name",)
+
+    # Add date navigation bar (날짜 탐색 바 추가)
+    date_hierarchy = "exam_date"
+
+    # Optimization: Fetch Student and Standard in one go
+    # 최적화: 학생과 시험 정보를 미리 로딩
+    list_select_related = ("student", "exam_standard")
+
+    # UI Improvement: Search instead of scrolling through dropdowns
+    # UI 개선: 드롭다운 스크롤 대신 검색창 사용
+    autocomplete_fields = ["student", "exam_standard"]
+
+    # Upload files directly here
+    # 여기서 파일 직접 업로드
+    inlines = [ExamAttachmentInline]
+
+
+@admin.register(ExamAttachment)
+class ExamAttachmentAdmin(admin.ModelAdmin):
+    """
+    Attachment List Configuration.
+    Enables searching files by student name or exam date.
+    Optimized to display related student and exam info efficiently.
+
+    첨부파일 목록 설정.
+    학생 이름이나 시험 날짜로 파일을 검색할 수 있게 함.
+    관련 학생 및 시험 정보를 효율적으로 표시하도록 최적화됨.
+    """
+
+    list_display = (
+        "id",
+        "get_student_name",
+        "get_exam_standard",
+        "file",
+        "created_at",
+    )
+    search_fields = ("exam_record__student__name", "original_name")
+    list_filter = ("created_at",)
+
+    # Optimization
+    list_select_related = (
+        "exam_record",
+        "exam_record__student",
+        "exam_record__exam_standard",
+    )
+
+    @admin.display(description="Student", ordering="exam_record__student__name")
+    def get_student_name(self, obj):
+        return obj.exam_record.student.name
+
+    @admin.display(description="Exam", ordering="exam_record__exam_standard__name")
+    def get_exam_standard(self, obj):
+        return obj.exam_record.exam_standard.name
+
+
+@admin.register(ExamScoreInput)
+class ExamScoreInputAdmin(admin.ModelAdmin):
+    """
+    Score Input List Configuration.
+    Useful for reviewing subjective scores (Writing/Speaking) across all students.
+    Uses autocomplete for filtering by Record or Section.
+
+    점수 입력 목록 설정.
+    모든 학생의 주관식 점수(쓰기/말하기)를 검토할 때 유용함.
+    기록 또는 섹션별 필터링을 위해 자동 완성 기능 사용.
+    """
+
+    list_display = ("get_student_name", "exam_section", "score", "updated_at")
+    list_filter = ("exam_section__category", "exam_record__exam_standard")
+    search_fields = ("exam_record__student__name",)
+
+    # Optimization
+    list_select_related = ("exam_record", "exam_record__student", "exam_section")
+
+    autocomplete_fields = ["exam_record", "exam_section"]
+
+    @admin.display(description="Student", ordering="exam_record__student__name")
+    def get_student_name(self, obj):
+        return obj.exam_record.student.name
+
+
+@admin.register(ExamDetailResult)
+class ExamDetailResultAdmin(admin.ModelAdmin):
+    """
+    Detailed O/X Results.
+    Registered to verify if bulk data (JSON) was loaded correctly.
+    Optimized for handling large volumes of question data.
+
+    O/X 상세 결과 전체 목록.
+    대량의 데이터(JSON)가 문항별로 잘 들어갔는지 검증하기 위해 등록.
+    대량의 문항 데이터를 처리하도록 최적화됨.
+    """
+
+    list_display = ("exam_record", "exam_section", "question_number", "is_correct")
+    list_filter = ("is_correct", "exam_section__category")
+
+    # Optimization
+    list_select_related = ("exam_record", "exam_section")
