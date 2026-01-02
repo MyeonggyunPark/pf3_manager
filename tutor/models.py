@@ -3,7 +3,6 @@ from datetime import datetime
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 
@@ -345,3 +344,81 @@ class ExamScoreInput(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     class Meta:
         unique_together = ("exam_record", "exam_section")
+
+
+# ==========================================
+# 5. Official Exam Results (정규 시험 결과)
+# ==========================================
+class OfficialExamResult(models.Model):
+    """
+    Official Exam Result.
+    Stores results of actual certification exams (Telc, Goethe, etc.).
+    Separate from internal mock exams.
+
+    정규 시험 결과.
+    실제 자격증 시험(Telc, Goethe 등)의 결과를 저장함.
+    내부 모의고사와는 별도로 관리됨.
+    """
+
+    class ResultStatusChoices(models.TextChoices):
+        PASSED = "PASSED", _("Bestanden")
+        FAILED = "FAILED", _("Nicht bestanden")
+        WAITING = "WAITING", _("Wartet auf Ergebnis")
+
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name="official_results"
+    )
+
+    # Link to existing standards or allow manual input if not in the list
+    # 기존 시험 표준을 선택하거나, 목록에 없는 경우 직접 입력 허용
+    exam_standard = models.ForeignKey(
+        ExamStandard,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    exam_name_manual = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="선택지 없는 경우 직접 입력",
+    )
+
+    exam_date = models.DateField(_("Exam Date"))
+
+    # Pass/Fail status is the primary metric
+    # 합격 여부가 가장 중요한 관리 지표
+    status = models.CharField(
+        max_length=20,
+        choices=ResultStatusChoices.choices,
+        default=ResultStatusChoices.WAITING,
+    )
+
+    # Optional score inputs (Text format for flexibility)
+    # 선택적 점수 입력 (유연성을 위해 텍스트 형식 사용)
+    total_score = models.CharField(
+        max_length=50, blank=True, null=True, 
+        help_text="점수를 아는 경우 입력"
+    )
+
+    grade = models.CharField(
+        max_length=20, blank=True, null=True, 
+        help_text="등급을 아는 경우 입력"
+    )
+
+    memo = models.TextField(blank=True, null=True, help_text="특이사항 메모")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Offizielles Prüfungsergebnis"
+        verbose_name_plural = "Offizielle Prüfungsergebnisse"
+        ordering = ["-exam_date"]
+
+    def __str__(self):
+        exam_name = (
+            self.exam_standard.name if self.exam_standard else self.exam_name_manual
+        )
+        return f"[Official] {self.student.name} - {exam_name} ({self.status})"

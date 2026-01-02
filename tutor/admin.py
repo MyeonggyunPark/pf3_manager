@@ -11,6 +11,7 @@ from .models import (
     ExamAttachment,
     ExamDetailResult,
     ExamScoreInput,
+    OfficialExamResult,
 )
 
 
@@ -369,3 +370,42 @@ class ExamDetailResultAdmin(admin.ModelAdmin):
 
     # Optimization
     list_select_related = ("exam_record", "exam_section")
+
+
+# ==========================================
+# 5. Official Exam Results (정규 시험 결과)
+# ==========================================
+@admin.register(OfficialExamResult)
+class OfficialExamResultAdmin(admin.ModelAdmin):
+    """
+    Official Exam Result Admin.
+    Manages external certification results.
+    Displays either the Standard name or the manually entered name.
+
+    정규 시험 결과 관리.
+    정규 자격증 시험 결과를 관리함.
+    시험 표준명 또는 직접 입력된 시험명을 표시함.
+    """
+
+    list_display = (
+        "student",
+        "get_exam_name",
+        "exam_date",
+        "status",
+    )
+    list_filter = ("status", "exam_date")
+    search_fields = ("student__name", "exam_name_manual", "exam_standard__name")
+
+    # Optimization: Fetch student and standard data efficiently
+    # 최적화: 학생 및 시험 표준 데이터 효율적 로딩
+    list_select_related = ("student", "exam_standard")
+
+    # UI Improvement
+    # UI 개선: 자동 완성 필드 사용
+    autocomplete_fields = ["student", "exam_standard"]
+
+    @admin.display(description="Exam", ordering="exam_standard__name")
+    def get_exam_name(self, obj):
+        # Return Standard Name if exists, otherwise return Manual Name
+        # 표준 시험명이 있으면 반환, 없으면 직접 입력한 이름 반환
+        return obj.exam_standard.name if obj.exam_standard else obj.exam_name_manual
