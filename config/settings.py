@@ -37,8 +37,8 @@ ALLOWED_HOSTS = hosts.split(",") if hosts else []
 
 # Application definition
 
-INSTALLED_APPS = [
-    # 1. Django Basic
+# 1. Django Basic Apps (프레임워크 내장 앱)
+DJANGO_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -46,67 +46,41 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     
-    # Required by allauth to manage site-specific data
-    # allauth가 사이트별 데이터를 관리하기 위해 필수
+    # Required by allauth (allauth 필수)
     "django.contrib.sites",
-    
-    # 2. Third-party Apps (Core)
-    # The core library for building Web APIs
-    # 웹 API 구축을 위한 핵심 라이브러리
+]
+
+# 2. Third-party Apps (외부 라이브러리)
+THIRD_PARTY_APPS = [
+    # REST Framework & API
     "rest_framework",
-    
-    # Provides token-based authentication (Required by dj-rest-auth)
-    # 토큰 기반 인증 제공 (dj-rest-auth 사용 시 필수)
+    # Token Auth (토큰 인증)
     "rest_framework.authtoken",
-
-    # Handles Cross-Origin Resource Sharing (CORS) for React communication
-    # 리액트와의 통신을 위한 교차 출처 리소스 공유(CORS) 처리
+    # CORS (React 통신)
     "corsheaders",
-
-    # Exposes authentication logic (login/logout) as REST APIs
-    # 인증 로직(로그인/로그아웃)을 REST API로 노출
+    # Login/Logout API
     "dj_rest_auth",
-
-    # Enables registration endpoints for social login support
-    # 소셜 로그인 지원을 위한 회원가입 엔드포인트 활성화
+    # Signup API
     "dj_rest_auth.registration",
-
-    # 3. Allauth (Auth Logic)
-    # Core application for comprehensive authentication management
-    # 포괄적인 인증 관리를 위한 핵심 애플리케이션
+    # Allauth (Social Login Core)
     "allauth",
-
-    # Manages local email/password based accounts
-    # 이메일/비밀번호 기반의 로컬 계정 관리
     "allauth.account",
-
-    # Manages social account authentication flows
-    # 소셜 계정 인증 흐름 관리
     "allauth.socialaccount",
-
-    # 4. Social Providers
-    # Google OAuth provider
-    # 구글 로그인 제공자
+    # Social Providers (소셜 제공자)
     "allauth.socialaccount.providers.google",
-
-    # Kakao OAuth provider
-    # 카카오 로그인 제공자
     "allauth.socialaccount.providers.kakao",
+    # Dev Tools (개발 도구)
+    "django_seed",  # Dummy data
+    "django_extensions",  # CLI extensions
+]
 
-    # 5. Dev Tools
-    # Generates fake data for testing purposes
-    # 테스트 목적으로 가짜 데이터 생성
-    "django_seed",
-
-    # Adds extra features to the Django CLI
-    # Django CLI에 추가 기능 제공
-    "django_extensions",
-
-    # 6. Local Apps
-    # Add project apps 
-    # 프로젝트 앱
+# 3. Local Apps (직접 만든 앱)
+LOCAL_APPS = [
     "tutor.apps.TutorConfig",
 ]
+
+# Final Configuration (최종 합체)
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 # Unique ID for the current site (Required by sites framework)
 # 현재 사이트의 고유 ID (sites 프레임워크 필수 설정)
@@ -235,13 +209,26 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # 2. Allauth Account Settings
-# Configure authentication method using Email instead of Username
-# Username 대신 이메일을 사용하도록 인증 방식 설정
-ACCOUNT_AUTHENTICATION_METHOD = "email"
-ACCOUNT_EMAIL_REQUIRED = True
+# Configure login method to use Email (Updated for allauth v0.61+)
+# Set as a set {'email'} instead of string "email"
+# 이메일을 로그인 수단으로 설정 (allauth v0.61+ 업데이트 대응)
+# 문자열 "email" 대신 집합 {'email'} 형태로 설정해야 함
+ACCOUNT_LOGIN_METHODS = {"email"}
+
+# Enforce unique email addresses
+# 이메일 중복 금지 (모든 유저는 고유한 이메일을 가져야 함)
 ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_USERNAME_REQUIRED = False
+
+# Do not use username field in the user model
+# Since we use email for login, username field is not required
+# 유저 모델에서 username 필드를 사용하지 않음
+# 이메일 로그인을 사용하므로 username 필드는 필요 없음
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+
+# [Removed Deprecated Settings]
+# ACCOUNT_AUTHENTICATION_METHOD -> Replaced by ACCOUNT_LOGIN_METHODS
+# ACCOUNT_EMAIL_REQUIRED -> Automatically True when using {'email'}
+# ACCOUNT_USERNAME_REQUIRED -> Automatically False when using {'email'}
 
 # Email verification settings (Set to 'mandatory' in production)
 # 이메일 인증 설정 (배포 시 'mandatory'로 변경 권장)
