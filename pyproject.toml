@@ -20,3 +20,8 @@ dependencies = [
     "python-dotenv>=1.2.1",
     "whitenoise>=6.11.0",
 ]
+
+[dependency-groups]
+dev = [
+    "djlint>=1.36.4",
+]
