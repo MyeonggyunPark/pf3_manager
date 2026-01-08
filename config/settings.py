@@ -37,7 +37,6 @@ ALLOWED_HOSTS = hosts.split(",") if hosts else []
 
 # Application definition
 
-# 1. Django Basic Apps (프레임워크 내장 앱)
 DJANGO_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -46,87 +45,83 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     
-    # Required by allauth (allauth 필수)
+    # Required for 'allauth' specific site handling
+    # 'allauth'의 사이트별 처리 기능을 위해 필수
     "django.contrib.sites",
 ]
 
-# 2. Third-party Apps (외부 라이브러리)
 THIRD_PARTY_APPS = [
-    # REST Framework & API
+    # REST Framework & Authentication
     "rest_framework",
-    # Token Auth (토큰 인증)
     "rest_framework.authtoken",
-    # CORS (React 통신)
-    "corsheaders",
-    # Login/Logout API
     "dj_rest_auth",
-    # Signup API
     "dj_rest_auth.registration",
-    # Allauth (Social Login Core)
+    
+    # CORS Headers for frontend communication
+    # 프론트엔드 통신을 위한 CORS 헤더 설정
+    "corsheaders",
+    
+    # Allauth for Social Login
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
-    # Social Providers (소셜 제공자)
     "allauth.socialaccount.providers.google",
     "allauth.socialaccount.providers.kakao",
-    # Dev Tools (개발 도구)
-    "django_seed",  # Dummy data
-    "django_extensions",  # CLI extensions
+    
+    # Development Utilities
+    "django_seed",
+    "django_extensions",
 ]
 
-# 3. Local Apps (직접 만든 앱)
 LOCAL_APPS = [
     "tutor.apps.TutorConfig",
 ]
 
-# Final Configuration (최종 합체)
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
-# Unique ID for the current site (Required by sites framework)
-# 현재 사이트의 고유 ID (sites 프레임워크 필수 설정)
+# Site ID required by django.contrib.sites
+# django.contrib.sites 사용을 위한 사이트 ID 식별자
 SITE_ID = 1
 
 MIDDLEWARE = [
-    # Should be at the top to handle headers before other requests
-    # 다른 요청보다 먼저 헤더를 처리하기 위해 최상단에 위치해야 함
+    # CORS middleware must be placed as high as possible to handle preflight requests
+    # 프리플라이트 요청 처리를 위해 CORS 미들웨어는 가능한 최상단에 위치해야 함
     "corsheaders.middleware.CorsMiddleware",
-
     "django.middleware.security.SecurityMiddleware",
-
-    # Serves static files efficiently in production
-    # 배포 환경에서 정적 파일을 효율적으로 제공
+    
+    # Optimized static file serving for production
+    # 배포 환경을 위한 최적화된 정적 파일 서빙
     "whitenoise.middleware.WhiteNoiseMiddleware",
-
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-
-    # Middleware required for allauth functionality
-    # allauth 기능 작동에 필요한 미들웨어
+    
+    # Middleware for allauth account management
+    # allauth 계정 관리를 위한 미들웨어
     "allauth.account.middleware.AccountMiddleware",
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Database
@@ -140,13 +135,13 @@ def get_env_variable(var_name):
         raise ImproperlyConfigured(error_msg)
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': get_env_variable('DB_NAME'),       
-        'USER': get_env_variable('DB_USER'),         
-        'PASSWORD': get_env_variable('DB_PASSWORD'), 
-        'HOST': os.getenv('DB_HOST', 'localhost'),      
-        'PORT': os.getenv('DB_PORT', '5432'),           
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": get_env_variable("DB_NAME"),
+        "USER": get_env_variable("DB_USER"),
+        "PASSWORD": get_env_variable("DB_PASSWORD"),
+        "HOST": os.getenv("DB_HOST", "localhost"),
+        "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
 
@@ -156,16 +151,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -173,7 +168,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
 TIME_ZONE = "Europe/Berlin"
 
@@ -188,76 +183,84 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Media Files (User Uploads)
+# Media configuration for user-uploaded files
+# 사용자 업로드 파일을 위한 미디어 설정
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 
-# Configure Custom User Model
-# 커스텀 유저 모델 설정
+# Custom user model definition
+# 커스텀 유저 모델 지정
 AUTH_USER_MODEL = "tutor.Tutor"
 
 # ==========================================
-# Extended Configuration (Auth, CORS, API)
+# Authentication & REST Configuration
 # ==========================================
 
-# 1. Authentication Backends
-# Configure backends for both standard Admin login and Allauth social login
-# 관리자 페이지 로그인과 Allauth 소셜 로그인을 위한 백엔드 설정
+# Configure authentication backends for Admin and Allauth
+# 관리자 및 Allauth 인증을 위한 백엔드 구성
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
-# 2. Allauth Account Settings
-# Configure login method to use Email (Updated for allauth v0.61+)
-# Set as a set {'email'} instead of string "email"
-# 이메일을 로그인 수단으로 설정 (allauth v0.61+ 업데이트 대응)
-# 문자열 "email" 대신 집합 {'email'} 형태로 설정해야 함
+# Allauth & dj-rest-auth compatibility settings
+# Allauth와 dj-rest-auth 간의 호환성 설정
 ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_AUTHENTICATION_METHOD = "email"
 
-# Enforce unique email addresses
-# 이메일 중복 금지 (모든 유저는 고유한 이메일을 가져야 함)
+# Account registration settings
+# 계정 등록 설정
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
-
-# Do not use username field in the user model
-# Since we use email for login, username field is not required
-# 유저 모델에서 username 필드를 사용하지 않음
-# 이메일 로그인을 사용하므로 username 필드는 필요 없음
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-
-# [Removed Deprecated Settings]
-# ACCOUNT_AUTHENTICATION_METHOD -> Replaced by ACCOUNT_LOGIN_METHODS
-# ACCOUNT_EMAIL_REQUIRED -> Automatically True when using {'email'}
-# ACCOUNT_USERNAME_REQUIRED -> Automatically False when using {'email'}
-
-# Email verification settings (Set to 'mandatory' in production)
-# 이메일 인증 설정 (배포 시 'mandatory'로 변경 권장)
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
-# Redirect URLs after login/logout
-# 로그인/로그아웃 후 리다이렉트 URL
+# Fields required during signup
+# 가입 시 필수 입력 필드
+ACCOUNT_SIGNUP_FIELDS = [
+    "email",
+]
+
+# Map username field to the model's default
+# username 필드를 모델의 기본값으로 매핑
+ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
+
+# Login/Logout redirects
+# 로그인/로그아웃 리다이렉트
 LOGIN_REDIRECT_URL = "/"
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"
 
-# 3. JWT Configuration (dj-rest-auth)
-# Enable JWT authentication and configure cookie names
-# JWT 인증 활성화 및 쿠키 이름 설정
-REST_USE_JWT = True
-JWT_AUTH_COOKIE = "my-app-auth"
-JWT_AUTH_REFRESH_COOKIE = "my-app-refresh-token"
+# JWT configuration (dj-rest-auth)
+REST_AUTH = {
+    "USE_JWT": True,
+    "JWT_AUTH_COOKIE": "my-app-auth",
+    "JWT_AUTH_REFRESH_COOKIE": "my-app-refresh-token",
+    
+    # Security adjustments for development (Set secure=True in production)
+    # 개발 환경 보안 조정 (프로덕션에서는 secure=True 설정 필요)
+    "JWT_AUTH_SECURE": False,
+    "JWT_AUTH_HTTPONLY": False,
+    "JWT_AUTH_SAMESITE": "Lax",
+    "JWT_AUTH_COOKIE_DOMAIN": None,
+    
+    # Disable CSRF check for cookie-based auth in this setup
+    # 현재 설정에서 쿠키 기반 인증을 위한 CSRF 체크 비활성화
+    "JWT_AUTH_COOKIE_USE_CSRF": False,
+    "SESSION_LOGIN": False,
+    
+    # Serializers
+    "USER_DETAILS_SERIALIZER": "tutor.serializers.TutorSerializer",
+    "REGISTER_SERIALIZER": "tutor.serializers.CustomRegisterSerializer",
+}
 
-# Simple JWT Settings (Token Expiration)
-# Simple JWT 설정 (토큰 만료 시간)
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=24),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
+    "SIGNING_KEY": SECRET_KEY,
 }
 
-# 4. Social Account Providers
-# Configure Google and Kakao providers using keys from .env
-# .env 파일의 키를 사용하여 구글 및 카카오 제공자 설정
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "APP": {
@@ -267,7 +270,6 @@ SOCIALACCOUNT_PROVIDERS = {
         },
         "SCOPE": ["profile", "email"],
         "AUTH_PARAMS": {"access_type": "online"},
-        "OAUTH_PKCE_ENABLED": True,
     },
     "kakao": {
         "APP": {
@@ -275,24 +277,28 @@ SOCIALACCOUNT_PROVIDERS = {
             "secret": os.environ.get("KAKAO_CLIENT_SECRET"),
             "key": "",
         },
-        "SCOPE": ["account_email", "profile_nickname"],
-        "AUTH_PARAMS": {"auth_type": "reauthenticate"},
     },
 }
 
-# 5. CORS & REST Framework
-# Configure CORS for React frontend and DRF permissions
-# React 프론트엔드를 위한 CORS 및 DRF 권한 설정
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# CORS Configuration
+# CORS 설정
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
+
+# Allowed origins for client applications
+# 클라이언트 애플리케이션 허용 출처
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+]
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
