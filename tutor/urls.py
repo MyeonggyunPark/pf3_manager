@@ -7,6 +7,8 @@ from .views import (
     ExamRecordViewSet,
     ExamAttachmentViewSet,
     OfficialExamResultViewSet,
+    LessonViewSet,
+    DashboardStatsView,
 )
 
 # Initialize DefaultRouter to automatically generate URLs for ViewSets
@@ -40,8 +42,16 @@ router.register(r"attachments", ExamAttachmentViewSet, basename="exam-attachment
 # /api/official-results/ -> 정규 시험 결과 CRUD 작업
 router.register(r"official-results", OfficialExamResultViewSet, basename="official-result")
 
+# /api/lessons/ -> Lesson CRUD operations
+# /api/lessons/ -> 수업 일정 CRUD 작업
+router.register(r"lessons", LessonViewSet, basename="lesson")
+
 urlpatterns = [
     # Include all router-generated URLs
     # 라우터가 생성한 모든 URL을 포함합니다
     path("", include(router.urls)),
+    
+    # Dashboard Stats Endpoint
+    # 대시보드 통계 엔드포인트
+    path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard-stats"),
 ]

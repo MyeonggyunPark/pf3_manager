@@ -12,6 +12,7 @@ from .models import (
     ExamDetailResult,
     ExamScoreInput,
     OfficialExamResult,
+    Lesson,
 )
 
 
@@ -373,7 +374,7 @@ class ExamDetailResultAdmin(admin.ModelAdmin):
 
 
 # ==========================================
-# 5. Official Exam Results (정규 시험 결과)
+# 5. Official Exam Results
 # ==========================================
 @admin.register(OfficialExamResult)
 class OfficialExamResultAdmin(admin.ModelAdmin):
@@ -409,3 +410,15 @@ class OfficialExamResultAdmin(admin.ModelAdmin):
         # Return Standard Name if exists, otherwise return Manual Name
         # 표준 시험명이 있으면 반환, 없으면 직접 입력한 이름 반환
         return obj.exam_standard.name if obj.exam_standard else obj.exam_name_manual
+
+
+# ==========================================
+# 6. Schedule Management
+# ==========================================
+@admin.register(Lesson)
+class LessonAdmin(admin.ModelAdmin):
+    list_display = ("date", "start_time", "student", "topic", "status")
+    list_filter = ("date", "status", "student")
+    search_fields = ("topic", "memo", "student__name")
+    date_hierarchy = "date"
+    list_select_related = ("student",)

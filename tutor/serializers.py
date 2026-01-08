@@ -12,6 +12,7 @@ from .models import (
     ExamScoreInput,
     ExamDetailResult,
     OfficialExamResult,
+    Lesson,
 )
 
 
@@ -237,3 +238,33 @@ class OfficialExamResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfficialExamResult
         fields = "__all__"
+
+
+# ==========================================
+# 6. Schedule Serializers
+# ==========================================
+class LessonSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Lesson (Schedule).
+    Includes computed fields 'start' and 'end' for frontend calendar libraries.
+
+    수업(일정)을 위한 시리얼라이저.
+    프론트엔드 캘린더 라이브러리를 위해 계산된 'start'와 'end' 필드를 포함함.
+    """
+
+    student_name = serializers.CharField(source="student.name", read_only=True)
+
+    # Computed fields for Calendar UI (ISO Format: "YYYY-MM-DDTHH:MM:SS")
+    # 캘린더 UI를 위한 계산된 필드
+    start = serializers.SerializerMethodField()
+    end = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Lesson  # models.py에 Lesson 추가 후 import 확인 필요
+        fields = "__all__"
+
+    def get_start(self, obj):
+        return f"{obj.date}T{obj.start_time}"
+
+    def get_end(self, obj):
+        return f"{obj.date}T{obj.end_time}"

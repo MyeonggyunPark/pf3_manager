@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 
 from django.db import models
@@ -422,3 +421,62 @@ class OfficialExamResult(models.Model):
             self.exam_standard.name if self.exam_standard else self.exam_name_manual
         )
         return f"[Official] {self.student.name} - {exam_name} ({self.status})"
+
+
+# ==========================================
+# 6. Schedule Management (수업 일정 관리)
+# ==========================================
+class Lesson(models.Model):
+    """
+    Individual Lesson Schedule.
+    Tracks daily class details, attendance, and topics.
+    Linked to a student and optionally to a course registration (contract).
+
+    개별 수업 일정.
+    일별 수업 상세, 출석, 수업 주제를 추적함.
+    학생과 연결되며, 선택적으로 수강 등록(계약)과도 연결됨.
+    """
+
+    class StatusChoices(models.TextChoices):
+        SCHEDULED = "SCHEDULED", _("Geplant")  
+        COMPLETED = "COMPLETED", _("Abgeschlossen") 
+        CANCELLED = "CANCELLED", _("Abgesagt")  
+        NOSHOW = "NOSHOW", _("Unentschuldigt") 
+
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name="lessons"
+    )
+
+    # Optional: Link to a specific contract to track deduction of hours
+    # 선택사항: 특정 계약(수강권)과 연동하여 시간 차감 추적
+    course_registration = models.ForeignKey(
+        CourseRegistration,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lessons",
+    )
+
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    topic = models.CharField(
+        max_length=200, blank=True, help_text="수업 주제 (예: Chapter 5)"
+    )
+    memo = models.TextField(blank=True, help_text="수업 피드백 또는 숙제")
+
+    status = models.CharField(
+        max_length=20, choices=StatusChoices.choices, default=StatusChoices.SCHEDULED
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Unterrichtsstunde"
+        verbose_name_plural = "Unterrichtsstunden"
+        ordering = ["date", "start_time"]
+
+    def __str__(self):
+        return f"[{self.date}] {self.student.name} - {self.topic}"

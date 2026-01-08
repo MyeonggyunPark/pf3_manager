@@ -1,5 +1,10 @@
-from rest_framework import viewsets, permissions, filters
+from datetime import date
 
+from rest_framework import viewsets, permissions, filters
+from django.db.models import Sum
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import (
     Student,
@@ -8,6 +13,7 @@ from .models import (
     ExamRecord,
     ExamAttachment,
     OfficialExamResult,
+    Lesson,
 )
 from .serializers import (
     StudentSerializer,
@@ -16,6 +22,7 @@ from .serializers import (
     ExamRecordSerializer,
     ExamAttachmentSerializer,
     OfficialExamResultSerializer,
+    LessonSerializer,
 )
 
 
@@ -155,4 +162,90 @@ class OfficialExamResultViewSet(viewsets.ModelViewSet):
             # Optimize Foreign Key lookups (Student, ExamStandard)
             # 외래 키 조회 최적화 (학생, 시험 표준)
             .select_related("student", "exam_standard")
+        )
+
+
+class LessonViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing Lessons.
+    Supports filtering by date range for calendar views.
+
+    수업 일정 관리를 위한 ViewSet.
+    캘린더 뷰를 위한 날짜 범위 필터링을 지원함.
+    """
+
+    serializer_class = LessonSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Only show lessons for the logged-in tutor's students
+        # 로그인한 튜터 학생들의 수업만 표시
+        queryset = Lesson.objects.filter(student__tutor=self.request.user)
+
+        # Date Range Filtering (For Monthly/Weekly Calendar)
+        # 날짜 범위 필터링 (월간/주간 캘린더용)
+        # Usage: /api/lessons/?start_date=2024-01-01&end_date=2024-01-31
+        start_date = self.request.query_params.get("start_date")
+        end_date = self.request.query_params.get("end_date")
+
+        if start_date and end_date:
+            queryset = queryset.filter(date__range=[start_date, end_date])
+
+        return queryset
+
+    @action(detail=False, methods=["get"])
+    def today(self, request):
+        """
+        Custom Endpoint: Get lessons for today only.
+        URL: /api/lessons/today/
+
+        커스텀 엔드포인트: 오늘 날짜의 수업만 조회.
+        """
+        today_date = date.today()
+        # Filter today's lessons and sort by start time
+        # 오늘 수업 필터링 및 시작 시간순 정렬
+        lessons = self.get_queryset().filter(date=today_date).order_by("start_time")
+        serializer = self.get_serializer(lessons, many=True)
+        return Response(serializer.data)
+
+
+class DashboardStatsView(APIView):
+    """
+    API View for Dashboard Statistics.
+    Returns aggregated data for revenue, active students, etc.
+    URL: /api/dashboard/stats/
+
+    대시보드 통계를 위한 API View.
+    수익, 활성 학생 수 등의 집계 데이터를 반환함.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # 1. Active Students Count
+        total_students = Student.objects.filter(tutor=user).count()
+
+        # 2. Estimated Revenue (Sum of total_fee from ACTIVE courses)
+        # 예상 수익 (활성 상태인 수강권의 총액 합계)
+        revenue_data = CourseRegistration.objects.filter(
+            student__tutor=user, status="ACTIVE"
+        ).aggregate(Sum("total_fee"))
+
+        estimated_revenue = revenue_data["total_fee__sum"] or 0
+
+        # 3. Monthly Lesson Count (Current Month)
+        # 이번 달 수업 횟수
+        current_month = date.today().month
+        monthly_lesson_count = Lesson.objects.filter(
+            student__tutor=user, date__month=current_month
+        ).count()
+
+        return Response(
+            {
+                "total_students": total_students,
+                "estimated_revenue": estimated_revenue,
+                "monthly_lesson_count": monthly_lesson_count,
+            }
         )
