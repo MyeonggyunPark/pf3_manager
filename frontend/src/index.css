@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* --- [Tailwind v4 Theme Configuration] --- */
+@theme {
+  /* V8 Color Palette (Cloud Dancer Theme) */
+  /* 투명도 조절을 위해 hsl() 함수 내부 값만 정의하는 방식이 아니라,
+     v4에서는 변수 자체를 색상으로 인식하므로 정확한 HSL 값을 넣습니다. */
+
+  /* Primary: Regatta (#4C72A9) -> Main Brand Color */
+  --color-primary: hsl(215 38% 48%);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  /* Secondary: Nantucket Breeze (#C1D0E6) -> Tab Backgrounds */
+  --color-secondary: hsl(216 39% 83%);
+  --color-secondary-foreground: hsl(215 38% 48%);
+
+  /* Background: Cloud Dancer (#F0EEE9) -> App Background */
+  --color-background: hsl(40 17% 93%);
+  --color-foreground: hsl(215 28% 17%);
+
+  /* Cards: White (#FFFFFF) */
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(215 28% 17%);
+
+  /* Muted: Alaskan Blue (#8DA9BE) -> Inactive Text */
+  --color-muted: hsl(216 39% 90%);
+  --color-muted-foreground: hsl(206 26% 50%);
+
+  /* Accent: Rinsing Rivulet (#78C0BE) */
+  --color-accent: hsl(178 36% 61%);
+  --color-accent-foreground: hsl(0 0% 100%);
+
+  /* Destructive: Dusky Citron (#E3CD8B) */
+  --color-destructive: hsl(46 60% 72%);
+  --color-destructive-foreground: hsl(30 40% 25%);
+
+  /* Success: Aqua Gray (#9EAFA2) */
+  --color-success: hsl(134 10% 65%);
+  --color-success-foreground: hsl(0 0% 100%);
+
+  /* UI Elements */
+  --color-border: hsl(216 39% 83%);
+  --color-input: hsl(216 39% 83%);
+  --color-ring: hsl(215 38% 48%);
+
+  /* Settings */
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
+
+  --font-sans: "Inter", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+
+  --animate-in: animateIn 0.4s ease-out;
+
+  @keyframes animateIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* Base Styles */
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Custom Scrollbar (V8 Exact Copy) */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--color-background); }
+::-webkit-scrollbar-thumb { background: var(--color-muted-foreground); border-radius: 4px; opacity: 0.5; }
