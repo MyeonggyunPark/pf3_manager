@@ -1,11 +1,6 @@
 @import "tailwindcss";
 
-/* --- [Tailwind v4 Theme Configuration] --- */
 @theme {
-  /* V8 Color Palette (Cloud Dancer Theme) */
-  /* 투명도 조절을 위해 hsl() 함수 내부 값만 정의하는 방식이 아니라,
-     v4에서는 변수 자체를 색상으로 인식하므로 정확한 HSL 값을 넣습니다. */
-
   /* Primary: Regatta (#4C72A9) -> Main Brand Color */
   --color-primary: hsl(215 38% 48%);
   --color-primary-foreground: hsl(0 0% 100%);
@@ -30,9 +25,13 @@
   --color-accent: hsl(178 36% 61%);
   --color-accent-foreground: hsl(0 0% 100%);
 
-  /* Destructive: Dusky Citron (#E3CD8B) */
-  --color-destructive: hsl(46 60% 72%);
-  --color-destructive-foreground: hsl(30 40% 25%);
+  /* destructive: Dusty Cedar (#AD5D5D) */
+  --color-destructive: hsl(0 35% 52%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  /* warning: Dusky Citron (#E3CD8B) */
+  --color-warning: hsl(46 60% 72%);
+  --color-warning-foreground: hsl(0 0% 100%);
 
   /* Success: Aqua Gray (#9EAFA2) */
   --color-success: hsl(134 10% 65%);
