@@ -14,12 +14,12 @@ import Badge from "../components/ui/Badge";
 
 // StatCard Component
 // 통계 카드 컴포넌트
-const StatCard = ({ title, value, trend, icon, color }) => (
-    <Card className="hover:shadow-md transition-shadow">
+const StatCard = ({ title, value, trend, icon, color, onClick }) => (
+    <Card className="hover:shadow-md transition-shadow cursor-pointer hover:bg-slate-50" onClick={onClick}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {title}
-        </CardTitle>
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {title}
+            </CardTitle>
             <div
                 className={`p-2 rounded-lg ${
                 color === "primary"
@@ -200,7 +200,7 @@ export default function Dashboard() {
                     return (
                         <div
                         key={exam.id}
-                        className="relative flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group"
+                        className="relative flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-slate-50 transition-all cursor-pointer group"
                         >
                         {/* Left: Date Box */}
                         {/* 좌측: 날짜 박스 */}
@@ -337,10 +337,11 @@ export default function Dashboard() {
                 <div className="col-span-4 lg:col-span-2 space-y-6">
                     <StatCard
                         title="이번 달 예상 수익"
-                        value={formatEuro(stats?.estimated_revenue) || 0}
+                        value={formatEuro(stats?.estimated_revenue)}
                         trend={`입금 완료: ${formatEuro(stats?.current_revenue) || 0}`}
                         icon="TrendingUp"
                         color="primary"
+                        onClick={() => navigate("/courses")}
                     />
                     <StatCard
                         title="진행 중인 학생"
@@ -348,6 +349,7 @@ export default function Dashboard() {
                         trend={`이번 달 수업: ${stats?.monthly_lesson_count || 0}회`}
                         icon="Users"
                         color="accent"
+                        onClick={() => navigate("/students")}
                     />
                     <Card className="bg-linear-to-br from-[#4C72A9] to-[#3b5b8a] text-white border-none shadow-lg">
                         <CardHeader>

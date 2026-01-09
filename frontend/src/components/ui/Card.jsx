@@ -1,11 +1,12 @@
 import { cn } from "../../lib/utils";
 
-export const Card = ({ className, children }) => (
+export const Card = ({ className, children, ...props }) => (
   <div
     className={cn(
       "rounded-xl border border-border bg-card text-card-foreground shadow-sm",
       className,
     )}
+    {...props}
   >
     {children}
   </div>
