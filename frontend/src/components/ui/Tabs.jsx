@@ -1,0 +1,22 @@
+import { cn } from "../../lib/utils";
+
+export const TabsList = ({ className, children }) => (
+    <div className={cn("inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground", className)}>
+        {children}
+    </div>
+);
+
+export const TabsTrigger = ({ value, activeValue, onClick, children }) => (
+  <button 
+    onClick={() => onClick(value)} 
+    className={cn("inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all", activeValue === value ? "bg-card text-primary shadow-sm" : "hover:bg-background/50 hover:text-primary")}
+  >
+      {children}
+  </button>
+);
+
+export const TabsContent = ({ value, activeValue, children, className }) => (
+  <div className={cn("rounded-lg border border-border bg-card p-6", className)} hidden={activeValue !== value}>
+    {children}
+  </div>
+);
