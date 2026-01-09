@@ -2,6 +2,7 @@ from datetime import date
 
 from rest_framework import viewsets, permissions, filters
 from django.db.models import Sum
+from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -212,40 +213,56 @@ class LessonViewSet(viewsets.ModelViewSet):
 class DashboardStatsView(APIView):
     """
     API View for Dashboard Statistics.
-    Returns aggregated data for revenue, active students, etc.
+    Calculates revenue based on monthly Course Registrations.
     URL: /api/dashboard/stats/
 
-    대시보드 통계를 위한 API View.
-    수익, 활성 학생 수 등의 집계 데이터를 반환함.
+    대시보드 통계 API.
+    월별 수강 등록(CourseRegistration)을 기준으로 수익을 계산함.
     """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         user = request.user
+        now = timezone.now()
 
-        # 1. Active Students Count
-        total_students = Student.objects.filter(tutor=user).count()
+        # Base Query: This month's registrations for this tutor
+        # 매달에 수강권을 등록하므로 start_date 기준 필터링
+        monthly_registrations = CourseRegistration.objects.filter(
+            student__tutor=user, start_date__year=now.year, start_date__month=now.month
+        )
 
-        # 2. Estimated Revenue (Sum of total_fee from ACTIVE courses)
-        # 예상 수익 (활성 상태인 수강권의 총액 합계)
-        revenue_data = CourseRegistration.objects.filter(
-            student__tutor=user, status="ACTIVE"
-        ).aggregate(Sum("total_fee"))
+        # Estimated Revenue (Total Fee of ALL registrations this month)
+        # 예상 수익: 입금 여부와 상관없이 이번 달 생성된 모든 수강권의 금액 합계
+        estimated_revenue = (
+            monthly_registrations.aggregate(total=Sum("total_fee"))["total"] or 0
+        )
 
-        estimated_revenue = revenue_data["total_fee__sum"] or 0
+        # Current Revenue (Total Fee of PAID registrations this month)
+        # 현재(확정) 수익: 이번 달 수강권 중 'is_paid=True'인 것들의 합계
+        current_revenue = (
+            monthly_registrations
+            .filter(is_paid=True)
+            .aggregate(total=Sum("total_fee"))["total"] or 0
+        )
 
-        # 3. Monthly Lesson Count (Current Month)
-        # 이번 달 수업 횟수
-        current_month = date.today().month
+        # Active Students Count
+        # 학생의 수강 상태가 'ACTIVE'인 학생만 카운트
+        active_students= (
+            Student.objects.filter(tutor=user, status="ACTIVE").count()
+        )
+
+        # Monthly Lesson Count
+        # 이번 달 수업 수
         monthly_lesson_count = Lesson.objects.filter(
-            student__tutor=user, date__month=current_month
+            student__tutor=user, date__year=now.year, date__month=now.month
         ).count()
 
         return Response(
             {
-                "total_students": total_students,
                 "estimated_revenue": estimated_revenue,
+                "current_revenue": current_revenue,
+                "active_students": active_students,
                 "monthly_lesson_count": monthly_lesson_count,
             }
         )

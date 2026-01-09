@@ -42,7 +42,7 @@ class Student(models.Model):
     Managed by a Tutor. Includes exam preferences.
 
     학생 정보 모델.
-    튜터에 의해 관리되며, 주 시험 응시 목표(Preference)를 포함함.
+    튜터에 의해 관리되며 주 시험 응시 목표를 포함함.
     """
 
     class GenderChoices(models.TextChoices):
@@ -53,6 +53,11 @@ class Student(models.Model):
         FULL = "FULL", _("Gesamtprüfung")
         WRITTEN = "WRITTEN", _("Schriftliche Prüfung")
         ORAL = "ORAL", _("Mündliche Prüfung")
+
+    class StatusChoices(models.TextChoices):
+        ACTIVE = "ACTIVE", _("Fortschritt")
+        PAUSED = "PAUSED", _("Pause")
+        FINISHED = "FINISHED", _("Ende")
 
     tutor = models.ForeignKey(
         Tutor, on_delete=models.CASCADE, related_name="students"
@@ -69,6 +74,13 @@ class Student(models.Model):
     # 시험 결과 입력 화면에서의 기본 필터링 옵션
     target_exam_mode = models.CharField(
         max_length=20, choices=ExamModeChoices.choices, default=ExamModeChoices.FULL
+    )
+
+    status = models.CharField(
+        max_length=10,
+        choices=StatusChoices.choices,
+        default=StatusChoices.ACTIVE,
+        help_text="학생의 현재 수강 상태",
     )
 
     memo = models.TextField(blank=True, null=True)

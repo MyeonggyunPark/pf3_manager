@@ -90,11 +90,12 @@ class StudentAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "tutor",
+        "status",
         "current_level",
         "target_level",
         "target_exam_mode",
     )
-    list_filter = ("current_level", "target_level", "gender")
+    list_filter = ("status", "current_level", "target_level", "gender")
     search_fields = ("name", "tutor__name")
 
     # Optimization: Fetch tutor data in a single query (N+1 Problem Fix)
