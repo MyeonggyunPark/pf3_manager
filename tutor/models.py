@@ -92,7 +92,7 @@ class Student(models.Model):
         verbose_name_plural = "Students"
 
     def __str__(self):
-        return f"{self.name} ({self.target_level})"
+        return self.name
 
 
 # ==========================================
