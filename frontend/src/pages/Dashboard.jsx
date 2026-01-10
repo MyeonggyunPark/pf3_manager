@@ -11,6 +11,7 @@ import {
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
+import AddStudentModal from "../components/modals/AddStudentModal";
 
 // StatCard Component
 // 통계 카드 컴포넌트
@@ -38,6 +39,7 @@ const StatCard = ({ title, value, trend, icon, color, onClick }) => (
 );
 
 export default function Dashboard() {
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const navigate = useNavigate();
 
     // Initialize stats with default values to prevent undefined errors
@@ -48,55 +50,59 @@ export default function Dashboard() {
         active_students: 0,
         monthly_lesson_count: 0,
     });
-
+    
     const [todayLessons, setTodayLessons] = useState([]);
     const [upcomingExams, setUpcomingExams] = useState([]);
     const [totalExamCount, setTotalExamCount] = useState(0);
 
+    // Modal Visibility State
+    // 모달 표시 상태 관리
+    const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+    
     // Fetch initial dashboard data
     // 초기 대시보드 데이터 호출
     useEffect(() => {
-        const load = async () => {
-        try {
-            // Parallel API calls for performance
-            // 성능을 위해 API 병렬 호출
-            const [s, t, e] = await Promise.all([
-                api.get("/api/dashboard/stats/"),
-                api.get("/api/lessons/today/"),
-                api.get("/api/official-results/"),
-            ]);
+        const fetchDashboardData = async () => {
+            try {
+                // Parallel API calls for performance
+                // 성능을 위해 API 병렬 호출
+                const [s, t, e] = await Promise.all([
+                    api.get("/api/dashboard/stats/"),
+                    api.get("/api/lessons/today/"),
+                    api.get("/api/official-results/"),
+                ]);
 
-            // Set Dashboard Statistics (Revenue, Students, etc.)
-            // 대시보드 통계 설정 (수익, 학생 수 등)
-            setStats(s.data);
+                // Update state with fetched data
+                // 가져온 데이터로 상태 업데이트
+                setStats(s.data);
+                setTodayLessons(t.data);
 
-            setTodayLessons(t.data);
+                // Normalize current time to 00:00:00 for accurate date comparison
+                // 정확한 날짜 비교를 위해 현재 시간을 00:00:00으로 정규화
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
 
-            // Normalize current time to 00:00:00 for accurate date comparison
-            // 정확한 날짜 비교를 위해 현재 시간을 00:00:00으로 정규화
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+                // Filter future exams and sort by date ascending
+                // 미래 시험 일정 필터링 및 날짜 오름차순 정렬
+                const futureExams = e.data
+                    .filter((exam) => {
+                        const examDate = new Date(exam.exam_date);
+                        examDate.setHours(0, 0, 0, 0);
+                        return examDate >= today;
+                    })
+                    .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date));
 
-            // Filter future exams and sort by date ascending
-            // 미래 시험 일정 필터링 및 날짜 오름차순 정렬
-            const futureExams = e.data
-            .filter((exam) => {
-                const examDate = new Date(exam.exam_date);
-                examDate.setHours(0, 0, 0, 0);
-                return examDate >= today;
-            })
-            .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date));
-
-            // Store total count and slice top 3
-            // 전체 개수 저장 및 상위 3개 추출
-            setTotalExamCount(futureExams.length);
-            setUpcomingExams(futureExams.slice(0, 3));
-        } catch (e) {
-            console.error("Dashboard Data Load Failed:", e);
-        }
+                // Store total count and slice top 3
+                // 전체 개수 저장 및 상위 3개 추출
+                setTotalExamCount(futureExams.length);
+                setUpcomingExams(futureExams.slice(0, 3));
+            } catch (e) {
+                console.error("Dashboard Data Load Failed:", e);
+            }
         };
-        load();
-    }, []);
+        fetchDashboardData();
+    }, [refreshTrigger]);
+
 
     // Helper function to format currency (Euro)
     // 화폐 단위(유로) 포맷팅 헬퍼 함수
@@ -108,8 +114,8 @@ export default function Dashboard() {
     };
 
     const todayDate = new Date().toLocaleDateString("de-DE", {
-    month: "long",
-    day: "numeric",
+        month: "long",
+        day: "numeric",
     });
 
     // Calculate D-Day based on date only
@@ -140,6 +146,16 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-6 animate-in">
+            {/* Add Student Modal */}
+            {/* 학생 추가 모달 */}
+            <AddStudentModal 
+                isOpen={isStudentModalOpen}
+                onClose={() => setIsStudentModalOpen(false)}
+                onSuccess={() => {
+                    setRefreshTrigger(prev => prev + 1);
+                }}
+            />
+
             {/* Upcoming Exams Section */}
             {/* 다가오는 시험 일정 섹션 */}
             {upcomingExams.length > 0 ? (
@@ -364,9 +380,9 @@ export default function Dashboard() {
                             <LucideIcons.PlusCircle className="mr-2 h-4 w-4" /> 수업 일지 작성
                         </Button>
                         <Button
-                            variant="secondary"
-                            className="w-full justify-start bg-white text-primary hover:bg-white/90 h-11"
-                            onClick={() => console.log("Open Add Student Modal")}
+                                variant="secondary"
+                                className="w-full justify-start bg-white text-primary hover:bg-white/90 h-11"
+                                onClick={() => setIsStudentModalOpen(true)}
                         >
                             <LucideIcons.UserPlus className="mr-2 h-4 w-4" /> 학생 추가
                         </Button>
