@@ -17,7 +17,10 @@ import AddLessonModal from "../components/modals/AddLessonModal";
 // StatCard Component
 // 통계 카드 컴포넌트
 const StatCard = ({ title, value, trend, icon, color, onClick }) => (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer hover:bg-slate-50" onClick={onClick}>
+    <Card
+        className="hover:shadow-md transition-shadow cursor-pointer hover:bg-slate-50"
+        onClick={onClick}
+    >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {title}
@@ -51,7 +54,7 @@ export default function Dashboard() {
         active_students: 0,
         monthly_lesson_count: 0,
     });
-    
+
     const [todayLessons, setTodayLessons] = useState([]);
     const [upcomingExams, setUpcomingExams] = useState([]);
     const [totalExamCount, setTotalExamCount] = useState(0);
@@ -60,7 +63,25 @@ export default function Dashboard() {
     // 모달 표시 상태 관리
     const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
     const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
-    
+
+    // State for selected lesson to edit
+    // 수정할 수업 선택 상태 관리
+    const [selectedLesson, setSelectedLesson] = useState(null);
+
+    // Function to open modal in edit mode
+    // 수정 모드로 모달을 여는 함수
+    const openEditModal = (lesson) => {
+        setSelectedLesson(lesson);
+        setIsLessonModalOpen(true);
+    };
+
+    // Function to open modal in create mode
+    // 생성 모드로 모달을 여는 함수
+    const openCreateModal = () => {
+        setSelectedLesson(null);
+        setIsLessonModalOpen(true);
+    };
+
     // Fetch initial dashboard data
     // 초기 대시보드 데이터 호출
     useEffect(() => {
@@ -87,12 +108,12 @@ export default function Dashboard() {
                 // Filter future exams and sort by date ascending
                 // 미래 시험 일정 필터링 및 날짜 오름차순 정렬
                 const futureExams = e.data
-                    .filter((exam) => {
-                        const examDate = new Date(exam.exam_date);
-                        examDate.setHours(0, 0, 0, 0);
-                        return examDate >= today;
-                    })
-                    .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date));
+                .filter((exam) => {
+                    const examDate = new Date(exam.exam_date);
+                    examDate.setHours(0, 0, 0, 0);
+                    return examDate >= today;
+                })
+                .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date));
 
                 // Store total count and slice top 3
                 // 전체 개수 저장 및 상위 3개 추출
@@ -104,7 +125,6 @@ export default function Dashboard() {
         };
         fetchDashboardData();
     }, [refreshTrigger]);
-
 
     // Helper function to format currency (Euro)
     // 화폐 단위(유로) 포맷팅 헬퍼 함수
@@ -146,25 +166,47 @@ export default function Dashboard() {
         return { day, month };
     };
 
+    // Styles for lesson status badges
+    // 수업 상태 배지를 위한 스타일 정의
+    const statusStyles = {
+        SCHEDULED:
+        "border-border/50 bg-background hover:border-accent hover:shadow-md",
+        COMPLETED:
+        "border-accent/30 bg-accent/5 hover:border-accent hover:shadow-md",
+        CANCELLED: "border-slate-200 bg-slate-50 opacity-70 hover:opacity-100",
+        NOSHOW:
+        "border-destructive/20 bg-destructive/5 hover:border-destructive/40",
+    };
+
+    // Icons mapping for lesson status
+    // 수업 상태별 아이콘 매핑
+    const statusIcons = {
+        SCHEDULED: <LucideIcons.Clock className="w-5 h-5 text-slate-400" />,
+        COMPLETED: <LucideIcons.CheckCircle2 className="w-6 h-6 text-accent" />,
+        CANCELLED: <LucideIcons.XCircle className="w-6 h-6 text-slate-400" />,
+        NOSHOW: <LucideIcons.AlertCircle className="w-6 h-6 text-destructive" />,
+    };
+
     return (
         <div className="space-y-6 animate-in">
-            {/* Add Lesson Modal */}
-            {/* 수업 추가 모달 */}
-            <AddLessonModal 
+            {/* Add Lesson Modal - connected with selectedLesson for edit mode */}
+            {/* 수업 추가 모달 - 수정 모드를 위해 selectedLesson과 연결됨 */}
+            <AddLessonModal
                 isOpen={isLessonModalOpen}
                 onClose={() => setIsLessonModalOpen(false)}
                 onSuccess={() => {
-                    setRefreshTrigger(prev => prev + 1); // Trigger Refresh
+                setRefreshTrigger((prev) => prev + 1); // Trigger Refresh
                 }}
+                lessonData={selectedLesson}
             />
 
             {/* Add Student Modal */}
             {/* 학생 추가 모달 */}
-            <AddStudentModal 
+            <AddStudentModal
                 isOpen={isStudentModalOpen}
                 onClose={() => setIsStudentModalOpen(false)}
                 onSuccess={() => {
-                    setRefreshTrigger(prev => prev + 1);
+                setRefreshTrigger((prev) => prev + 1);
                 }}
             />
 
@@ -239,30 +281,40 @@ export default function Dashboard() {
                             )}
                         >
                             <span className="text-[10px] font-bold leading-none">
-                                {month}
+                            {month}
                             </span>
                             <span className="text-xl font-extrabold leading-none mt-0.5">
-                                {day}
+                            {day}
                             </span>
                         </div>
 
-                        {/* Center: Info */}
-                        {/* 중앙: 시험 정보 */}
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                                <p className="text-sm font-bold text-slate-800 truncate">
-                                    {exam.student_name}
-                                </p>
-                                <Badge
-                                    variant="secondary"
-                                    className={cn(
-                                    "text-[10px] h-5 px-1.5 font-bold",
-                                    badgeColorClass,
-                                    )}
-                                >
-                                    {dDayStr}
-                                </Badge>
-                            </div>
+                            {/* Center: Info */}
+                            {/* 중앙: 시험 정보 */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
+                                        <p className="text-sm font-bold text-slate-800 truncate">
+                                            {exam.student_name}
+                                        </p>
+                                        {exam.student_level && (
+                                        <Badge
+                                            variant="outline"
+                                            className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+                                        >
+                                            {exam.student_level}
+                                        </Badge>
+                                        )}
+                                    </div>
+                                    <Badge
+                                        variant="secondary"
+                                        className={cn(
+                                        "text-[10px] h-5 px-1.5 font-bold",
+                                        badgeColorClass,
+                                        )}
+                                    >
+                                        {dDayStr}
+                                    </Badge>
+                                </div>
                                 <p className="text-xs text-muted-foreground truncate">
                                     {exam.exam_standard_name || exam.exam_name_manual}
                                 </p>
@@ -270,20 +322,20 @@ export default function Dashboard() {
                         </div>
                     );
                     })}
-                    </div>
                 </div>
-            ) : (
-                // Empty State: No exams scheduled
-                // 빈 상태: 예정된 시험 없음
-                <div className="w-full rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 flex flex-col items-center justify-center text-center">
+            </div>
+        ) : (
+            // Empty State: No exams scheduled
+            // 빈 상태: 예정된 시험 없음
+            <div className="w-full rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 flex flex-col items-center justify-center text-center">
                 <div className="bg-white p-3 rounded-full shadow-sm mb-3">
                     <LucideIcons.GraduationCap className="w-6.5 h-6.5 text-slate-400" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-700">
                     예정된 정규 시험이 없습니다
                 </h3>
-                </div>
-            )}
+            </div>
+        )}
 
             {/* Main Content Area */}
             {/* 메인 콘텐츠 영역 */}
@@ -291,7 +343,7 @@ export default function Dashboard() {
                 <Card className="col-span-4 lg:col-span-5 border-none shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                         <CardTitle className="text-base flex items-center gap-2">
-                            <LucideIcons.Calendar className="w-5 h-5 text-accent" /> 
+                            <LucideIcons.Calendar className="w-5 h-5 text-accent" />
                             오늘의 수업
                         </CardTitle>
                         <Badge variant="secondary" className="text-primary font-bold">
@@ -300,24 +352,25 @@ export default function Dashboard() {
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         {todayLessons.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                            오늘 예정된 수업이 없습니다.
-                        </div>
+                            <div className="text-center py-8 text-muted-foreground text-sm">
+                                오늘 예정된 수업이 없습니다.
+                            </div>
                         ) : (
-                        todayLessons.map((lesson) => (
-                            <div
-                            key={lesson.id}
-                            className="flex items-center justify-between rounded-xl border border-border/50 bg-background p-4 hover:border-accent hover:shadow-md transition-all cursor-pointer group"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div
+                            todayLessons.map((lesson) => (
+                                <div
+                                    key={lesson.id}
+                                    // Open edit modal on click
+                                    // 클릭 시 수정 모달 열기
+                                    onClick={() => openEditModal(lesson)}
                                     className={cn(
-                                        "flex h-12 w-12 flex-col items-center justify-center rounded-lg border text-sm font-bold",
-                                        lesson.status === "COMPLETED"
-                                        ? "bg-accent/10 border-accent text-accent"
-                                        : "bg-white border-border text-muted-foreground",
+                                        "flex items-center justify-between rounded-xl border p-4 transition-all cursor-pointer group",
+                                        // Apply dynamic styles based on lesson status
+                                        // 수업 상태에 따른 동적 스타일 적용
+                                        statusStyles[lesson.status] || statusStyles.SCHEDULED,
                                     )}
-                                    >
+                                >
+                                <div className="flex items-center gap-4">
+                                    <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border text-sm font-bold bg-white border-border text-muted-foreground">
                                         <span>{lesson.start_time.split(":")[0]}</span>
                                         <span className="text-[10px] opacity-70">
                                             {lesson.start_time.split(":")[1]}
@@ -326,15 +379,23 @@ export default function Dashboard() {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <p className="font-bold text-slate-700 group-hover:text-primary transition-colors">
-                                            {lesson.student_name}
+                                                {lesson.student_name}
                                             </p>
+                                            {lesson.student_level && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+                                                >
+                                                    {lesson.student_level}
+                                                </Badge>
+                                            )}
                                             {lesson.topic && (
-                                            <Badge
-                                                variant="outline"
-                                                className="text-[10px] h-5 px-1.5 bg-white max-w-37.5 truncate"
-                                            >
-                                                {lesson.topic}
-                                            </Badge>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-[10px] h-5 px-1.5 bg-white max-w-37.5 truncate"
+                                                >
+                                                    {lesson.topic}
+                                                </Badge>
                                             )}
                                         </div>
                                         <p className="text-sm text-muted-foreground mt-0.5">
@@ -342,20 +403,13 @@ export default function Dashboard() {
                                         </p>
                                     </div>
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className={cn(
-                                    "rounded-full",
-                                    lesson.status === "COMPLETED"
-                                        ? "text-accent bg-accent/10"
-                                        : "text-muted-foreground hover:text-accent hover:bg-background",
-                                    )}
-                                >
-                                    <LucideIcons.CheckCircle2 className="w-6 h-6" />
-                                </Button>
-                            </div>
-                        ))
+                                <div className="p-2">
+                                    {/* Render status icon */}
+                                    {/* 상태 아이콘 렌더링 */}
+                                    {statusIcons[lesson.status] || statusIcons.SCHEDULED}
+                                </div>
+                                </div>
+                            ))
                         )}
                     </CardContent>
                 </Card>
@@ -381,23 +435,23 @@ export default function Dashboard() {
                     />
                     <Card className="bg-linear-to-br from-[#4C72A9] to-[#3b5b8a] text-white border-none shadow-lg">
                         <CardHeader>
-                        <CardTitle className="text-sm text-white">빠른 실행</CardTitle>
+                            <CardTitle className="text-sm text-white">빠른 실행</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                        <Button
-                            variant="secondary"
-                            className="w-full justify-start h-11 gap-2"
-                            onClick={() => setIsLessonModalOpen(true)}
-                        >
-                            <LucideIcons.CalendarPlus className="mr-1 h-4 w-4" /> 수업 추가
-                        </Button>
-                        <Button
+                            <Button
+                                variant="secondary"
+                                className="w-full justify-start h-11 gap-2"
+                                onClick={openCreateModal}
+                            >
+                                <LucideIcons.CalendarPlus className="mr-1 h-4 w-4" /> 수업 추가
+                            </Button>
+                            <Button
                                 variant="secondary"
                                 className="w-full justify-start bg-white text-primary hover:bg-white/90 h-11 gap-2"
                                 onClick={() => setIsStudentModalOpen(true)}
-                        >
-                            <LucideIcons.UserPlus className="mr-1 h-4 w-4" /> 학생 등록
-                        </Button>
+                            >
+                                <LucideIcons.UserPlus className="mr-1 h-4 w-4" /> 학생 등록
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>

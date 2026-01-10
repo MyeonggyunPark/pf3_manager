@@ -4,9 +4,18 @@ import { X, Loader2 } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
-export default function AddLessonModal({ isOpen, onClose, onSuccess }) {
+export default function AddLessonModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  lessonData = null,
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const [students, setStudents] = useState([]);
+
+  // Determine if the modal is in edit mode based on provided lessonData
+  // lessonData 존재 여부를 기반으로 수정 모드인지 확인
+  const isEditMode = !!lessonData;
 
   // Manage validation errors per field (object) and general submission errors (string)
   // 필드별 유효성 에러(객체)와 일반 제출 에러(문자열)를 구분하여 관리
@@ -38,6 +47,26 @@ export default function AddLessonModal({ isOpen, onClose, onSuccess }) {
   };
 
   const [formData, setFormData] = useState(initialFormState);
+
+  // Populate form data when opening in edit mode, or reset to defaults in create mode
+  // 수정 모드로 열릴 때 폼 데이터를 채우거나, 생성 모드일 때 기본값으로 초기화
+  useEffect(() => {
+    if (isOpen && lessonData) {
+      setFormData({
+        student: lessonData.student,
+        date: lessonData.date,
+        // Format HH:MM:SS to HH:MM for input compatibility
+        // 입력 필드 호환성을 위해 HH:MM:SS 형식을 HH:MM으로 포맷팅
+        start_time: lessonData.start_time.slice(0, 5),
+        end_time: lessonData.end_time.slice(0, 5),
+        topic: lessonData.topic || "",
+        status: lessonData.status,
+        memo: lessonData.memo || "",
+      });
+    } else if (isOpen && !lessonData) {
+      setFormData(initialFormState);
+    }
+  }, [isOpen, lessonData]);
 
   // Fetch student list when modal opens and filter only 'ACTIVE' students for valid scheduling
   // 모달이 열릴 때 학생 목록을 조회하고, 유효한 수업 예약을 위해 'ACTIVE' 상태인 학생만 필터링
@@ -123,16 +152,26 @@ export default function AddLessonModal({ isOpen, onClose, onSuccess }) {
         student: parseInt(formData.student, 10),
       };
 
-      await api.post("/api/lessons/", payload);
+      // Call API: PUT for updates (Edit), POST for creation (Add)
+      // API 호출: 수정 시 PUT, 생성 시 POST 사용
+      if (isEditMode) {
+        await api.put(`/api/lessons/${lessonData.id}/`, payload);
+      } else {
+        await api.post("/api/lessons/", payload);
+      }
 
       setFormData(initialFormState);
       onSuccess();
       onClose();
     } catch (err) {
       console.error("Lesson Create Failed:", err);
+      // Set dynamic error message based on the mode (Edit vs Create)
+      // 모드(수정 vs 생성)에 따라 동적인 에러 메시지 설정
       setSubmitError(
         err.response?.data?.detail ||
-          "수업 등록에 실패했습니다. 입력 값을 확인해주세요.",
+          `수업 ${
+            isEditMode ? "변경" : "등록"
+          }에 실패했습니다. 입력 값을 확인해주세요.`,
       );
     } finally {
       setIsLoading(false);
@@ -195,10 +234,14 @@ export default function AddLessonModal({ isOpen, onClose, onSuccess }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-              수업 추가
+              {/* Dynamic title based on mode */}
+              {/* 모드에 따른 동적 타이틀 */}
+              {isEditMode ? "수업 변경" : "수업 추가"}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              추가할 새로운 수업의 정보를 입력하세요.
+              {isEditMode
+                ? "수정이 필요한 수업 정보를 변경해주세요."
+                : "추가할 새로운 수업의 정보를 입력하세요."}
             </p>
           </div>
           <button
@@ -415,8 +458,11 @@ export default function AddLessonModal({ isOpen, onClose, onSuccess }) {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 저장 중...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                  {isEditMode ? "변경 중..." : "저장 중..."}
                 </>
+              ) : isEditMode ? (
+                "변경"
               ) : (
                 "저장"
               )}
