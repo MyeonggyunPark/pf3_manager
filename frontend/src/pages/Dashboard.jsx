@@ -12,6 +12,7 @@ import {
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import AddStudentModal from "../components/modals/AddStudentModal";
+import AddLessonModal from "../components/modals/AddLessonModal";
 
 // StatCard Component
 // 통계 카드 컴포넌트
@@ -58,6 +59,7 @@ export default function Dashboard() {
     // Modal Visibility State
     // 모달 표시 상태 관리
     const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+    const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
     
     // Fetch initial dashboard data
     // 초기 대시보드 데이터 호출
@@ -146,6 +148,16 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-6 animate-in">
+            {/* Add Lesson Modal */}
+            {/* 수업 추가 모달 */}
+            <AddLessonModal 
+                isOpen={isLessonModalOpen}
+                onClose={() => setIsLessonModalOpen(false)}
+                onSuccess={() => {
+                    setRefreshTrigger(prev => prev + 1); // Trigger Refresh
+                }}
+            />
+
             {/* Add Student Modal */}
             {/* 학생 추가 모달 */}
             <AddStudentModal 
@@ -374,17 +386,17 @@ export default function Dashboard() {
                         <CardContent className="space-y-3">
                         <Button
                             variant="secondary"
-                            className="w-full justify-start h-11"
-                            onClick={() => console.log("Open Add Lesson Modal")}
+                            className="w-full justify-start h-11 gap-2"
+                            onClick={() => setIsLessonModalOpen(true)}
                         >
-                            <LucideIcons.PlusCircle className="mr-2 h-4 w-4" /> 수업 일지 작성
+                            <LucideIcons.CalendarPlus className="mr-1 h-4 w-4" /> 수업 추가
                         </Button>
                         <Button
                                 variant="secondary"
-                                className="w-full justify-start bg-white text-primary hover:bg-white/90 h-11"
+                                className="w-full justify-start bg-white text-primary hover:bg-white/90 h-11 gap-2"
                                 onClick={() => setIsStudentModalOpen(true)}
                         >
-                            <LucideIcons.UserPlus className="mr-2 h-4 w-4" /> 학생 추가
+                            <LucideIcons.UserPlus className="mr-1 h-4 w-4" /> 학생 등록
                         </Button>
                         </CardContent>
                     </Card>

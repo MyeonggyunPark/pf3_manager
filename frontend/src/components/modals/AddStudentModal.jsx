@@ -118,7 +118,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
       newErrors.target_level = "목표 레벨을 선택해주세요.";
     if (!formData.target_exam_mode)
       newErrors.target_exam_mode = "시험 유형을 선택해주세요.";
-    if (!formData.status) newErrors.status = "상태를 선택해주세요.";
+    if (!formData.status) newErrors.status = "수강 상태를 선택해주세요.";
 
     // If there are validation errors, update state and stop submission
     // 유효성 에러가 존재하면 상태를 업데이트하고 제출 중단
@@ -225,7 +225,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-              새 학생 등록
+              학생 등록
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
               등록할 새로운 학생의 정보를 입력하세요.
@@ -311,8 +311,6 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
               <ErrorMessage message={errors.gender} />
             </div>
           </div>
-
-          <div className="h-px bg-slate-100 w-full my-2" />
 
           {/* Row 2: Levels */}
           {/* 2행: 레벨 */}
