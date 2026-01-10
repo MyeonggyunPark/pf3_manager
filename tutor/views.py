@@ -39,7 +39,8 @@ class StudentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     # Enable search functionality by name
-    # 이름으로 검색하는 기능을 활성화합니다
+    # 'filter_backends' activates the search parameter (e.g., ?search=Name)
+    # 이름으로 검색하는 기능을 활성화합니다 (예: ?search=홍길동)
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
 
@@ -53,7 +54,10 @@ class StudentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """
         Automatically assign the logged-in user as the tutor when creating a student.
+        This overrides the default create behavior to inject the user.
+
         학생 생성 시 로그인한 사용자를 튜터로 자동 할당합니다.
+        기본 생성 동작을 오버라이드하여 현재 사용자를 주입합니다.
         """
         serializer.save(tutor=self.request.user)
 
@@ -85,7 +89,9 @@ class ExamStandardViewSet(viewsets.ReadOnlyModelViewSet):
     """
 
     # Optimized queryset with prefetch_related to prevent N+1 problem
+    # 'modules__sections' fetches related modules and sections in separate queries
     # N+1 문제를 방지하기 위해 prefetch_related로 최적화된 쿼리셋
+    # 'modules__sections'는 관련된 모듈과 섹션을 별도의 쿼리로 미리 가져옵니다
     queryset = ExamStandard.objects.prefetch_related("modules__sections").all()
     serializer_class = ExamStandardSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -110,11 +116,11 @@ class ExamRecordViewSet(viewsets.ModelViewSet):
         """
         return (
             ExamRecord.objects.filter(student__tutor=self.request.user)
-            # Optimize Foreign Keys (1:1, N:1)
-            # 외래 키 최적화 (1:1, N:1 관계)
+            # Optimize Foreign Keys (1:1, N:1): Uses JOIN in SQL
+            # 외래 키 최적화 (1:1, N:1 관계): SQL에서 JOIN을 사용합니다
             .select_related("student", "exam_standard")
-            # Optimize Many-to-Many or Reverse Foreign Keys (1:N)
-            # 다대다 또는 역방향 외래 키 최적화 (1:N 관계)
+            # Optimize Many-to-Many or Reverse Foreign Keys (1:N): Uses separate queries
+            # 다대다 또는 역방향 외래 키 최적화 (1:N 관계): 별도의 쿼리를 사용합니다
             .prefetch_related("attachments")
         )
 
@@ -131,7 +137,10 @@ class ExamAttachmentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Ensure access only to attachments linked to the tutor's students.
+        Traverses relationships: ExamAttachment -> ExamRecord -> Student -> Tutor
+
         튜터의 학생들과 연결된 첨부 파일에만 접근하도록 보장합니다.
+        관계 탐색: ExamAttachment -> ExamRecord -> Student -> Tutor
         """
         return ExamAttachment.objects.filter(
             exam_record__student__tutor=self.request.user
@@ -179,9 +188,19 @@ class LessonViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Only show lessons for the logged-in tutor's students
-        # 로그인한 튜터 학생들의 수업만 표시
-        queryset = Lesson.objects.filter(student__tutor=self.request.user)
+        """
+        Retrieve lessons for the tutor's students.
+        Supports optional date range filtering via query parameters.
+
+        튜터의 학생들에 대한 수업을 조회합니다.
+        쿼리 매개변수를 통한 선택적 날짜 범위 필터링을 지원함.
+        """
+
+        # Eager load 'student' to avoid N+1 queries when serializing student names
+        # 학생 이름을 시리얼라이즈할 때 N+1 쿼리를 방지하기 위해 'student'를 미리 로드(Eager load)합니다
+        queryset = Lesson.objects.filter(
+            student__tutor=self.request.user
+        ).select_related("student")
 
         # Date Range Filtering (For Monthly/Weekly Calendar)
         # 날짜 범위 필터링 (월간/주간 캘린더용)
@@ -233,7 +252,9 @@ class DashboardStatsView(APIView):
         )
 
         # Estimated Revenue (Total Fee of ALL registrations this month)
+        # aggregate() performs calculation in the DB, returning a dictionary
         # 예상 수익: 입금 여부와 상관없이 이번 달 생성된 모든 수강권의 금액 합계
+        # aggregate()는 DB에서 계산을 수행하고 딕셔너리를 반환합니다
         estimated_revenue = (
             monthly_registrations.aggregate(total=Sum("total_fee"))["total"] or 0
         )
@@ -241,16 +262,15 @@ class DashboardStatsView(APIView):
         # Current Revenue (Total Fee of PAID registrations this month)
         # 현재(확정) 수익: 이번 달 수강권 중 'is_paid=True'인 것들의 합계
         current_revenue = (
-            monthly_registrations
-            .filter(is_paid=True)
-            .aggregate(total=Sum("total_fee"))["total"] or 0
+            monthly_registrations.filter(is_paid=True).aggregate(
+                total=Sum("total_fee")
+            )["total"]
+            or 0
         )
 
         # Active Students Count
         # 학생의 수강 상태가 'ACTIVE'인 학생만 카운트
-        active_students= (
-            Student.objects.filter(tutor=user, status="ACTIVE").count()
-        )
+        active_students = Student.objects.filter(tutor=user, status="ACTIVE").count()
 
         # Monthly Lesson Count
         # 이번 달 수업 수
