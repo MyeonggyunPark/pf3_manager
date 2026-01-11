@@ -152,10 +152,10 @@ export default function AddLessonModal({
         student: parseInt(formData.student, 10),
       };
 
-      // Call API: PUT for updates (Edit), POST for creation (Add)
-      // API 호출: 수정 시 PUT, 생성 시 POST 사용
+      // Call API: PATCH for updates (Edit), POST for creation (Add)
+      // API 호출: 수정 시 PATCH, 생성 시 POST 사용
       if (isEditMode) {
-        await api.put(`/api/lessons/${lessonData.id}/`, payload);
+        await api.patch(`/api/lessons/${lessonData.id}/`, payload);
       } else {
         await api.post("/api/lessons/", payload);
       }
