@@ -126,7 +126,7 @@ class ExamModuleSerializer(serializers.ModelSerializer):
     # 'source="sections"' refers to the related_name in the ExamSection model
     # 중첩 시리얼라이저: 이 모듈에 속한 섹션들을 조회합니다
     # 'source="sections"'는 ExamSection 모델에 정의된 related_name을 참조합니다
-    sections = ExamSectionSerializer(many=True, read_only=True, source="sections")
+    sections = ExamSectionSerializer(many=True, read_only=True)
 
     class Meta:
         model = ExamModule
@@ -144,7 +144,7 @@ class ExamStandardSerializer(serializers.ModelSerializer):
 
     # Nested Serializer: Retrieve modules belonging to this standard
     # 중첩 시리얼라이저: 이 표준에 속한 모듈들을 조회합니다
-    modules = ExamModuleSerializer(many=True, read_only=True, source="modules")
+    modules = ExamModuleSerializer(many=True, read_only=True)
 
     class Meta:
         model = ExamStandard

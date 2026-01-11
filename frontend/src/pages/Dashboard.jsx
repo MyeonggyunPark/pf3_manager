@@ -13,6 +13,7 @@ import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import AddLessonModal from "../components/modals/AddLessonModal";
+import EditOfficialExamModal from "../components/modals/EditOfficialExamModal";
 
 // StatCard Component
 // 통계 카드 컴포넌트
@@ -58,6 +59,8 @@ export default function Dashboard() {
     const [todayLessons, setTodayLessons] = useState([]);
     const [upcomingExams, setUpcomingExams] = useState([]);
     const [totalExamCount, setTotalExamCount] = useState(0);
+    const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+    const [selectedExam, setSelectedExam] = useState(null);
 
     // Modal Visibility State
     // 모달 표시 상태 관리
@@ -187,8 +190,25 @@ export default function Dashboard() {
         NOSHOW: <LucideIcons.AlertCircle className="w-6 h-6 text-destructive" />,
     };
 
+    const openExamModal = (exam) => {
+        setSelectedExam(exam);
+        setIsExamModalOpen(true);
+    };
+
     return (
         <div className="space-y-6 animate-in">
+            
+            {/* Edit Official Exam Modal */}
+            {/* 정규 시험 수정 모달 */}
+            <EditOfficialExamModal
+                isOpen={isExamModalOpen}
+                onClose={() => setIsExamModalOpen(false)}
+                examData={selectedExam}
+                onSuccess={() => {
+                setRefreshTrigger(prev => prev + 1); // Refresh dashboard data
+                }}
+            />
+
             {/* Add Lesson Modal - connected with selectedLesson for edit mode */}
             {/* 수업 추가 모달 - 수정 모드를 위해 selectedLesson과 연결됨 */}
             <AddLessonModal
@@ -270,6 +290,7 @@ export default function Dashboard() {
                     return (
                         <div
                         key={exam.id}
+                        onClick={() => openExamModal(exam)}
                         className="relative flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-slate-50 transition-all cursor-pointer group"
                         >
                         {/* Left: Date Box */}
@@ -440,14 +461,14 @@ export default function Dashboard() {
                         <CardContent className="space-y-3">
                             <Button
                                 variant="secondary"
-                                className="w-full justify-start h-11 gap-2"
+                                className="w-full justify-start h-11 gap-2 cursor-pointer"
                                 onClick={openCreateModal}
                             >
                                 <LucideIcons.CalendarPlus className="mr-1 h-4 w-4" /> 수업 추가
                             </Button>
                             <Button
                                 variant="secondary"
-                                className="w-full justify-start bg-white text-primary hover:bg-white/90 h-11 gap-2"
+                                className="w-full justify-start bg-white text-primary hover:bg-white/90 h-11 gap-2 cursor-pointer"
                                 onClick={() => setIsStudentModalOpen(true)}
                             >
                                 <LucideIcons.UserPlus className="mr-1 h-4 w-4" /> 학생 등록
