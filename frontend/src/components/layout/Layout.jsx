@@ -68,17 +68,17 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
         const path = location.pathname;
 
         if (path === "/")
-        return { title: "Overview", desc: "오늘의 일정과 주요 지표" };
+        return { title: "Übersicht", desc: "오늘의 일정과 주요 지표" };
         if (path.startsWith("/schedule"))
-        return { title: "Schedule", desc: "주간 및 월간 수업 일정" };
+        return { title: "Stundenplan", desc: "주간 및 월간 수업 일정" };
         if (path.startsWith("/students"))
-        return { title: "Students", desc: "등록된 학생 목록" };
+        return { title: "Schüler", desc: "등록된 학생 목록" };
         if (path.startsWith("/courses"))
-        return { title: "Contracts", desc: "수강권 및 결제 관리" };
+        return { title: "Verträge", desc: "수강권 및 결제 관리" };
         if (path.startsWith("/exams"))
-        return { title: "Exam Results", desc: "모의고사 및 정규 시험" };
+        return { title: "Prüfungsergebnisse", desc: "모의고사 및 정규 시험" };
         if (path.startsWith("/settings"))
-        return { title: "Settings", desc: "환경설정" };
+        return { title: "Einstellungen", desc: "환경설정" };
 
         return { title: "MyTutor", desc: "" };
     };
@@ -140,7 +140,7 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
                     />
                     <SidebarItem
                     icon="graduation-cap"
-                    label="시험 결과"
+                    label="시험 관리"
                     active={isActive("/exams")}
                     onClick={() => navigate("/exams")}
                     />
@@ -184,7 +184,9 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
                         <h2 className="text-2xl font-bold tracking-tight text-primary">
                         {title}
                         </h2>
-                        <p className="text-sm text-muted-foreground">{desc}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            {desc}
+                        </p>
                     </div>
                     <div className="flex gap-3 relative">
                         {/* Notification Bell with Logic */}
@@ -192,7 +194,7 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
                         <Button
                         variant="ghost"
                         size="icon"
-                        className="text-muted-foreground relative"
+                        className="text-muted-foreground relative cursor-pointer"
                         onClick={() => setShowNotifications(!showNotifications)}
                         >
                         <LucideIcons.Bell className="w-5 h-5" />
