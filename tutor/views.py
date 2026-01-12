@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from rest_framework import viewsets, permissions, filters
 from django.db.models import Sum
@@ -244,6 +244,7 @@ class DashboardStatsView(APIView):
     def get(self, request):
         user = request.user
         now = timezone.now()
+        today = timezone.localdate(now)
 
         # Base Query: This month's registrations for this tutor
         # 매달에 수강권을 등록하므로 start_date 기준 필터링
@@ -278,11 +279,29 @@ class DashboardStatsView(APIView):
             student__tutor=user, date__year=now.year, date__month=now.month
         ).count()
 
+        # Calculate tomorrow's date and retrieve lessons for that day
+        # 내일 날짜를 계산하고 해당 날짜의 수업을 조회
+        tomorrow = today + timedelta(days=1)
+        tomorrow_lessons_queryset = (
+            Lesson.objects.filter(student__tutor=user, date=tomorrow)
+            
+            # Optimize DB query using select_related for Foreign Keys
+            # 외래 키에 대한 DB 쿼리를 select_related를 사용하여 최적화합니다
+            .select_related("student").order_by("start_time")
+        )
+
+        # Serialize tomorrow's lesson data
+        # 내일 수업 데이터를 시리얼라이즈
+        tomorrow_lessons_data = LessonSerializer(
+            tomorrow_lessons_queryset, many=True
+        ).data
+
         return Response(
             {
                 "estimated_revenue": estimated_revenue,
                 "current_revenue": current_revenue,
                 "active_students": active_students,
                 "monthly_lesson_count": monthly_lesson_count,
+                "tomorrow_lessons": tomorrow_lessons_data,
             }
         )

@@ -56,7 +56,12 @@ export default function Dashboard() {
         monthly_lesson_count: 0,
     });
 
+    // States for managing lesson tabs (today/tomorrow)
+    // 수업 탭(오늘/내일) 관리 및 데이터 상태
     const [todayLessons, setTodayLessons] = useState([]);
+    const [tomorrowLessons, setTomorrowLessons] = useState([]); 
+    const [activeTab, setActiveTab] = useState("today"); 
+
     const [upcomingExams, setUpcomingExams] = useState([]);
     const [totalExamCount, setTotalExamCount] = useState(0);
     const [isExamModalOpen, setIsExamModalOpen] = useState(false);
@@ -101,7 +106,11 @@ export default function Dashboard() {
                 // Update state with fetched data
                 // 가져온 데이터로 상태 업데이트
                 setStats(s.data);
+                
+                // Set state for today and tomorrow lessons
+                // 오늘 및 내일 수업 데이터 상태 설정
                 setTodayLessons(t.data);
+                setTomorrowLessons(s.data.tomorrow_lessons || []);
 
                 // Normalize current time to 00:00:00 for accurate date comparison
                 // 정확한 날짜 비교를 위해 현재 시간을 00:00:00으로 정규화
@@ -138,10 +147,27 @@ export default function Dashboard() {
         }).format(amount || 0);
     };
 
-    const todayDate = new Date().toLocaleDateString("de-DE", {
-        month: "long",
-        day: "numeric",
-    });
+    // Date Helpers to get formatted date strings
+    // 날짜 포맷팅을 위한 헬퍼 함수들
+    const getFormattedDate = (addDays = 0) => {
+        const date = new Date();
+        date.setDate(date.getDate() + addDays);
+        return date.toLocaleDateString("de-DE", {
+            month: "long",
+            day: "numeric",
+        });
+    };
+
+    const todayDate = getFormattedDate(0);
+    const tomorrowDate = getFormattedDate(1);
+
+    // Logic to determine which lessons and date to display based on active tab
+    // 활성 탭에 따라 표시할 수업 데이터와 날짜를 결정하는 로직
+    const displayLessons = activeTab === "today" ? todayLessons : tomorrowLessons;
+    const displayDate = activeTab === "today" ? todayDate : tomorrowDate;
+    const emptyMessage = activeTab === "today" 
+        ? "오늘 예정된 수업이 없습니다." 
+        : "내일 예정된 수업이 없습니다.";
 
     // Calculate D-Day based on date only
     // 날짜 기준으로 D-Day 계산
@@ -362,22 +388,67 @@ export default function Dashboard() {
             {/* 메인 콘텐츠 영역 */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-4 lg:col-span-5 border-none shadow-sm">
+
+                    {/* Header with Tabs - Separated icon and interactive text buttons */}
+                    {/* 탭이 포함된 헤더 - 아이콘을 분리하고 텍스트 버튼만 상호작용하도록 설정 */}
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <LucideIcons.Calendar className="w-5 h-5 text-accent" />
-                            오늘의 수업
-                        </CardTitle>
+                        <div className="flex items-center gap-2">
+
+                            {/* Static Icon */}
+                            {/* 정적 아이콘 */}
+                            <div className="p-2">
+                                <LucideIcons.Calendar className="w-5 h-5 text-accent" />
+                            </div>
+
+                            <div className="flex items-center gap-4 ml-1">
+
+                                {/* Today Tab Button */}
+                                {/* 오늘의 수업 탭 버튼 */}
+                                <button 
+                                    onClick={() => setActiveTab('today')}
+                                    className={cn(
+                                        "transition-colors outline-none text-base cursor-pointer",
+                                        activeTab === 'today' 
+                                            ? "text-slate-900 font-bold" 
+                                            : "text-slate-400 hover:text-slate-600 font-medium"
+                                    )}
+                                >
+                                    오늘의 수업
+                                </button>
+
+                                {/* Divider */}
+                                {/* 구분선 */}
+                                <span className="text-slate-300 font-light text-sm">|</span>
+
+                                {/* Tomorrow Tab Button */}
+                                {/* 내일의 수업 탭 버튼 */}
+                                <button 
+                                    onClick={() => setActiveTab('tomorrow')}
+                                    className={cn(
+                                        "transition-colors outline-none text-base cursor-pointer",
+                                        activeTab === 'tomorrow' 
+                                            ? "text-slate-900 font-bold" 
+                                            : "text-slate-400 hover:text-slate-600 font-medium"
+                                    )}
+                                >
+                                    내일의 수업
+                                </button>
+                            </div>
+                        </div>
                         <Badge variant="secondary" className="text-primary font-bold">
-                            {todayDate}
+                            {displayDate}
                         </Badge>
                     </CardHeader>
                     <CardContent className="grid gap-4">
-                        {todayLessons.length === 0 ? (
+
+                        {/* Display Lessons (Today or Tomorrow) - Render without filtering status */}
+                        {/* 수업 목록 표시 (오늘 또는 내일) - 상태 필터링 없이 그대로 렌더링 */}
+                        {displayLessons.length === 0 ? (
                             <div className="text-center py-8 text-muted-foreground text-sm">
-                                오늘 예정된 수업이 없습니다.
+                                {emptyMessage}
                             </div>
                         ) : (
-                            todayLessons.map((lesson) => (
+                            displayLessons.map((lesson) => (
                                 <div
                                     key={lesson.id}
                                     // Open edit modal on click
