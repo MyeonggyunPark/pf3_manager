@@ -492,3 +492,38 @@ class Lesson(models.Model):
 
     def __str__(self):
         return f"[{self.date}] {self.student.name} - {self.topic}"
+
+
+# ==========================================
+# 7. Todo Management (할 일 관리)
+# ==========================================
+class Todo(models.Model):
+    """
+    Tutor's Personal Todo List.
+    Independent from students, used for general task management.
+
+    튜터 개인용 투두 리스트.
+    학생과는 독립적이며, 일반적인 업무 관리를 위해 사용됨.
+    """
+
+    tutor = models.ForeignKey(Tutor, on_delete=models.CASCADE, related_name="todos")
+    content = models.CharField(max_length=255)
+    is_completed = models.BooleanField(default=False)
+
+    # Optional: Deadline date for the task
+    # 선택사항: 할 일의 마감 기한
+    due_date = models.DateField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Aufgabe"
+        verbose_name_plural = "Aufgaben"
+        ordering = [
+            "is_completed",
+            "-created_at",
+        ]  # Incomplete items first (미완료 항목 우선 정렬)
+
+    def __str__(self):
+        return f"[{'V' if self.is_completed else ' '}] {self.content}"

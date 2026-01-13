@@ -9,6 +9,7 @@ from .views import (
     OfficialExamResultViewSet,
     LessonViewSet,
     DashboardStatsView,
+    TodoViewSet,
 )
 
 # Initialize DefaultRouter to automatically generate URLs for ViewSets
@@ -45,6 +46,10 @@ router.register(r"official-results", OfficialExamResultViewSet, basename="offici
 # /api/lessons/ -> Lesson CRUD operations
 # /api/lessons/ -> 수업 일정 CRUD 작업
 router.register(r"lessons", LessonViewSet, basename="lesson")
+
+# /api/todos/ -> Todo CRUD operations
+# /api/todos/ -> 투두 리스트 CRUD 작업
+router.register(r"todos", TodoViewSet, basename="todo")
 
 urlpatterns = [
     # Include all router-generated URLs

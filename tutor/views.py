@@ -17,6 +17,7 @@ from .models import (
     ExamAttachment,
     OfficialExamResult,
     Lesson,
+    Todo,
 )
 from .serializers import (
     StudentSerializer,
@@ -26,6 +27,7 @@ from .serializers import (
     ExamAttachmentSerializer,
     OfficialExamResultSerializer,
     LessonSerializer,
+    TodoSerializer,
 )
 
 
@@ -323,3 +325,35 @@ class DashboardStatsView(APIView):
                 "tomorrow_lessons": tomorrow_lessons_data,
             }
         )
+
+
+class TodoViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing Todos.
+    Allows Tutors to manage their own tasks.
+
+    투두 관리를 위한 ViewSet.
+    튜터가 자신의 할 일을 관리할 수 있도록 함.
+    """
+
+    serializer_class = TodoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    # Enable filtering by completion status
+    # 완료 상태에 따른 필터링 활성화
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["is_completed"]
+
+    def get_queryset(self):
+        """
+        Retrieve todos only for the logged-in tutor.
+        로그인한 튜터의 투두만 조회
+        """
+        return Todo.objects.filter(tutor=self.request.user)
+
+    def perform_create(self, serializer):
+        """
+        Assign the logged-in user as the owner of the todo.
+        로그인한 사용자를 투두의 소유자로 할당
+        """
+        serializer.save(tutor=self.request.user)

@@ -13,6 +13,7 @@ from .models import (
     ExamDetailResult,
     OfficialExamResult,
     Lesson,
+    Todo,
 )
 
 
@@ -303,3 +304,21 @@ class LessonSerializer(serializers.ModelSerializer):
                 "종료 시간은 시작 시간보다 늦어야 합니다."
             )
         return data
+
+
+# ==========================================
+# 7. Todo Serializers
+# ==========================================
+class TodoSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Todo List.
+    Simple CRUD serializer for task management.
+
+    투두 리스트를 위한 시리얼라이저.
+    작업 관리를 위한 간단한 CRUD 시리얼라이저.
+    """
+
+    class Meta:
+        model = Todo
+        fields = "__all__"
+        read_only_fields = ("tutor",)

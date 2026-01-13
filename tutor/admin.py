@@ -13,6 +13,7 @@ from .models import (
     ExamScoreInput,
     OfficialExamResult,
     Lesson,
+    Todo,
 )
 
 
@@ -423,3 +424,12 @@ class LessonAdmin(admin.ModelAdmin):
     search_fields = ("topic", "memo", "student__name")
     date_hierarchy = "date"
     list_select_related = ("student",)
+
+# ==========================================
+# 7. Todo Management
+# ==========================================
+@admin.register(Todo)
+class TodoAdmin(admin.ModelAdmin):
+    list_display = ("tutor", "content", "is_completed", "due_date", "created_at")
+    list_filter = ("is_completed", "created_at")
+    search_fields = ("content",)
