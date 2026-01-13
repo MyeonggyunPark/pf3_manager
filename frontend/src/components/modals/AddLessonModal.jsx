@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -11,7 +11,12 @@ export default function AddLessonModal({
   lessonData = null,
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [students, setStudents] = useState([]);
+
+  // State for managing delete confirmation overlay visibility
+  // 삭제 확인 오버레이 표시 여부를 관리하는 상태
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Determine if the modal is in edit mode based on provided lessonData
   // lessonData 존재 여부를 기반으로 수정 모드인지 확인
@@ -96,6 +101,7 @@ export default function AddLessonModal({
     setFormData(initialFormState);
     setErrors({});
     setSubmitError(null);
+    setShowDeleteConfirm(false);
     onClose();
   };
 
@@ -113,6 +119,30 @@ export default function AddLessonModal({
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
+    }
+  };
+
+  // Trigger the delete confirmation overlay instead of window.confirm
+  // window.confirm 대신 삭제 확인 오버레이를 활성화
+  const handleRequestDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  // Execute the actual delete operation when confirmed in the overlay
+  // 오버레이에서 확인 시 실제 삭제 작업 실행
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/lessons/${lessonData.id}/`);
+      onSuccess();
+      handleClose();
+    } catch (err) {
+      console.error("Delete Failed:", err);
+      setSubmitError("삭제 중 오류가 발생했습니다.");
+      // Close overlay on error (에러 발생 시 오버레이 닫기)
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -162,7 +192,7 @@ export default function AddLessonModal({
 
       setFormData(initialFormState);
       onSuccess();
-      onClose();
+      handleClose();
     } catch (err) {
       console.error("Lesson Create Failed:", err);
       // Set dynamic error message based on the mode (Edit vs Create)
@@ -230,7 +260,49 @@ export default function AddLessonModal({
   // 올바른 z-index 스태킹을 위해 부모 DOM 계층 외부에서 모달을 렌더링하도록 포털 사용
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
+        {/* Delete Confirmation Overlay (Conditional Rendering) */}
+        {/* 삭제 확인 오버레이 (조건부 렌더링) */}
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="w-8 h-8 text-destructive" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">
+              삭제 확인
+            </h3>
+            <p className="text-slate-500 text-center mb-8 max-w-xs">
+              정말로 삭제하시겠습니까?
+              <br />
+              <span className="text-sm text-destructive mt-1 block">
+                이 작업은 되돌릴 수 없습니다.
+              </span>
+            </p>
+            <div className="flex w-full max-w-xs gap-3">
+              <Button
+                type="button"
+                className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                취소
+              </Button>
+              <Button
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 shadow-md shadow-destructive/20 text-sm font-semibold cursor-pointer transition-all"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "삭제"
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">
@@ -319,6 +391,7 @@ export default function AddLessonModal({
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
+                onClick={(e) => e.target.showPicker()}
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-sm cursor-pointer"
               />
               <ErrorMessage message={errors.date} />
@@ -442,23 +515,46 @@ export default function AddLessonModal({
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          {/* Action Buttons with Delete Option */}
+          {/* 삭제 옵션이 포함된 액션 버튼 */}
+          <div className="flex items-center gap-3 pt-2">
+
+            {/* Show delete button only in edit mode */}
+            {/* 수정 모드일 때만 삭제 버튼 표시 */}
+            {isEditMode && (
+              <Button
+                type="button"
+                className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
+                
+                // Call handleRequestDelete to show overlay
+                // 오버레이 표시를 위해 handleRequestDelete 호출
+                onClick={handleRequestDelete}
+                disabled={isLoading || isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </Button>
+            )}
+
             <Button
               type="button"
               className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               onClick={handleClose}
-              disabled={isLoading}
+              disabled={isLoading || isDeleting}
             >
               취소
             </Button>
             <Button
               type="submit"
               className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer transition-all"
-              disabled={isLoading}
+              disabled={isLoading || isDeleting}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   {isEditMode ? "변경 중..." : "저장 중..."}
                 </>
               ) : isEditMode ? (

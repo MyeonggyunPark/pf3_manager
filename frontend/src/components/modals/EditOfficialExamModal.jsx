@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -11,6 +11,11 @@ export default function EditOfficialExamModal({
   examData,
 }) {
   const [isLoading, setIsLoading] = useState(false);
+
+  // State for delete operation status and confirmation modal visibility
+  // 삭제 작업 상태 및 확인 모달 표시 여부 관리
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Manage validation errors per field (object) and general submission errors (string)
   // 필드별 유효성 에러(객체)와 일반 제출 에러(문자열)를 구분하여 관리
@@ -85,6 +90,7 @@ export default function EditOfficialExamModal({
     setFormData(initialFormState);
     setErrors({});
     setSubmitError(null);
+    setShowDeleteConfirm(false);
     onClose();
   };
 
@@ -101,6 +107,27 @@ export default function EditOfficialExamModal({
 
   const handleStatusChange = (value) => {
     setFormData((prev) => ({ ...prev, status: value }));
+  };
+
+  // Open delete confirmation overlay
+  // 삭제 확인 오버레이 열기
+  const handleRequestDelete = () => setShowDeleteConfirm(true);
+
+  // Execute delete operation calling the API
+  // API를 호출하여 삭제 작업 수행
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/official-results/${examData.id}/`);
+      onSuccess();
+      handleClose();
+    } catch (err) {
+      console.error("Exam Delete Failed:", err);
+      setSubmitError("삭제 중 오류가 발생했습니다.");
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -191,35 +218,26 @@ export default function EditOfficialExamModal({
     </label>
   );
 
-  // Reusable chip component for selection (e.g., Status)
-  // 선택을 위한 재사용 가능한 칩 컴포넌트 (예: 상태 선택)
+  // Reusable chip component for selection
+  // 선택을 위한 재사용 가능한 칩 컴포넌트
   const SelectionChip = ({
     label,
     value,
     selectedValue,
     onClick,
     className = "",
-    colorClass = "",
   }) => {
     const isSelected = selectedValue === value;
-
-    // Define base styles for unselected state
-    // 선택되지 않은 상태의 기본 스타일 정의
-    const baseStyle =
-      "bg-slate-100 text-slate-500 border-transparent hover:bg-slate-200 hover:text-slate-700";
-
-    // Define active styles: Use custom color class if provided, otherwise default to primary
-    // 활성 스타일 정의: 제공된 경우 커스텀 색상 클래스 사용, 그렇지 않으면 기본 프라이머리 사용
-    const activeStyle = colorClass
-      ? `${colorClass} ring-1 ring-offset-1 transform scale-[1.02] shadow-sm`
-      : "bg-primary text-white shadow-md shadow-primary/30 ring-1 ring-primary transform scale-[1.02]";
 
     return (
       <button
         type="button"
         onClick={() => onClick(value)}
-        className={`relative flex items-center justify-center px-2 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-out whitespace-nowrap border 
-        ${isSelected ? activeStyle : baseStyle} ${className}`}
+        className={`relative flex items-center justify-center px-2 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-out whitespace-nowrap ${
+          isSelected
+            ? "bg-primary text-white shadow-md shadow-primary/30 ring-1 ring-primary transform scale-[1.02]"
+            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-transparent"
+        } ${className}`}
       >
         {label}
       </button>
@@ -230,7 +248,47 @@ export default function EditOfficialExamModal({
   // 올바른 z-index 스태킹 컨텍스트 보장을 위해 포털을 통해 모달 렌더링
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
+        
+        {/* Delete Confirmation Overlay */}
+        {/* 삭제 확인 오버레이 */}
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="w-8 h-8 text-destructive" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">삭제 확인</h3>
+            <p className="text-slate-500 text-center mb-8 max-w-xs text-sm">
+              정말로 삭제하시겠습니까?
+              <br />
+              <span className="text-destructive mt-1 block">
+                이 작업은 되돌릴 수 없습니다.
+              </span>
+            </p>
+            <div className="flex w-full max-w-xs gap-3">
+              <Button
+                type="button"
+                className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 h-11 text-sm font-semibold cursor-pointer transition-all"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                취소
+              </Button>
+              <Button
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold shadow-md cursor-pointer transition-all"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "삭제"
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Header Section */}
         {/* 헤더 섹션 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -384,7 +442,6 @@ export default function EditOfficialExamModal({
                 selectedValue={formData.status}
                 onClick={handleStatusChange}
                 className="cursor-pointer"
-                colorClass="bg-slate-200 text-slate-700 border-slate-300 ring-slate-400"
               />
               <SelectionChip
                 label="합격"
@@ -392,7 +449,6 @@ export default function EditOfficialExamModal({
                 selectedValue={formData.status}
                 onClick={handleStatusChange}
                 className="cursor-pointer"
-                colorClass="bg-success/15 text-success border-success/30 ring-success"
               />
               <SelectionChip
                 label="불합격"
@@ -400,7 +456,6 @@ export default function EditOfficialExamModal({
                 selectedValue={formData.status}
                 onClick={handleStatusChange}
                 className="cursor-pointer"
-                colorClass="bg-destructive/10 text-destructive border-destructive/30 ring-destructive"
               />
             </div>
           </div>
@@ -453,6 +508,22 @@ export default function EditOfficialExamModal({
           {/* Action Buttons */}
           {/* 하단 액션 버튼 */}
           <div className="flex gap-3 pt-2">
+
+            {/* Delete Button - Shows confirmation overlay */}
+            {/* 삭제 버튼 - 확인 오버레이 표시 */}
+            <Button
+              type="button"
+              className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
+              onClick={handleRequestDelete}
+              disabled={isLoading || isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+            </Button>
+
             <Button
               type="button"
               className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
