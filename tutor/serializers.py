@@ -290,3 +290,16 @@ class LessonSerializer(serializers.ModelSerializer):
         날짜와 종료 시간을 결합하여 완전한 ISO 날짜/시간 문자열을 반환합니다.
         """
         return f"{obj.date}T{obj.end_time}"
+
+    # Backend Validation for Data Integrity
+    # Even if frontend validates, backend must prevent invalid data (Security)
+    # 데이터 무결성을 위한 백엔드 유효성 검사
+    # 프론트엔드 검증이 있더라도, 우회 접근을 막기 위해 백엔드에서도 반드시 검증해야 함
+    def validate(self, data):
+        start = data.get("start_time")
+        end = data.get("end_time")
+        if start and end and start >= end:
+            raise serializers.ValidationError(
+                "종료 시간은 시작 시간보다 늦어야 합니다."
+            )
+        return data

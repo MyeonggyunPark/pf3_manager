@@ -1,8 +1,10 @@
 from datetime import date, timedelta
 
-from rest_framework import viewsets, permissions, filters
 from django.db.models import Sum
 from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
+
+from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -34,15 +36,19 @@ class StudentViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = StudentSerializer
+
     # Ensure only authenticated users can access
     # 인증된 사용자만 접근할 수 있도록 보장합니다
     permission_classes = [permissions.IsAuthenticated]
 
-    # Enable search functionality by name
-    # 'filter_backends' activates the search parameter (e.g., ?search=Name)
-    # 이름으로 검색하는 기능을 활성화합니다 (예: ?search=홍길동)
-    filter_backends = [filters.SearchFilter]
-    search_fields = ["name"]
+    # Enable search functionality by name and filtering by fields
+    # 'filter_backends' activates search and exact filtering
+    # 이름 검색 및 필드 필터링 기능을 활성화
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+
+    # Allow filtering by 'status'
+    # 'status' 필드를 기준으로 필터링을 허용
+    filterset_fields = ["status"]
 
     def get_queryset(self):
         """
@@ -70,6 +76,13 @@ class CourseRegistrationViewSet(viewsets.ModelViewSet):
 
     serializer_class = CourseRegistrationSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    # Allow filtering by payment status
+    # Used for calculating notification badges efficiently
+    # 납부 상태에 따른 필터링을 허용
+    # 알림 뱃지 카운트를 효율적으로 계산하기 위해 사용
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["is_paid"]
 
     def get_queryset(self):
         """
@@ -116,9 +129,11 @@ class ExamRecordViewSet(viewsets.ModelViewSet):
         """
         return (
             ExamRecord.objects.filter(student__tutor=self.request.user)
+            
             # Optimize Foreign Keys (1:1, N:1): Uses JOIN in SQL
             # 외래 키 최적화 (1:1, N:1 관계): SQL에서 JOIN을 사용합니다
             .select_related("student", "exam_standard")
+            
             # Optimize Many-to-Many or Reverse Foreign Keys (1:N): Uses separate queries
             # 다대다 또는 역방향 외래 키 최적화 (1:N 관계): 별도의 쿼리를 사용합니다
             .prefetch_related("attachments")
@@ -169,6 +184,7 @@ class OfficialExamResultViewSet(viewsets.ModelViewSet):
         """
         return (
             OfficialExamResult.objects.filter(student__tutor=self.request.user)
+            
             # Optimize Foreign Key lookups (Student, ExamStandard)
             # 외래 키 조회 최적화 (학생, 시험 표준)
             .select_related("student", "exam_standard")
@@ -222,10 +238,12 @@ class LessonViewSet(viewsets.ModelViewSet):
         커스텀 엔드포인트: 오늘 날짜의 수업만 조회.
         """
         today_date = date.today()
+        
         # Filter today's lessons and sort by start time
         # 오늘 수업 필터링 및 시작 시간순 정렬
         lessons = self.get_queryset().filter(date=today_date).order_by("start_time")
         serializer = self.get_serializer(lessons, many=True)
+        
         return Response(serializer.data)
 
 
