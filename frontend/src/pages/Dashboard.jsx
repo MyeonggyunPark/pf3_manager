@@ -392,12 +392,12 @@ export default function Dashboard() {
                     {/* Header with Tabs - Separated icon and interactive text buttons */}
                     {/* 탭이 포함된 헤더 - 아이콘을 분리하고 텍스트 버튼만 상호작용하도록 설정 */}
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
 
                             {/* Static Icon */}
                             {/* 정적 아이콘 */}
                             <div className="p-2">
-                                <LucideIcons.Calendar className="w-5 h-5 text-accent" />
+                                <LucideIcons.BookOpen className="w-5 h-5 text-primary" />
                             </div>
 
                             <div className="flex items-center gap-4 ml-1">
@@ -439,7 +439,7 @@ export default function Dashboard() {
                             {displayDate}
                         </Badge>
                     </CardHeader>
-                    <CardContent className="grid gap-4">
+                    <CardContent className="grid gap-4 h-110 custom-scrollbar content-start">
 
                         {/* Display Lessons (Today or Tomorrow) - Render without filtering status */}
                         {/* 수업 목록 표시 (오늘 또는 내일) - 상태 필터링 없이 그대로 렌더링 */}
