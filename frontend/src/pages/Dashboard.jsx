@@ -13,7 +13,7 @@ import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import AddLessonModal from "../components/modals/AddLessonModal";
-import EditOfficialExamModal from "../components/modals/EditOfficialExamModal";
+import AddOfficialExamModal from "../components/modals/AddOfficialExamModal";
 
 // StatCard Component
 // 통계 카드 컴포넌트
@@ -226,7 +226,7 @@ export default function Dashboard() {
             
             {/* Edit Official Exam Modal */}
             {/* 정규 시험 수정 모달 */}
-            <EditOfficialExamModal
+            <AddOfficialExamModal
                 isOpen={isExamModalOpen}
                 onClose={() => setIsExamModalOpen(false)}
                 examData={selectedExam}
