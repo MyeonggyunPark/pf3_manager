@@ -71,6 +71,10 @@ THIRD_PARTY_APPS = [
     # Development Utilities
     "django_seed",
     "django_extensions",
+    
+    # Advanced filtering support
+    # 고급 필터링 기능 지원
+    "django_filters",
 ]
 
 LOCAL_APPS = [
@@ -301,4 +305,10 @@ REST_FRAMEWORK = {
         "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    
+    # Global default filter backend setup
+    # Enables filtering across all ViewSets using filterset_fields
+    # 전역 기본 필터 백엔드 설정
+    # 모든 ViewSet에서 filterset_fields를 통한 필터링 활성화
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 }

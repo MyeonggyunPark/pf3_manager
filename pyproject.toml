@@ -10,6 +10,7 @@ dependencies = [
     "django-allauth[socialaccount]>=65.13.1",
     "django-cors-headers>=4.9.0",
     "django-extensions>=4.1",
+    "django-filter>=25.2",
     "django-seed>=0.3.1",
     "djangorestframework>=3.16.1",
     "djangorestframework-simplejwt>=5.5.1",
