@@ -142,12 +142,35 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
       onClose();
     } catch (err) {
       console.error("Student Create Failed:", err);
-      // Handle API errors (e.g., 500 Server Error) separately
-      // API 에러(예: 500 서버 에러)는 별도로 처리
-      setSubmitError(
-        err.response?.data?.detail ||
-          "학생 등록에 실패했습니다. 입력 값을 확인해주세요.",
-      );
+      const responseData = err.response?.data;
+
+      // Robust Error Handling for Django Rest Framework (DRF)
+      // Check if the error response is an object with field-specific errors
+      // DRF의 필드별 상세 에러 객체를 처리하여 UI에 반영
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        !responseData.detail
+      ) {
+        const fieldErrors = {};
+        Object.keys(responseData).forEach((key) => {
+
+          // DRF returns errors as arrays (e.g., ["This field is required."])
+          // DRF는 에러를 배열로 반환하므로 첫 번째 메시지를 추출
+          fieldErrors[key] = Array.isArray(responseData[key])
+            ? responseData[key][0]
+            : responseData[key];
+        });
+        setErrors(fieldErrors);
+      } else {
+
+        // Fallback for general errors
+        // 일반 에러 처리
+        setSubmitError(
+          responseData?.detail ||
+            "학생 등록에 실패했습니다. 입력 값을 확인해주세요.",
+        );
+      }
     } finally {
       setIsLoading(false);
     }

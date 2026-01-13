@@ -40,19 +40,17 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
     const [showNotifications, setShowNotifications] = useState(false);
     
     // Fetch unpaid courses globally for the notification bell
+    // Uses server-side filtering (?is_paid=false) for performance optimization
     // 알림 벨을 위해 전역적으로 미납 수강 데이터를 호출
+    // 성능 최적화를 위해 서버 사이드 필터링(?is_paid=false)을 사용함
     useEffect(() => {
         const fetchNotifications = async () => {
-        try {
-            const res = await api.get("/api/courses/");
-            const count = res.data.filter((c) => !c.is_paid).length;
-            setUnpaidCount(count);
-        } catch (e) {
-            console.error("Notification Fetch Error:", e);
-        }
+            const res = await api.get("/api/courses/?is_paid=false");
+            setUnpaidCount(res.data.length);
         };
         fetchNotifications();
-    }, [location.pathname]); // Update when page changes (optional)
+        // Update when page changes (optional)
+    }, [location.pathname]); 
 
     // Check if current URL matches the path to highlight sidebar item
     // 현재 URL이 경로와 일치하는지 확인하여 사이드바 아이템을 강조

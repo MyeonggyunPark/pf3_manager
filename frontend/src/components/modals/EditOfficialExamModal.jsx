@@ -38,20 +38,18 @@ export default function EditOfficialExamModal({
   const [formData, setFormData] = useState(initialFormState);
 
   // Fetch student list when modal opens and filter only 'ACTIVE' students
+  // Uses server-side filtering (?status=ACTIVE) to optimize performance
   // 모달이 열릴 때 학생 목록을 조회하고, 'ACTIVE' 상태인 학생만 필터링
+  // 성능 최적화를 위해 서버 사이드 필터링(?status=ACTIVE)을 사용
   useEffect(() => {
     if (isOpen) {
       const fetchData = async () => {
         try {
           const [studentsRes, standardsRes] = await Promise.all([
-            api.get("/api/students/"),
+            api.get("/api/students/?status=ACTIVE"),
             api.get("/api/exam-standards/"),
           ]);
-          const activeStudents = studentsRes.data.filter(
-            (student) => student.status === "ACTIVE",
-          );
-          setStudents(activeStudents);
-
+          setStudents(studentsRes.data);
           setExamStandards(standardsRes.data);
         } catch (err) {
           console.error("Failed to load dropdown data:", err);
@@ -144,9 +142,27 @@ export default function EditOfficialExamModal({
       handleClose();
     } catch (err) {
       console.error("Exam Update Failed:", err);
-      setSubmitError(
-        err.response?.data?.detail || "시험 정보 업데이트에 실패했습니다.",
-      );
+      const responseData = err.response?.data;
+
+      // Robust error handling to display field-specific validation errors from backend
+      // 백엔드에서 오는 필드별 유효성 검사 에러를 표시하기 위한 견고한 에러 처리
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        !responseData.detail
+      ) {
+        const fieldErrors = {};
+        Object.keys(responseData).forEach((key) => {
+          fieldErrors[key] = Array.isArray(responseData[key])
+            ? responseData[key][0]
+            : responseData[key];
+        });
+        setErrors(fieldErrors);
+      } else {
+        setSubmitError(
+          responseData?.detail || "시험 정보 업데이트에 실패했습니다.",
+        );
+      }
     } finally {
       setIsLoading(false);
     }
