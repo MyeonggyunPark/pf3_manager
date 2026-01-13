@@ -318,7 +318,16 @@ class TodoSerializer(serializers.ModelSerializer):
     작업 관리를 위한 간단한 CRUD 시리얼라이저.
     """
 
+    # Read-only fields for displaying human-readable labels in frontend
+    # 프론트엔드 표기를 위한 읽기 전용 필드
+    category_display = serializers.CharField(
+        source="get_category_display", read_only=True
+    )
+    priority_display = serializers.CharField(
+        source="get_priority_display", read_only=True
+    )
+
     class Meta:
         model = Todo
         fields = "__all__"
-        read_only_fields = ("tutor",)
+        read_only_fields = ("tutor", "category_display", "priority_display")

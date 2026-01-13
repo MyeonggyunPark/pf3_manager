@@ -501,10 +501,27 @@ class Todo(models.Model):
     """
     Tutor's Personal Todo List.
     Independent from students, used for general task management.
+    Updated to include categories and priorities for better task management.
 
     튜터 개인용 투두 리스트.
     학생과는 독립적이며, 일반적인 업무 관리를 위해 사용됨.
+    업무 관리 효율화를 위해 카테고리와 중요도 필드가 추가됨.
     """
+
+    # Priority Levels (Order by Importance: High < Medium < Low)
+    # 중요도 레벨 (중요순 정렬: 높음 < 보통 < 낮음)
+    class PriorityChoices(models.IntegerChoices):
+        HIGH = 1, _("Hoch")
+        MEDIUM = 2, _("Mittel")
+        LOW = 3, _("Niedrig")
+
+    # Business Categories for Tutors
+    # 튜터를 위한 업무 카테고리
+    class CategoryChoices(models.TextChoices):
+        PREP = "PREP", _("Vorbereitung")
+        ADMIN = "ADMIN", _("Verwaltung")
+        STUDENT = "STUDENT", _("Betreuung")
+        PERSONAL = "PERSONAL", _("Privat")
 
     tutor = models.ForeignKey(Tutor, on_delete=models.CASCADE, related_name="todos")
     content = models.CharField(max_length=255)
@@ -514,16 +531,32 @@ class Todo(models.Model):
     # 선택사항: 할 일의 마감 기한
     due_date = models.DateField(null=True, blank=True)
 
+    # Priority of the task
+    # 업무의 중요도
+    priority = models.IntegerField(
+        choices=PriorityChoices.choices, default=PriorityChoices.MEDIUM
+    )
+
+    # Category of the task
+    # 업무의 카테고리
+    category = models.CharField(
+        max_length=20, choices=CategoryChoices.choices, default=CategoryChoices.PERSONAL
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Aufgabe"
         verbose_name_plural = "Aufgaben"
+        # Smart Ordering: Uncompleted -> High Priority -> Urgent Date -> Newest
+        # 스마트 정렬: 미완료 -> 중요도 높음 -> 마감 임박 -> 최신순
         ordering = [
             "is_completed",
+            "priority",
+            "due_date",
             "-created_at",
-        ]  # Incomplete items first (미완료 항목 우선 정렬)
+        ]
 
     def __str__(self):
-        return f"[{'V' if self.is_completed else ' '}] {self.content}"
+        return f"[{self.get_category_display()}] {self.content}"

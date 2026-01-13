@@ -330,19 +330,35 @@ class DashboardStatsView(APIView):
 class TodoViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing Todos.
-    Allows Tutors to manage their own tasks.
+    Allows Tutors to manage their own tasks with advanced filtering and sorting.
 
     투두 관리를 위한 ViewSet.
     튜터가 자신의 할 일을 관리할 수 있도록 함.
+    필터링(우선순위, 카테고리) 및 정렬 기능을 포함.
     """
 
     serializer_class = TodoSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # Enable filtering by completion status
-    # 완료 상태에 따른 필터링 활성화
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["is_completed"]
+    # Add OrderingFilter and SearchFilter
+    # 정렬(Ordering)과 검색(Search) 기능을 위한 백엔드 추가
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.OrderingFilter,
+        filters.SearchFilter,
+    ]
+
+    # Enable filtering by new fields
+    # 완료 여부뿐만 아니라 중요도(priority)와 카테고리(category)로도 필터링 가능하게 설정
+    filterset_fields = ["is_completed", "priority", "category"]
+
+    # Fields allowed for ordering
+    # 정렬 가능한 필드 정의 (중요도순, 마감일순, 생성일순)
+    ordering_fields = ["priority", "due_date", "created_at"]
+
+    # Enable search by content
+    # 할 일 내용으로 검색 가능
+    search_fields = ["content"]
 
     def get_queryset(self):
         """

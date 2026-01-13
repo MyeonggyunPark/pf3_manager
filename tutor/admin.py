@@ -419,17 +419,64 @@ class OfficialExamResultAdmin(admin.ModelAdmin):
 # ==========================================
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
+    """
+    Lesson Schedule Admin.
+    Manages daily classes and tracks attendance/status.
+    Includes date hierarchy navigation and optimized student lookups.
+
+    수업 일정 관리.
+    일별 수업 및 출석/상태를 관리함.
+    날짜 계층 탐색 기능을 포함하며 학생 조회 성능이 최적화됨.
+    """
+
     list_display = ("date", "start_time", "student", "topic", "status")
     list_filter = ("date", "status", "student")
     search_fields = ("topic", "memo", "student__name")
+
+    # Add date navigation bar (날짜 탐색 바 추가)
     date_hierarchy = "date"
+
+    # Optimization: Fetch student data efficiently (최적화: 학생 데이터 효율적 로딩)
     list_select_related = ("student",)
+
 
 # ==========================================
 # 7. Todo Management
 # ==========================================
 @admin.register(Todo)
 class TodoAdmin(admin.ModelAdmin):
-    list_display = ("tutor", "content", "is_completed", "due_date", "created_at")
-    list_filter = ("is_completed", "created_at")
+    """
+    Todo Admin Configuration.
+    Enhanced to show categories and priorities.
+    Allows quick editing of status and priority from the list view.
+
+    투두 관리자 설정.
+    카테고리와 중요도를 표시하도록 개선됨.
+    목록 화면에서 상태와 중요도를 빠르게 수정할 수 있음.
+    """
+
+    # Display key metrics first (Priority, Category)
+    # 핵심 지표(중요도, 카테고리)를 먼저 표시
+    list_display = (
+        "tutor",
+        "priority",
+        "category",
+        "content",
+        "is_completed",
+        "due_date",
+        "created_at",
+    )
+
+    # Filters for efficient task management
+    # 효율적인 업무 관리를 위한 필터
+    list_filter = ("priority", "category", "is_completed", "due_date")
+
     search_fields = ("content",)
+
+    # Allow direct editing in the list view for improved productivity
+    # 생산성 향상을 위해 목록 뷰에서 직접 수정 허용
+    list_editable = ("is_completed", "priority")
+
+    # Default sorting for admin view
+    # 관리자 뷰 기본 정렬
+    ordering = ("is_completed", "priority", "due_date")
