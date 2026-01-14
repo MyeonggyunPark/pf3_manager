@@ -368,6 +368,7 @@ export default function AddOfficialExamModal({
                 name="exam_date"
                 value={formData.exam_date}
                 onChange={handleChange}
+                onClick={(e) => e.target.showPicker()}
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-sm cursor-pointer"
               />
               <ErrorMessage message={errors.exam_date} />

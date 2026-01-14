@@ -344,7 +344,7 @@ export default function Schedule() {
                         className="h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-white cursor-pointer whitespace-nowrap"
                         onClick={openCreateModal}
                     >
-                        <LucideIcons.Plus className="w-4 h-4 mr-2" /> 수업 추가
+                        <LucideIcons.CalendarPlus className="w-4 h-4 mr-2" /> 수업 추가
                     </Button>
                 </div>
             </div>
@@ -524,7 +524,7 @@ export default function Schedule() {
                         onClick={openCreateTodoModal}
                         className="h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-white cursor-pointer whitespace-nowrap"
                     >
-                        <LucideIcons.Plus className="w-4 h-4 mr-2" /> 업무 추가
+                        <LucideIcons.ListPlus className="w-4 h-4 mr-2" /> 업무 추가
                     </Button>
                     </div>
                 </CardHeader>
