@@ -211,8 +211,10 @@ export default function Schedule() {
 
     // Calculate D-Day for todo due dates with color coding based on urgency
     // 긴급도에 따른 색상 코딩이 포함된 할 일 마감일 D-Day 계산
-    const getTodoDDay = (dateString) => {
+    const getTodoDDay = (dateString, isCompleted) => {
         if (!dateString) return null;
+
+        if (isCompleted) return null;
 
         const [year, month, day] = dateString.split("-").map(Number);
         const target = new Date(year, month - 1, day);
@@ -243,8 +245,8 @@ export default function Schedule() {
         };
 
         return {
-            text: `D+${Math.abs(diffDays)}`,
-            color: "bg-destructive/5 text-destructive/70",
+            text: `마감`,
+            color: "bg-slate-600 text-white border-slate-700 font-medium",
         };
     };
 
@@ -357,6 +359,7 @@ export default function Schedule() {
                         weekday: "short",
                     });
                     const dayNum = dateObj.getDate();
+                    const isSunday = dateObj.getDay() === 0;
 
                     return (
                         <Card
@@ -371,15 +374,20 @@ export default function Schedule() {
                             <div className="p-3 border-b border-border text-center shrink-0">
                                 <p
                                     className={cn(
-                                    "text-xs font-bold uppercase text-muted-foreground",
-                                    dayName === "Sa" || dayName === "So"
+                                        "text-xs font-bold uppercase",
+                                        isSunday
                                         ? "text-destructive"
-                                        : "",
+                                        : "text-muted-foreground",
                                     )}
                                 >
                                     {dayName}
                                 </p>
-                                <p className={cn("text-lg font-bold text-foreground")}>
+                                <p className={cn(
+                                    "text-lg font-bold",
+                                    isSunday
+                                    ? "text-destructive"
+                                    : "text-foreground",
+                                )}>
                                     {dayNum}
                                 </p>
                             </div>
@@ -420,7 +428,7 @@ export default function Schedule() {
                         key={d}
                         className={cn(
                         "text-sm font-bold uppercase",
-                        d === "Sa" || d === "So"
+                        d === "So"
                             ? "text-destructive"
                             : "text-muted-foreground",
                         )}
@@ -435,6 +443,8 @@ export default function Schedule() {
                     const dateStr = getFormattedDate(dateObj);
                     const isToday = dateStr === todayStr;
                     const dayLessons = getLessonsForDate(dateObj);
+                    const isSunday = dateObj.getDay() === 0;
+
                     return (
                         <div
                         key={i}
@@ -449,7 +459,11 @@ export default function Schedule() {
                                 <span
                                 className={cn(
                                     "font-bold",
-                                    isToday ? "text-accent" : "text-foreground",
+                                    isToday
+                                    ? "text-accent"
+                                    : isSunday
+                                    ? "text-destructive"
+                                    : "text-foreground",
                                 )}
                                 >
                                     {dateObj.getDate()}
@@ -544,17 +558,20 @@ export default function Schedule() {
                                             </div>
                                         ) : (
                                             categoryTodos.map((todo) => {
-                                                const dDay = getTodoDDay(todo.due_date);
+                                                const dDay = getTodoDDay(todo.due_date, todo.is_completed);
+                                                const isOverdue = !todo.is_completed && todo.due_date && new Date(todo.due_date) < new Date().setHours(0, 0, 0, 0);
+                                                
                                                 return (
                                                     <div
                                                     key={todo.id}
                                                     onClick={() => openEditTodoModal(todo)}
                                                     className={cn(
                                                         "group relative flex flex-col p-3 rounded-xl border bg-white transition-all hover:shadow-md cursor-pointer",
-                                                        priorityBorderColors[todo.priority] ||
-                                                        "border-l-slate-200",
+                                                        isOverdue ? "border-destructive border-dashed bg-destructive/10" : (priorityBorderColors[todo.priority] || "border-l-slate-200"),
                                                         todo.is_completed
-                                                        ? "border-success/30 bg-success/5 opacity-80"
+                                                        ? "border-success bg-success/20 opacity-80"
+                                                        : isOverdue
+                                                        ? ""
                                                         : "border-slate-100",
                                                     )}
                                                     >
@@ -569,7 +586,10 @@ export default function Schedule() {
                                                             </span>
                                                             <div className="flex gap-1.5">
                                                                 {todo.due_date && (
-                                                                <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                                                                <span className={cn(
+                                                                        "text-[10px] font-medium flex items-center gap-1",
+                                                                        isOverdue ? "text-destructive font-bold" : "text-muted-foreground"
+                                                                )}>
                                                                     <LucideIcons.Calendar className="w-3 h-3" />
                                                                     {formatTodoDate(todo.due_date)}
                                                                 </span>
@@ -599,7 +619,7 @@ export default function Schedule() {
                                                                 "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
                                                                 todo.is_completed
                                                                 ? "bg-success border-success text-white"
-                                                                : "border-slate-300 bg-white hover:border-primary",
+                                                                : "border-slate-300 bg-white hover:border-success hover:bg-success/10",
                                                             )}
                                                             >
                                                                 {todo.is_completed && (
