@@ -131,7 +131,7 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
                     onClick={() => navigate("/students")}
                     />
                     <SidebarItem
-                    icon="book-open"
+                    icon="CreditCard"
                     label="수강 관리"
                     active={isActive("/courses")}
                     onClick={() => navigate("/courses")}
