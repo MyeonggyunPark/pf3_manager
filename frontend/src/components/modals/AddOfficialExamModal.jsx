@@ -34,6 +34,7 @@ export default function AddOfficialExamModal({
     exam_standard: "",
     exam_name_manual: "",
     exam_date: "",
+    exam_mode: "",
     status: "",
     total_score: "",
     grade: "",
@@ -74,6 +75,7 @@ export default function AddOfficialExamModal({
         exam_standard: examData.exam_standard || "",
         exam_name_manual: examData.exam_name_manual || "",
         exam_date: examData.exam_date,
+        exam_mode: examData.exam_mode || "FULL",
         status: examData.status || "WAITING",
         total_score: examData.total_score || "",
         grade: examData.grade || "",
@@ -109,6 +111,12 @@ export default function AddOfficialExamModal({
     setFormData((prev) => ({ ...prev, status: value }));
   };
 
+  // Handle Exam Mode Change
+  // 응시 유형 변경 핸들러
+  const handleModeChange = (value) => {
+    setFormData((prev) => ({ ...prev, exam_mode: value }));
+  };
+
   // Open delete confirmation overlay
   // 삭제 확인 오버레이 열기
   const handleRequestDelete = () => setShowDeleteConfirm(true);
@@ -135,11 +143,12 @@ export default function AddOfficialExamModal({
     setSubmitError(null);
     setErrors({});
 
-    // Validate required fields: Student, Date, and Exam Type (Standard or Manual)
-    // 필수 필드 유효성 검사: 학생, 날짜, 시험 유형(표준 또는 직접 입력)
+    // Validate required fields: Student, Date, Exam Type (Standard or Manual) and Exam Mode
+    // 필수 필드 유효성 검사: 학생, 날짜, 시험 종류(표준 또는 직접 입력), 응시 유형
     const newErrors = {};
     if (!formData.student) newErrors.student = "학생을 선택해주세요.";
     if (!formData.exam_date) newErrors.exam_date = "응시일을 선택해주세요.";
+    if (!formData.exam_mode) newErrors.exam_mode = "응시 유형을 선택해주세요.";
     if (!formData.exam_standard && !formData.exam_name_manual.trim()) {
       newErrors.exam_standard = "시험 종류를 선택하거나 직접 입력해주세요.";
     }
@@ -431,6 +440,36 @@ export default function AddOfficialExamModal({
           )}
 
           <div className="h-px bg-slate-100 w-full my-1" />
+
+          {/* Exam Mode Selection */}
+          {/* 응시 유형 선택 */}
+          <div className="space-y-2">
+            <InputLabel label="응시 유형" hasError={!!errors.exam_mode} />
+            <div className="grid grid-cols-3 gap-2">
+              <SelectionChip
+                label="Gesamt"
+                value="FULL"
+                selectedValue={formData.exam_mode}
+                onClick={handleModeChange}
+                className="cursor-pointer"
+              />
+              <SelectionChip
+                label="Schriftlich"
+                value="WRITTEN"
+                selectedValue={formData.exam_mode}
+                onClick={handleModeChange}
+                className="cursor-pointer"
+              />
+              <SelectionChip
+                label="Mündlich"
+                value="ORAL"
+                selectedValue={formData.exam_mode}
+                onClick={handleModeChange}
+                className="cursor-pointer"
+              />
+            </div>
+            <ErrorMessage message={errors.exam_mode} />
+          </div>
 
           {/* Exam Status Selection */}
           {/* 시험 상태 선택 */}

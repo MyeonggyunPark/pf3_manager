@@ -313,6 +313,14 @@ export default function Dashboard() {
                         badgeColorClass = "bg-warning text-white";
                     }
 
+                    // Exam Mode Labels & Colors
+                    // 응시 유형 라벨 및 색상 정의
+                    const modeLabel = {
+                        FULL: "Gesamt",
+                        WRITTEN: "Schriftlich",
+                        ORAL: "Mündlich",
+                    }[exam.exam_mode] || "Gesamt";
+                        
                     return (
                         <div
                         key={exam.id}
@@ -362,9 +370,17 @@ export default function Dashboard() {
                                         {dDayStr}
                                     </Badge>
                                 </div>
-                                <p className="text-xs text-muted-foreground truncate">
-                                    {exam.exam_standard_name || exam.exam_name_manual}
-                                </p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <p className="text-[13px] text-muted-foreground">
+                                        {exam.exam_standard_name || exam.exam_name_manual}
+                                    </p>
+                                        <Badge 
+                                            variant="outline"
+                                            className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+                                        >
+                                            {modeLabel}
+                                        </Badge>
+                                    </div>
                             </div>
                         </div>
                     );
