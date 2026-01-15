@@ -48,16 +48,20 @@ class StudentViewSet(viewsets.ModelViewSet):
     # 이름 검색 및 필드 필터링 기능을 활성화
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
 
-    # Allow filtering by 'status'
-    # 'status' 필드를 기준으로 필터링을 허용
-    filterset_fields = ["status"]
+    search_fields = ["name"]
+
+    # Allow filtering by 'status' and 'current_level'
+    # Useful for grouping students by proficiency in the frontend
+    # 'status' 및 'current_level' 필드를 기준으로 필터링을 허용
+    # 프론트엔드에서 숙련도별로 학생을 그룹화할 때 유용함
+    filterset_fields = ["status", "current_level"]
 
     def get_queryset(self):
         """
         Limit queryset to students belonging to the logged-in tutor.
         로그인한 튜터에게 속한 학생들로 쿼리셋을 제한합니다.
         """
-        return Student.objects.filter(tutor=self.request.user)
+        return Student.objects.filter(tutor=self.request.user).order_by("name")
 
     def perform_create(self, serializer):
         """
@@ -79,12 +83,12 @@ class CourseRegistrationViewSet(viewsets.ModelViewSet):
     serializer_class = CourseRegistrationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # Allow filtering by payment status
-    # Used for calculating notification badges efficiently
-    # 납부 상태에 따른 필터링을 허용
-    # 알림 뱃지 카운트를 효율적으로 계산하기 위해 사용
+    # Allow filtering by payment status and student
+    # 'student' filter added to retrieve history for a specific student
+    # 납부 상태 및 특정 학생에 따른 필터링을 허용
+    # 특정 학생의 수강 이력을 조회하기 위해 'student' 필터 추가됨
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["is_paid"]
+    filterset_fields = ["is_paid", "student"]
 
     def get_queryset(self):
         """
@@ -120,6 +124,9 @@ class ExamRecordViewSet(viewsets.ModelViewSet):
 
     serializer_class = ExamRecordSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["student"]
 
     def get_queryset(self):
         """
@@ -175,6 +182,13 @@ class OfficialExamResultViewSet(viewsets.ModelViewSet):
 
     serializer_class = OfficialExamResultSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    # Added 'exam_mode' to allow filtering by exam type (Full/Written/Oral)
+    # Crucial for analyzing partial pass statuses
+    # 시험 유형(전체/필기/구술)별 필터링을 위해 'exam_mode' 추가
+    # 부분 합격 현황을 분석하는 데 필수적임
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["student", "status", "exam_mode"]
 
     def get_queryset(self):
         """

@@ -76,6 +76,46 @@ class CourseRegistrationInline(admin.TabularInline):
     extra = 0 
 
 
+class ExamRecordInline(admin.TabularInline):
+    """
+    Inline view for Internal Exam Records.
+    Display basic exam results directly on the Student page.
+    Allows quick access to the full detail page via the change link.
+
+    내부 모의고사 기록 인라인 뷰.
+    학생 페이지에서 기본 시험 결과를 직접 표시함.
+    수정 링크를 통해 전체 상세 페이지로 빠르게 접근할 수 있음.
+    """
+
+    model = ExamRecord
+    extra = 0
+    fields = ("exam_standard", "exam_date", "exam_mode", "total_score", "grade")
+
+    # Score is calculated automatically, so keep it read-only here
+    # 점수는 자동 계산되므로 여기서는 읽기 전용으로 설정
+    readonly_fields = (
+        "total_score",
+    )  
+    show_change_link = True
+
+
+class OfficialExamResultInline(admin.TabularInline):
+    """
+    Inline view for Official Exam Results.
+    Display official certification results directly on the Student page.
+    Crucial for tracking certification progress (Pass/Fail/Partial).
+
+    정규 시험 결과 인라인 뷰.
+    학생 페이지에서 정규 자격증 시험 결과를 직접 표시함.
+    자격증 취득 현황(합격/불합격/부분합격)을 추적하는 데 중요함.
+    """
+
+    model = OfficialExamResult
+    extra = 0
+    fields = ("exam_standard", "exam_name_manual", "exam_date", "exam_mode", "status")
+    show_change_link = True
+
+
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
     """
@@ -103,9 +143,11 @@ class StudentAdmin(admin.ModelAdmin):
     # 최적화: 튜터 정보를 한 번의 쿼리로 가져옴
     list_select_related = ("tutor",)
 
-    # Add CourseRegistration table inside Student page
-    # 학생 페이지 내부에 수강 등록 테이블 삽입
-    inlines = [CourseRegistrationInline]
+    # Add CourseRegistration AND Exam Inlines inside Student page
+    # Consolidates all student history (Courses, Mock Exams, Official Exams) in one view
+    # 학생 페이지 내부에 수강 등록 및 시험 이력 테이블 삽입
+    # 학생의 모든 이력(수강, 모의고사, 정규 시험)을 한 화면에서 통합 관리
+    inlines = [CourseRegistrationInline, ExamRecordInline, OfficialExamResultInline]
 
 
 @admin.register(CourseRegistration)
@@ -394,9 +436,11 @@ class OfficialExamResultAdmin(admin.ModelAdmin):
         "student",
         "get_exam_name",
         "exam_date",
+        "exam_mode",
         "status",
     )
-    list_filter = ("status", "exam_date")
+
+    list_filter = ("status", "exam_mode", "exam_date")
     search_fields = ("student__name", "exam_name_manual", "exam_standard__name")
 
     # Optimization: Fetch student and standard data efficiently

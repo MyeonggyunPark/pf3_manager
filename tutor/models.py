@@ -249,6 +249,10 @@ class ExamRecord(models.Model):
     특정 시험 표준에 대한 학생의 실제 응시 내역을 저장함.
     """
 
+    # Exam Mode Choices
+    # Allows distinguishing between Full, Written-only, and Oral-only attempts.
+    # 응시 유형 정의
+    # 전체 응시인지, 필기/구술 부분 응시인지 구분하기 위함.
     class ExamModeChoices(models.TextChoices):
         FULL = "FULL", _("Gesamtprüfung")
         WRITTEN = "WRITTEN", _("Schriftliche Prüfung")
@@ -371,6 +375,15 @@ class OfficialExamResult(models.Model):
     내부 모의고사와는 별도로 관리됨.
     """
 
+    # Exam Mode Choices
+    # Allows distinguishing between Full, Written-only, and Oral-only attempts.
+    # 응시 유형 정의
+    # 전체 응시인지, 필기/구술 부분 응시인지 구분하기 위함.
+    class ExamModeChoices(models.TextChoices):
+        FULL = "FULL", _("Gesamtprüfung")
+        WRITTEN = "WRITTEN", _("Schriftliche Prüfung")
+        ORAL = "ORAL", _("Mündliche Prüfung")
+
     class ResultStatusChoices(models.TextChoices):
         PASSED = "PASSED", _("Bestanden")
         FAILED = "FAILED", _("Nicht bestanden")
@@ -397,6 +410,17 @@ class OfficialExamResult(models.Model):
     )
 
     exam_date = models.DateField(_("Exam Date"))
+
+    # Actual mode taken (Full / Written Only / Oral Only)
+    # Crucial for tracking partial certification (e.g., Passed Written, Failed Oral)
+    # 실제 응시 유형 (전체 / 필기만 / 구술만)
+    # 부분 합격 여부 추적(예: 필기는 합격했으나 구술은 불합격)을 위한 핵심 필드
+    exam_mode = models.CharField(
+        max_length=20,
+        choices=ExamModeChoices.choices,
+        default=ExamModeChoices.FULL,
+        help_text="응시 유형 (전체/필기/구술)",
+    )
 
     # Pass/Fail status is the primary metric
     # 합격 여부가 가장 중요한 관리 지표

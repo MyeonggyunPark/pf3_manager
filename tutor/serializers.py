@@ -202,6 +202,10 @@ class ExamRecordSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source="student.name", read_only=True)
     exam_name = serializers.CharField(source="exam_standard.name", read_only=True)
 
+    # Calculate max score dynamically based on exam mode (Full vs Partial)
+    # 응시 유형(전체 vs 부분)에 따라 만점을 동적으로 계산하여 제공
+    max_score = serializers.SerializerMethodField()
+
     # Nested Serializers (Inverse Relations)
     # Used for displaying all related data in the detail view
     # 중첩 시리얼라이저 (역참조 관계)
@@ -213,10 +217,24 @@ class ExamRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExamRecord
         fields = "__all__"
-        
+
         # Prevent tutor modification via API
         # API를 통한 튜터 정보 변조 방지
         read_only_fields = ("tutor",)
+
+    def get_max_score(self, obj):
+        """
+        Determine max score based on the exam mode.
+        If FULL, use the standard's total score. If partial, find the specific module's max score.
+
+        응시 유형에 따른 만점 점수를 반환합니다.
+        전체 응시인 경우 표준 총점을, 부분 응시인 경우 해당 모듈의 만점을 찾아 반환합니다.
+        """
+        if obj.exam_mode == "FULL":
+            return obj.exam_standard.total_score
+
+        module = obj.exam_standard.modules.filter(module_type=obj.exam_mode).first()
+        return module.max_score if module else 0
 
 
 # ==========================================
@@ -244,9 +262,25 @@ class OfficialExamResultSerializer(serializers.ModelSerializer):
         source="student.current_level", read_only=True
     )
 
+    # Provide max score for reference if linked to a standard
+    # 표준과 연결된 경우 참조용으로 만점 점수를 제공
+    max_score = serializers.SerializerMethodField()
+
     class Meta:
         model = OfficialExamResult
         fields = "__all__"
+
+    def get_max_score(self, obj):
+        """
+        Retrieve the total score from the linked ExamStandard.
+        Returns None if it's a manually entered exam without a standard.
+
+        연결된 시험 표준(ExamStandard)에서 총점을 조회합니다.
+        표준 없이 수동으로 입력한 시험인 경우 None을 반환합니다.
+        """
+        if obj.exam_standard:
+            return obj.exam_standard.total_score
+        return None 
 
 
 # ==========================================
