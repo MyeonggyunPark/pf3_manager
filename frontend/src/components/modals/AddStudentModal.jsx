@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -43,13 +43,22 @@ const FemaleIcon = ({ className }) => (
   </svg>
 );
 
-export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
+export default function AddStudentModal({ isOpen, onClose, onSuccess, studentData = null }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Manage validation errors per field (object) and general submission errors (string)
   // 필드별 유효성 에러(객체)와 일반 제출 에러(문자열)를 구분하여 관리
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
+
+  // State for managing delete confirmation overlay visibility
+  // 삭제 확인 오버레이 표시 여부를 관리하는 상태
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Determine if the modal is in edit mode
+  // 수정 모드인지 확인
+  const isEditMode = !!studentData;
 
   // Initial form state matching the Student model fields
   // Student 모델 필드와 일치하는 초기 폼 상태
@@ -66,6 +75,27 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
 
   const [formData, setFormData] = useState(initialFormState);
 
+  // Populate form data when opening in edit mode
+  // 수정 모드일 때 폼 데이터 채우기
+  useEffect(() => {
+    if (isOpen && studentData) {
+      setFormData({
+        name: studentData.name,
+        gender: studentData.gender,
+        age: studentData.age,
+        current_level: studentData.current_level,
+        target_level: studentData.target_level,
+        target_exam_mode: studentData.target_exam_mode,
+        status: studentData.status,
+        memo: studentData.memo || "",
+      });
+    } else if (isOpen) {
+      setFormData(initialFormState);
+      setErrors({});
+      setSubmitError(null);
+    }
+  }, [isOpen, studentData]);
+
   // Do not render if modal is closed
   // 모달이 닫혀있으면 렌더링하지 않음
   if (!isOpen) return null;
@@ -76,6 +106,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
     setFormData(initialFormState);
     setErrors({});
     setSubmitError(null);
+    setShowDeleteConfirm(false);
     onClose();
   };
 
@@ -97,6 +128,27 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
     // 사용자가 값을 선택하면 해당 필드의 에러 메시지 제거
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
+    }
+  };
+
+  // Trigger delete confirmation
+  // 삭제 확인창 띄우기
+  const handleRequestDelete = () => setShowDeleteConfirm(true);
+
+  // Execute delete operation
+  // 삭제 실행
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/students/${studentData.id}/`);
+      onSuccess();
+      handleClose();
+    } catch (err) {
+      console.error("Delete Failed:", err);
+      setSubmitError("삭제 중 오류가 발생했습니다.");
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -135,7 +187,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
         age: parseInt(formData.age, 10),
       };
 
-      await api.post("/api/students/", payload);
+      if (isEditMode) {
+        await api.patch(`/api/students/${studentData.id}/`, payload);
+      } else {
+        await api.post("/api/students/", payload);
+      }
 
       setFormData(initialFormState);
       onSuccess();
@@ -155,7 +211,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
         const fieldErrors = {};
         Object.keys(responseData).forEach((key) => {
 
-          // DRF returns errors as arrays (e.g., ["This field is required."])
+          // DRF returns errors as arrays
           // DRF는 에러를 배열로 반환하므로 첫 번째 메시지를 추출
           fieldErrors[key] = Array.isArray(responseData[key])
             ? responseData[key][0]
@@ -168,7 +224,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
         // 일반 에러 처리
         setSubmitError(
           responseData?.detail ||
-            "학생 등록에 실패했습니다. 입력 값을 확인해주세요.",
+            `학생 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
         );
       }
     } finally {
@@ -242,16 +298,56 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
+        {/* Delete Confirmation Overlay */}
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="w-8 h-8 text-destructive" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">삭제 확인</h3>
+            <p className="text-slate-500 text-center mb-8 max-w-xs text-sm">
+              정말로 삭제하시겠습니까?
+              <br />
+              <span className="text-destructive mt-1 block">
+                이 작업은 되돌릴 수 없습니다.
+              </span>
+            </p>
+            <div className="flex w-full max-w-xs gap-3">
+              <Button
+                type="button"
+                className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 h-11 text-sm font-semibold cursor-pointer transition-all"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                취소
+              </Button>
+              <Button
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold shadow-md cursor-pointer transition-all"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "삭제"
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         {/* 헤더 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-              학생 등록
+              {isEditMode ? "학생 정보 수정" : "학생 등록"}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              등록할 새로운 학생의 정보를 입력하세요.
+              {isEditMode
+                ? "수정이 필요한 학생 정보를 변경해주세요."
+                : "등록할 새로운 학생의 정보를 입력하세요."}
             </p>
           </div>
           <button
@@ -461,6 +557,21 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
           {/* Action Buttons */}
           {/* 하단 액션 버튼 */}
           <div className="flex gap-3 pt-2">
+            {isEditMode && (
+              <Button
+                type="button"
+                className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
+                onClick={handleRequestDelete}
+                disabled={isLoading || isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </Button>
+            )}
+
             <Button
               type="button"
               className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
@@ -472,12 +583,15 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
             <Button
               type="submit"
               className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer transition-all"
-              disabled={isLoading}
+              disabled={isLoading || isDeleting}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 저장 중...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                  {isEditMode ? "수정 중..." : "저장 중..."}
                 </>
+              ) : isEditMode ? (
+                "수정"
               ) : (
                 "등록"
               )}
