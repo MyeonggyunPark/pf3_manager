@@ -134,14 +134,14 @@ export default function StudentList() {
         const res = await api.get("/api/students/", { params });
         setStudents(res.data);
 
-        // Auto-select the first student if currently active one is not in the new list
-        // 현재 선택된 학생이 새로운 목록에 없거나 선택된 학생이 없으면 첫 번째 학생 자동 선택
+        // Auto-select removal: Only keep selection if the currently selected student still exists in the list
+        // 자동 선택 제거: 현재 선택된 학생이 리스트에 여전히 존재할 때만 유지하고, 아니면 선택 해제
         if (res.data.length > 0) {
           const isCurrentActiveInList = res.data.some(
             (s) => s.id === activeStudentId,
           );
-          if (!activeStudentId || !isCurrentActiveInList) {
-            setActiveStudentId(res.data[0].id);
+          if (!isCurrentActiveInList) {
+            setActiveStudentId(null);
           }
         } else {
           setActiveStudentId(null);
@@ -836,8 +836,8 @@ export default function StudentList() {
                                           {exam.status === "PASSED"
                                             ? "합격"
                                             : exam.status === "FAILED"
-                                            ? "불합격"
-                                            : "대기"}
+                                              ? "불합격"
+                                              : "대기"}
                                         </Badge>
                                       </div>
                                     </td>
@@ -863,13 +863,24 @@ export default function StudentList() {
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/10">
-              <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center shadow-sm mb-4">
-                <LucideIcons.User className="w-8 h-8 text-muted-foreground/50" />
+
+            // Render Empty State if no student is selected
+            // 학생이 선택되지 않았을 경우 빈 상태 UI 렌더링
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/5 animate-in fade-in duration-500">
+              <div className="w-20 h-20 bg-muted/20 rounded-full flex items-center justify-center mb-6 ring-1 ring-border/50">
+                <LucideIcons.UserRoundSearch className="w-10 h-10 text-muted-foreground/40" />
               </div>
-              <p className="font-medium text-lg text-muted-foreground">
-                학생을 선택해주세요
-              </p>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-semibold text-foreground/80">
+                  선택된 학생이 없습니다
+                </h3>
+                <p className="text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                  좌측 목록에서 학생을 선택하여
+                  <br />
+                  상세 정보와 수강 이력을 확인하세요.
+                </p>
+              </div>
             </div>
           )}
         </Card>
