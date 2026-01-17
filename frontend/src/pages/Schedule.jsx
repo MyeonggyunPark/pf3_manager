@@ -371,7 +371,15 @@ export default function Schedule() {
                                 : "border-t-transparent bg-slate-50/50",
                             )}
                         >
-                            <div className="p-3 border-b border-border text-center shrink-0">
+                            <div className="p-3 border-b border-border text-center shrink-0 relative">
+                                {dayLessons.length > 0 && (
+                                    <Badge
+                                        variant="secondary"
+                                        className="absolute right-2 top-2 text-[10px] h-4 px-1"
+                                    >
+                                        {dayLessons.length}
+                                    </Badge>
+                                )}
                                 <p
                                     className={cn(
                                         "text-xs font-bold uppercase",
