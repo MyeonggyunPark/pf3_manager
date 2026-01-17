@@ -6,6 +6,8 @@ import { Card } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import AddStudentModal from "../components/modals/AddStudentModal";
+import AddCourseModal from "../components/modals/AddCourseModal"; 
+import AddOfficialExamModal from "../components/modals/AddOfficialExamModal"; 
 
 const MaleIcon = ({ className }) => (
   <svg
@@ -110,6 +112,13 @@ export default function StudentList() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [activeStudentId, setActiveStudentId] = useState(null);
 
+  // States for Course and Exam Modals
+  // 수강권 및 시험 수정 모달 상태
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+  const [selectedExam, setSelectedExam] = useState(null);
+
   // Detailed data for the active student (fetched separately)
   // 활성 학생의 상세 데이터 (개별 호출로 가져옴)
   const [studentCourses, setStudentCourses] = useState([]);
@@ -211,6 +220,16 @@ export default function StudentList() {
     setIsModalOpen(true);
   };
 
+  const openEditCourseModal = (course) => {
+    setSelectedCourse(course);
+    setIsCourseModalOpen(true);
+  };
+
+  const openEditExamModal = (exam) => {
+    setSelectedExam(exam);
+    setIsExamModalOpen(true);
+  };
+
   // Trigger list refresh after successful create/edit/delete
   // 등록/수정/삭제 성공 후 리스트 갱신 트리거
   const handleSuccess = () => setRefreshTrigger((prev) => prev + 1);
@@ -236,6 +255,20 @@ export default function StudentList() {
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleSuccess}
         studentData={selectedStudent}
+      />
+
+      <AddCourseModal
+        isOpen={isCourseModalOpen}
+        onClose={() => setIsCourseModalOpen(false)}
+        onSuccess={handleSuccess}
+        courseData={selectedCourse}
+      />
+
+      <AddOfficialExamModal
+        isOpen={isExamModalOpen}
+        onClose={() => setIsExamModalOpen(false)}
+        onSuccess={handleSuccess}
+        examData={selectedExam}
       />
 
       {/* Filter and Search Bar Section */}
@@ -556,7 +589,7 @@ export default function StudentList() {
                                   총 시간
                                 </th>
                                 <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  시간당
+                                  시간당 금액
                                 </th>
                                 <th className="px-4 py-4 font-semibold text-center w-[15%]">
                                   총 금액
@@ -574,7 +607,8 @@ export default function StudentList() {
                                 studentCourses.map((course) => (
                                   <tr
                                     key={course.id}
-                                    className="hover:bg-muted/10 transition-colors"
+                                    onClick={() => openEditCourseModal(course)}
+                                    className="hover:bg-muted/30 transition-colors cursor-pointer"
                                   >
                                     <td className="px-4 py-4 text-center text-foreground truncate">
                                       {formatDate(course.start_date)} ~{" "}
@@ -774,7 +808,8 @@ export default function StudentList() {
                                 studentExams.map((exam) => (
                                   <tr
                                     key={exam.id}
-                                    className="hover:bg-muted/10 transition-colors"
+                                    onClick={() => openEditExamModal(exam)}
+                                    className="hover:bg-muted/30 transition-colors cursor-pointer"
                                   >
                                     <td className="px-4 py-4 text-center text-muted-foreground">
                                       {formatDate(exam.exam_date)}
@@ -863,7 +898,6 @@ export default function StudentList() {
               </div>
             </div>
           ) : (
-
             // Render Empty State if no student is selected
             // 학생이 선택되지 않았을 경우 빈 상태 UI 렌더링
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/5 animate-in fade-in duration-500">
