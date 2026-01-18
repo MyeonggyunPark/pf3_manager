@@ -657,9 +657,14 @@ export default function StudentList() {
                                 <tr>
                                   <td
                                     colSpan="6"
-                                    className="px-6 py-12 text-center text-muted-foreground text-sm"
+                                    className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
                                   >
-                                    등록된 수강 이력이 없습니다.
+                                    <div className="flex flex-col items-center justify-center gap-2">
+                                      <LucideIcons.SearchX className="w-6 h-6" />
+                                      <p className="font-semibold">
+                                        등록된 수강 이력이 없습니다.
+                                      </p>
+                                    </div>
                                   </td>
                                 </tr>
                               )}
@@ -765,9 +770,14 @@ export default function StudentList() {
                                 <tr>
                                   <td
                                     colSpan="6"
-                                    className="px-6 py-12 text-center text-muted-foreground text-sm"
+                                    className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
                                   >
-                                    등록된 모의고사 기록이 없습니다.
+                                    <div className="flex flex-col items-center justify-center gap-2">
+                                      <LucideIcons.SearchX className="w-6 h-6" />
+                                      <p className="font-semibold">
+                                        등록된 모의고사 기록이 없습니다.
+                                      </p>
+                                    </div>
                                   </td>
                                 </tr>
                               )}
@@ -882,9 +892,14 @@ export default function StudentList() {
                                 <tr>
                                   <td
                                     colSpan="6"
-                                    className="px-6 py-12 text-center text-muted-foreground text-sm"
+                                    className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
                                   >
-                                    등록된 시험 결과가 없습니다.
+                                    <div className="flex flex-col items-center justify-center gap-2">
+                                      <LucideIcons.SearchX className="w-6 h-6" />
+                                      <p className="font-semibold">
+                                        등록된 시험 결과가 없습니다.
+                                      </p>
+                                    </div>
                                   </td>
                                 </tr>
                               )}
@@ -906,8 +921,8 @@ export default function StudentList() {
               </div>
 
               <div className="text-center space-y-2">
-                <h3 className="text-xl font-semibold text-foreground/80">
-                  선택된 학생이 없습니다
+                <h3 className="text-xl font-semibold text-primary">
+                  선택된 학생이 없습니다.
                 </h3>
                 <p className="text-muted-foreground max-w-xs mx-auto leading-relaxed">
                   좌측 목록에서 학생을 선택하여

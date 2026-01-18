@@ -550,7 +550,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
               onChange={handleChange}
               rows={4}
               className="w-full p-3 rounded-lg border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400"
-              placeholder="학생에 대한 추가 정보 / 특이사항"
+              placeholder="추가 정보 / 특이사항"
             />
           </div>
 

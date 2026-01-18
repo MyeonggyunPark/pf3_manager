@@ -390,12 +390,10 @@ export default function Dashboard() {
         ) : (
             // Empty State: No exams scheduled
             // 빈 상태: 예정된 시험 없음
-            <div className="w-full rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 flex flex-col items-center justify-center text-center">
-                <div className="bg-white p-3 rounded-full shadow-sm mb-3">
-                    <LucideIcons.GraduationCap className="w-6.5 h-6.5 text-slate-400" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-700">
-                    예정된 정규 시험이 없습니다
+            <div className="w-full rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 flex flex-col items-center justify-center text-center text-muted-foreground/70 gap-2">
+                <LucideIcons.SearchX className="w-8 h-8" />
+                <h3 className="text-sm font-semibold">
+                    예정된 정규 시험이 없습니다.
                 </h3>
             </div>
         )}
@@ -425,8 +423,8 @@ export default function Dashboard() {
                                     className={cn(
                                         "transition-colors outline-none text-base cursor-pointer",
                                         activeTab === 'today' 
-                                            ? "text-slate-900 font-bold" 
-                                            : "text-slate-400 hover:text-slate-600 font-medium"
+                                            ? "text-primary font-bold" 
+                                            : "text-slate-400 hover:text-primary font-medium"
                                     )}
                                 >
                                     오늘의 수업
@@ -443,8 +441,8 @@ export default function Dashboard() {
                                     className={cn(
                                         "transition-colors outline-none text-base cursor-pointer",
                                         activeTab === 'tomorrow' 
-                                            ? "text-slate-900 font-bold" 
-                                            : "text-slate-400 hover:text-slate-600 font-medium"
+                                            ? "text-primary font-bold" 
+                                            : "text-slate-400 hover:text-primary font-medium"
                                     )}
                                 >
                                     내일의 수업
@@ -460,8 +458,11 @@ export default function Dashboard() {
                         {/* Display Lessons (Today or Tomorrow) - Render without filtering status */}
                         {/* 수업 목록 표시 (오늘 또는 내일) - 상태 필터링 없이 그대로 렌더링 */}
                         {displayLessons.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground text-sm">
-                                {emptyMessage}
+                            <div className="text-center py-10 text-muted-foreground/70 text-sm flex flex-col items-center justify-center gap-2">
+                                <LucideIcons.SearchX className="w-8 h-8" />
+                                <h3 className="text-sm font-semibold">
+                                    {emptyMessage}
+                                </h3>
                             </div>
                         ) : (
                             displayLessons.map((lesson) => (

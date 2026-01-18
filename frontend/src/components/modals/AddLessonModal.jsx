@@ -335,7 +335,7 @@ export default function AddLessonModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
-              <InputLabel label="학생 선택" hasError={!!errors.student} />
+              <InputLabel label="학생" hasError={!!errors.student} />
               <div className="relative">
                 <select
                   name="student"
@@ -348,7 +348,7 @@ export default function AddLessonModal({
                   }`}
                 >
                   <option value="" disabled hidden>
-                    학생을 선택하세요
+                    학생을 선택하세요.
                   </option>
                   {students.map((student) => (
                     <option
@@ -377,8 +377,8 @@ export default function AddLessonModal({
                 </div>
               </div>
               {students.length === 0 && (
-                <p className="text-xs text-slate-400 mt-1 ml-1">
-                  * 등록된 '수강중(Active)' 학생이 없습니다.
+                <p className="text-xs text-destructive mt-1 ml-1">
+                  * 등록된 수강중인 학생이 없습니다.
                 </p>
               )}
               <ErrorMessage message={errors.student} />
@@ -504,14 +504,14 @@ export default function AddLessonModal({
           </div>
 
           <div className="space-y-1.5">
-            <InputLabel label="수업 메모" hasError={false} />
+            <InputLabel label="메모" hasError={false} />
             <textarea
               name="memo"
               value={formData.memo}
               onChange={handleChange}
               rows={3}
               className="w-full p-3 rounded-lg border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400"
-              placeholder="수업 내용, 숙제, 특이사항 등"
+              placeholder="추가 사항 / 특이 사항"
             />
           </div>
 

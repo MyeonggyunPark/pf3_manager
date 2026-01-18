@@ -4,6 +4,15 @@ import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
+// Helper to format date string for input[type="date"] (YYYY-MM-DD)
+// input[type="date"]를 위한 날짜 문자열 포맷팅 헬퍼 (YYYY-MM-DD)
+const formatDateForInput = (dateString) => {
+  if (!dateString) return "";
+  // Check if it's already YYYY-MM-DD or ISO string
+  // 이미 YYYY-MM-DD 형식이거나 ISO 문자열인지 확인 후 처리
+  return new Date(dateString).toISOString().split("T")[0];
+};
+
 export default function AddOfficialExamModal({
   isOpen,
   onClose,
@@ -16,6 +25,10 @@ export default function AddOfficialExamModal({
   // 삭제 작업 상태 및 확인 모달 표시 여부 관리
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Determine edit mode based on the presence of examData
+  // examData 존재 여부에 따른 수정 모드 결정
+  const isEditMode = !!examData;
 
   // Manage validation errors per field (object) and general submission errors (string)
   // 필드별 유효성 에러(객체)와 일반 제출 에러(문자열)를 구분하여 관리
@@ -41,27 +54,76 @@ export default function AddOfficialExamModal({
     memo: "",
   };
 
-  const [formData, setFormData] = useState(initialFormState);
+  // Initialize form data using lazy initialization to handle examData prop
+  // examData prop을 처리하기 위해 지연 초기화를 사용하여 폼 데이터 초기화
+  const [formData, setFormData] = useState(() => {
+    if (examData) {
+      return {
+        student: examData.student,
+        exam_standard: examData.exam_standard || "",
+        exam_name_manual: examData.exam_name_manual || "",
+        // Format date for input field
+        // 입력 필드를 위해 날짜 포맷팅
+        exam_date: formatDateForInput(examData.exam_date),
+        exam_mode: examData.exam_mode || "",
+        status: examData.status || "",
+        total_score: examData.total_score || "",
+        max_score: examData.max_score || "",
+        grade: examData.grade || "",
+        memo: examData.memo || "",
+      };
+    }
+    return initialFormState;
+  });
 
-  // Fetch student list when modal opens and filter only 'ACTIVE' students
-  // Uses server-side filtering (?status=ACTIVE) to optimize performance
-  // 모달이 열릴 때 학생 목록을 조회하고, 'ACTIVE' 상태인 학생만 필터링
-  // 성능 최적화를 위해 서버 사이드 필터링(?status=ACTIVE)을 사용
+  // Fetch data when modal opens (Students & Exam Standards)
+  // Uses split error handling for robust feedback
+  // 모달이 열릴 때 데이터(학생, 시험 기준) 조회
+  // 견고한 피드백을 위해 분리된 에러 핸들링 사용
   useEffect(() => {
     if (isOpen) {
       const fetchData = async () => {
-        try {
-          const [studentsRes, standardsRes] = await Promise.all([
-            api.get("/api/students/?status=ACTIVE"),
-            api.get("/api/exam-standards/"),
-          ]);
+        // Clear previous errors
+        // 이전 에러 초기화
+        setSubmitError(null);
+
+        // Execute API calls in parallel but handle errors individually
+        // API 호출을 병렬로 실행하되 에러는 개별적으로 처리
+        const [studentsRes, standardsRes] = await Promise.all([
+          // 1. Handle Student API Error independently
+          // 학생 API 에러 개별 처리 (실패 시 null 반환)
+          api.get("/api/students/?status=ACTIVE").catch((err) => {
+            console.error("Student fetch error:", err);
+            return null;
+          }),
+
+          // 2. Handle Standards API Error independently
+          // 시험 기준 API 에러 개별 처리
+          api.get("/api/exam-standards/").catch((err) => {
+            console.error("Standard fetch error:", err);
+            return null;
+          }),
+        ]);
+
+        // 3. Process Results & Set States
+        // 결과 처리 및 상태 설정
+        if (studentsRes) {
           setStudents(studentsRes.data);
+        } else {
+          setSubmitError("학생 목록을 불러오는데 실패했습니다.");
+        }
+
+        if (standardsRes) {
           setExamStandards(standardsRes.data);
-        } catch (err) {
-          console.error("Failed to load dropdown data:", err);
-          setSubmitError("필수 데이터를 불러오는데 실패했습니다.");
+        } else {
+          // Append error message if student fetch also failed, or set new
+          // 학생 목록 실패 시 메시지 추가, 아니면 새로 설정
+          setSubmitError((prev) =>
+            prev ? `${prev}` : "시험 기준을 불러오는데 실패했습니다.",
+          );
         }
       };
+
       fetchData();
     }
   }, [isOpen]);
@@ -69,18 +131,28 @@ export default function AddOfficialExamModal({
   // Populate form with existing data when editing
   // 수정 시 기존 데이터로 폼 필드 채우기
   useEffect(() => {
-    if (isOpen && examData) {
-      setFormData({
-        student: examData.student,
-        exam_standard: examData.exam_standard || "",
-        exam_name_manual: examData.exam_name_manual || "",
-        exam_date: examData.exam_date,
-        exam_mode: examData.exam_mode || "FULL",
-        status: examData.status || "WAITING",
-        total_score: examData.total_score || "",
-        grade: examData.grade || "",
-        memo: examData.memo || "",
-      });
+    if (isOpen) {
+      if (examData) {
+        setFormData({
+          student: examData.student,
+          exam_standard: examData.exam_standard || "",
+          exam_name_manual: examData.exam_name_manual || "",
+          exam_date: formatDateForInput(examData.exam_date),
+          exam_mode: examData.exam_mode || "FULL",
+          status: examData.status || "WAITING",
+          total_score: examData.total_score || "",
+          max_score: examData.max_score || "",
+          grade: examData.grade || "",
+          memo: examData.memo || "",
+        });
+      } else {
+        // Reset to initial state if adding new exam
+        // 새 시험 등록 시 초기 상태로 리셋
+        setFormData(initialFormState);
+      }
+      // Clear validation errors on open/change
+      // 열리거나 변경될 때 유효성 검사 에러 초기화
+      setErrors({});
     }
   }, [isOpen, examData]);
 
@@ -105,6 +177,12 @@ export default function AddOfficialExamModal({
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
+  };
+
+  // Manual handler for setting specific values directly
+  // 특정 값을 직접 설정하기 위한 수동 핸들러
+  const handleValueChange = (name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleStatusChange = (value) => {
@@ -169,11 +247,20 @@ export default function AddOfficialExamModal({
         exam_standard: formData.exam_standard
           ? parseInt(formData.exam_standard, 10)
           : null,
+        total_score: formData.total_score
+          ? parseFloat(formData.total_score)
+          : null,
+        max_score: formData.max_score ? parseFloat(formData.max_score) : null,
       };
 
-      // Perform partial update using PATCH
-      // PATCH를 사용하여 부분 업데이트 수행
-      await api.patch(`/api/official-results/${examData.id}/`, payload);
+      // Perform partial update using PATCH or create using POST
+      // PATCH를 사용하여 부분 업데이트 수행 또는 POST로 생성
+      if (isEditMode) {
+        await api.patch(`/api/official-results/${examData.id}/`, payload);
+      } else {
+        await api.post("/api/official-results/", payload);
+      }
+
       onSuccess();
       handleClose();
     } catch (err) {
@@ -196,7 +283,8 @@ export default function AddOfficialExamModal({
         setErrors(fieldErrors);
       } else {
         setSubmitError(
-          responseData?.detail || "시험 정보 업데이트에 실패했습니다.",
+          responseData?.detail ||
+            `정규 시험 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
         );
       }
     } finally {
@@ -303,10 +391,12 @@ export default function AddOfficialExamModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-              시험 정보 수정
+              {isEditMode ? "정규 시험 정보 수정" : "정규 시험 등록"}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              수정이 필요한 시험 정보를 변경해주세요.
+              {isEditMode
+                ? "수정이 필요한 정규 시험 정보를 변경해주세요."
+                : "등록할 정규 시험의 정보를 입력하세요."}
             </p>
           </div>
           <button
@@ -338,10 +428,14 @@ export default function AddOfficialExamModal({
                   name="student"
                   value={formData.student}
                   onChange={handleChange}
-                  className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm text-slate-800 appearance-none cursor-pointer"
+                  className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer ${
+                    formData.student === ""
+                      ? "text-slate-400"
+                      : "text-slate-800"
+                  }`}
                 >
-                  <option value="" disabled>
-                    학생 선택
+                  <option value="" disabled hidden>
+                    학생을 선택하세요.
                   </option>
                   {students.map((student) => (
                     <option key={student.id} value={student.id}>
@@ -365,6 +459,11 @@ export default function AddOfficialExamModal({
                   </svg>
                 </div>
               </div>
+              {students.length === 0 && (
+                <p className="text-xs text-destructive mt-1 ml-1">
+                  * 등록된 수강중인 학생이 없습니다.
+                </p>
+              )}
               <ErrorMessage message={errors.student} />
             </div>
 
@@ -378,7 +477,11 @@ export default function AddOfficialExamModal({
                 value={formData.exam_date}
                 onChange={handleChange}
                 onClick={(e) => e.target.showPicker()}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-sm cursor-pointer"
+                className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
+                  formData.exam_date === ""
+                    ? "text-slate-400 [&::-webkit-calendar-picker-indicator]:opacity-40"
+                    : "text-slate-800 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                }`}
               />
               <ErrorMessage message={errors.exam_date} />
             </div>
@@ -392,8 +495,12 @@ export default function AddOfficialExamModal({
               <select
                 name="exam_standard"
                 value={formData.exam_standard}
-                onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm text-slate-800 appearance-none cursor-pointer"
+                onChange={(e) => {
+                  handleChange(e);
+                  if (e.target.value) handleValueChange("exam_name_manual", "");
+                }}
+                className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer
+                ${formData.exam_standard === "" ? "text-slate-400" : "text-slate-800"}`}
               >
                 <option value="">(선택지 없을 시) 직접 입력</option>
                 {examStandards.map((std) => (
@@ -432,7 +539,10 @@ export default function AddOfficialExamModal({
               <input
                 name="exam_name_manual"
                 value={formData.exam_name_manual}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  if (e.target.value) handleValueChange("exam_standard", "");
+                }}
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
                 placeholder="시험 명칭 입력"
               />
@@ -541,28 +651,29 @@ export default function AddOfficialExamModal({
               onChange={handleChange}
               rows={3}
               className="w-full p-3 rounded-lg border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400"
-              placeholder="시험 관련 특이사항, 정보 등"
+              placeholder="추가사항 / 특이사항"
             />
           </div>
 
           {/* Action Buttons */}
           {/* 하단 액션 버튼 */}
           <div className="flex gap-3 pt-2">
-
             {/* Delete Button - Shows confirmation overlay */}
-            {/* 삭제 버튼 - 확인 오버레이 표시 */}
-            <Button
-              type="button"
-              className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
-              onClick={handleRequestDelete}
-              disabled={isLoading || isDeleting}
-            >
-              {isDeleting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-            </Button>
+            {/* 삭제 버튼 - 확인 오버레이 표시 (수정 모드에서만 렌더링) */}
+            {isEditMode && (
+              <Button
+                type="button"
+                className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
+                onClick={handleRequestDelete}
+                disabled={isLoading || isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </Button>
+            )}
 
             <Button
               type="button"
@@ -575,14 +686,16 @@ export default function AddOfficialExamModal({
             <Button
               type="submit"
               className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer transition-all"
-              disabled={isLoading}
+              disabled={isLoading || isDeleting}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 저장 중...
                 </>
+              ) : isEditMode ? (
+                "수정"
               ) : (
-                "저장"
+                "등록"
               )}
             </Button>
           </div>

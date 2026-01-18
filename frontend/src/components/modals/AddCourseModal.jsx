@@ -178,6 +178,7 @@ export default function AddCourseModal({
     // 유효성 검사 로직
     const newErrors = {};
     if (!formData.student) newErrors.student = "학생을 선택해주세요.";
+    if (!formData.status) newErrors.status = "진행 상태를 선택해주세요.";
     if (!formData.start_date) newErrors.start_date = "시작일을 입력해주세요.";
     if (!formData.end_date) newErrors.end_date = "종료일을 입력해주세요.";
     if (!formData.total_hours)
@@ -347,7 +348,7 @@ export default function AddCourseModal({
           {/* Row 1: Student & Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <InputLabel label="학생 선택" hasError={!!errors.student} />
+              <InputLabel label="학생" hasError={!!errors.student} />
               <div className="relative">
                 <select
                   name="student"
@@ -361,7 +362,7 @@ export default function AddCourseModal({
                     }`}
                 >
                   <option value="" disabled hidden>
-                    학생을 선택하세요
+                    학생을 선택하세요.
                   </option>
                   {students.map((student) => (
                     <option
@@ -373,8 +374,28 @@ export default function AddCourseModal({
                     </option>
                   ))}
                 </select>
-                <ErrorMessage message={errors.student} />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
               </div>
+              {students.length === 0 && (
+                <p className="text-xs text-destructive mt-1 ml-1">
+                  * 등록된 수강중인 학생이 없습니다.
+                </p>
+              )}
+              <ErrorMessage message={errors.student} />
             </div>
 
             <div>
@@ -402,6 +423,7 @@ export default function AddCourseModal({
                   className="cursor-pointer"
                 />
               </div>
+              <ErrorMessage message={errors.status} />
             </div>
           </div>
 
@@ -415,7 +437,11 @@ export default function AddCourseModal({
                 value={formData.start_date}
                 onClick={(e) => e.target.showPicker()}
                 onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-sm cursor-pointer"
+                className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
+                  formData.start_date === ""
+                    ? "text-slate-400 [&::-webkit-calendar-picker-indicator]:opacity-40"
+                    : "text-slate-800 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                }`}
               />
               <ErrorMessage message={errors.start_date} />
             </div>
@@ -427,7 +453,11 @@ export default function AddCourseModal({
                 value={formData.end_date}
                 onClick={(e) => e.target.showPicker()}
                 onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-sm cursor-pointer"
+                className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
+                  formData.end_date === ""
+                    ? "text-slate-400 [&::-webkit-calendar-picker-indicator]:opacity-40"
+                    : "text-slate-800 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                }`}
               />
               <ErrorMessage message={errors.end_date} />
             </div>
@@ -521,7 +551,7 @@ export default function AddCourseModal({
               onChange={handleChange}
               rows={2}
               className="w-full p-3 rounded-lg border border-slate-200 bg-destructive30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400"
-              placeholder="수강권에 대한 추가사항 / 특이사항"
+              placeholder="추가사항 / 특이사항"
             />
           </div>
 
@@ -543,7 +573,7 @@ export default function AddCourseModal({
             )}
             <Button
               type="button"
-              className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 h-11 text-sm font-semibold cursor-pointer"
+              className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               onClick={handleClose}
               disabled={isLoading}
             >
