@@ -141,7 +141,7 @@ export default function StudentList() {
         const params = {};
         if (searchQuery) params.search = searchQuery;
         if (statusFilter) params.status = statusFilter;
-        if (levelFilter) params.current_level = levelFilter;
+        if (levelFilter) params.target_level = levelFilter;
 
         const res = await api.get("/api/students/", { params });
         setStudents(res.data);
@@ -390,13 +390,13 @@ export default function StudentList() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-lg font-semibold text-foreground">
                           {s.name}
                         </span>
                         <span className="text-[10px] h-5 px-1.5 rounded-md border border-primary/30 text-primary bg-card font-semibold flex items-center">
-                          {s.current_level}
+                          {s.target_level}
                         </span>
                       </div>
                       <Badge
