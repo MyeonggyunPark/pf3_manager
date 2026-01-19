@@ -487,7 +487,7 @@ export default function CourseList() {
             {/* --- Detailed List Section --- */}
             {/* 상세 리스트 섹션 (테이블) */}
             <div className="flex-1 h-full bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col min-h-0 mt-3">
-                <div className="bg-slate-100 border-b border-border pr-2">
+                <div className="bg-primary/10 border-b border-border pr-2">
                     <table className="w-full text-md table-fixed">
                         <thead className="text-md text-muted-foreground uppercase">
                             <tr>
@@ -536,7 +536,7 @@ export default function CourseList() {
                                 filteredCourses.map((course) => (
                                 <tr
                                     key={course.id}
-                                    className="hover:bg-muted/30 transition-colors cursor-pointer"
+                                    className="hover:bg-muted/20 transition-colors cursor-pointer"
                                     onClick={() => openEditModal(course)}
                                 >
                                     <td className="px-4 py-4 text-center text-foreground truncate w-[18%]">

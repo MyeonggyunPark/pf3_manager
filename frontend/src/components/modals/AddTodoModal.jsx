@@ -321,7 +321,11 @@ export default function AddTodoModal({
                   // Open native date picker on click for better UX
                   // 사용자 경험 개선을 위해 클릭 시 네이티브 날짜 선택창 열기
                   onClick={(e) => e.target.showPicker()}
-                  className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-xs cursor-pointer"
+                  className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-xs cursor-pointer ${
+                    dueDate === ""
+                      ? "text-slate-400 [&::-webkit-calendar-picker-indicator]:opacity-40"
+                      : "text-slate-800 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                  }`}
                 />
               </div>
             </div>

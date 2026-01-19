@@ -385,7 +385,7 @@ export default function AddLessonModal({
             </div>
 
             <div className="space-y-1.5">
-              <InputLabel label="날짜" hasError={!!errors.date} />
+              <InputLabel label="수업일" hasError={!!errors.date} />
               <input
                 type="date"
                 name="date"
@@ -511,7 +511,7 @@ export default function AddLessonModal({
               onChange={handleChange}
               rows={3}
               className="w-full p-3 rounded-lg border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400"
-              placeholder="추가 사항 / 특이 사항"
+              placeholder="추가사항 / 특이사항"
             />
           </div>
 

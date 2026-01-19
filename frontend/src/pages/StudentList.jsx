@@ -8,6 +8,7 @@ import Badge from "../components/ui/Badge";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import AddCourseModal from "../components/modals/AddCourseModal"; 
 import AddOfficialExamModal from "../components/modals/AddOfficialExamModal"; 
+import AddMockExamModal from "../components/modals/AddMockExamModal";
 
 const MaleIcon = ({ className }) => (
   <svg
@@ -118,6 +119,8 @@ export default function StudentList() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState(null);
+  const [isMockExamModalOpen, setIsMockExamModalOpen] = useState(false);
+  const [selectedMockExam, setSelectedMockExam] = useState(null);
 
   // Detailed data for the active student (fetched separately)
   // 활성 학생의 상세 데이터 (개별 호출로 가져옴)
@@ -230,6 +233,11 @@ export default function StudentList() {
     setIsExamModalOpen(true);
   };
 
+  const openEditMockExamModal = (exam) => {
+    setSelectedMockExam(exam); // 클릭한 시험 데이터 설정 (수정 모드)
+    setIsMockExamModalOpen(true);
+  };
+
   // Trigger list refresh after successful create/edit/delete
   // 등록/수정/삭제 성공 후 리스트 갱신 트리거
   const handleSuccess = () => setRefreshTrigger((prev) => prev + 1);
@@ -269,6 +277,13 @@ export default function StudentList() {
         onClose={() => setIsExamModalOpen(false)}
         onSuccess={handleSuccess}
         examData={selectedExam}
+      />
+
+      <AddMockExamModal
+        isOpen={isMockExamModalOpen}
+        onClose={() => setIsMockExamModalOpen(false)}
+        onSuccess={handleSuccess}
+        examData={selectedMockExam}
       />
 
       {/* Filter and Search Bar Section */}
@@ -357,7 +372,7 @@ export default function StudentList() {
                     "px-5 py-4 rounded-xl cursor-pointer transition-all border border-transparent flex items-center gap-3",
                     activeStudentId === s.id
                       ? "bg-primary/10 border-primary/20 shadow-sm"
-                      : "hover:bg-muted/30",
+                      : "hover:bg-muted/20",
                   )}
                 >
                   <div
@@ -580,7 +595,7 @@ export default function StudentList() {
                       {activeTab === "courses" && (
                         <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
                           <table className="w-full text-sm table-fixed">
-                            <thead className="text-xs text-muted-foreground uppercase bg-muted/30 border-b border-border">
+                            <thead className="text-xs text-muted-foreground uppercase bg-primary/10 border-b border-border">
                               <tr>
                                 <th className="px-4 py-4 font-semibold text-center w-[30%]">
                                   기간
@@ -608,7 +623,7 @@ export default function StudentList() {
                                   <tr
                                     key={course.id}
                                     onClick={() => openEditCourseModal(course)}
-                                    className="hover:bg-muted/30 transition-colors cursor-pointer"
+                                    className="hover:bg-muted/20 transition-colors cursor-pointer"
                                   >
                                     <td className="px-4 py-4 text-center text-foreground truncate">
                                       {formatDate(course.start_date)} ~{" "}
@@ -678,7 +693,7 @@ export default function StudentList() {
                       {activeTab === "mock-exams" && (
                         <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
                           <table className="w-full text-sm table-fixed">
-                            <thead className="text-xs text-muted-foreground uppercase bg-muted/30 border-b border-border">
+                            <thead className="text-xs text-muted-foreground uppercase bg-primary/10 border-b border-border">
                               <tr>
                                 <th className="px-4 py-4 font-semibold text-center w-[15%]">
                                   응시일
@@ -705,7 +720,8 @@ export default function StudentList() {
                                 studentMockExams.map((exam) => (
                                   <tr
                                     key={exam.id}
-                                    className="hover:bg-muted/10 transition-colors"
+                                    onClick={() => openEditMockExamModal(exam)}
+                                    className="hover:bg-muted/20 transition-colors cursor-pointer"
                                   >
                                     <td className="px-4 py-4 text-center text-muted-foreground">
                                       {formatDate(exam.exam_date)}
@@ -733,12 +749,18 @@ export default function StudentList() {
                                     </td>
                                     <td className="px-4 py-4 text-center">
                                       <div className="flex justify-center">
-                                        <Badge
-                                          variant="default"
-                                          className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
-                                        >
-                                          {exam.grade || "-"}
-                                        </Badge>
+                                        {exam.grade ? (
+                                          <Badge
+                                            variant="default"
+                                            className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
+                                          >
+                                            {exam.grade}
+                                          </Badge>
+                                        ) : (
+                                          <span className="font-bold text-foreground">
+                                            -
+                                          </span>
+                                        )}
                                       </div>
                                     </td>
                                     <td className="px-4 py-4 text-center">
@@ -791,7 +813,7 @@ export default function StudentList() {
                       {activeTab === "exams" && (
                         <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
                           <table className="w-full text-sm table-fixed">
-                            <thead className="text-xs text-muted-foreground uppercase bg-muted/30 border-b border-border">
+                            <thead className="text-xs text-muted-foreground uppercase bg-primary/10 border-b border-border">
                               <tr>
                                 <th className="px-4 py-4 font-semibold text-center w-[15%]">
                                   응시일
@@ -819,7 +841,7 @@ export default function StudentList() {
                                   <tr
                                     key={exam.id}
                                     onClick={() => openEditExamModal(exam)}
-                                    className="hover:bg-muted/30 transition-colors cursor-pointer"
+                                    className="hover:bg-muted/20 transition-colors cursor-pointer"
                                   >
                                     <td className="px-4 py-4 text-center text-muted-foreground">
                                       {formatDate(exam.exam_date)}
