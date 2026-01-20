@@ -480,7 +480,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* 목표 시험 유형 */}
             <div className="col-span-12 sm:col-span-7 space-y-2">
               <InputLabel
-                label="목표 시험 유형"
+                label="목표 응시 유형"
                 hasError={!!errors.target_exam_mode}
               />
               <div className="grid grid-cols-3 gap-1.5">

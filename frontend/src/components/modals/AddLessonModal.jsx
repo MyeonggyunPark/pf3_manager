@@ -469,7 +469,7 @@ export default function AddLessonModal({
           <div className="h-px bg-slate-100 w-full my-2" />
 
           <div className="space-y-2">
-            <InputLabel label="진행 상태" hasError={!!errors.status} />
+            <InputLabel label="수업 상태" hasError={!!errors.status} />
             <div className="grid grid-cols-4 gap-2">
               <SelectionChip
                 label="예정"

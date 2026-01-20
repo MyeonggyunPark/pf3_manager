@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2, Trash2, AlertTriangle, Calculator } from "lucide-react";
+import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -178,7 +178,7 @@ export default function AddCourseModal({
     // 유효성 검사 로직
     const newErrors = {};
     if (!formData.student) newErrors.student = "학생을 선택해주세요.";
-    if (!formData.status) newErrors.status = "진행 상태를 선택해주세요.";
+    if (!formData.status) newErrors.status = "수강 상태를 선택해주세요.";
     if (!formData.start_date) newErrors.start_date = "시작일을 입력해주세요.";
     if (!formData.end_date) newErrors.end_date = "종료일을 입력해주세요.";
     if (!formData.total_hours)
@@ -399,7 +399,7 @@ export default function AddCourseModal({
             </div>
 
             <div>
-              <InputLabel label="진행 상태" hasError={!!errors.status} />
+              <InputLabel label="수강 상태" hasError={!!errors.status} />
               <div className="grid grid-cols-3 gap-2">
                 <SelectionChip
                   label="진행중"
