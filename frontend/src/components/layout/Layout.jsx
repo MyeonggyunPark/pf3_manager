@@ -212,7 +212,10 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
                             {unpaidCount > 0 ? (
                                 <div
                                 className="flex items-start gap-3 p-3 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors cursor-pointer"
-                                onClick={() => navigate("/courses")}
+                                onClick={() => {
+                                    setShowNotifications(false);
+                                    navigate("/courses", { state: { view: "unpaid_all" } });
+                                }}
                                 >
                                 <div className="bg-destructive/20 p-1.5 rounded-full text-destructive mt-0.5">
                                     <LucideIcons.AlertCircle className="w-4 h-4" />

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
 import {
     BarChart,
@@ -61,6 +62,8 @@ const formatDate = (dateStr) => {
 };
 
 export default function CourseList() {
+    const location = useLocation();
+
     // State for data and loading status
     // 데이터 및 로딩 상태 관리
     const [courses, setCourses] = useState([]);
@@ -74,8 +77,9 @@ export default function CourseList() {
 
     const [selectedYear, setSelectedYear] = useState(currentYear);
     const [selectedMonth, setSelectedMonth] = useState(0);
-
     const [paymentFilter, setPaymentFilter] = useState("ALL");
+
+    const [isAllUnpaidMode, setIsAllUnpaidMode] = useState(false);
 
     // Chart View Mode State (Revenue vs Student Count)
     // 차트 보기 모드 상태 (매출 vs 수강생 수)
@@ -85,6 +89,18 @@ export default function CourseList() {
     // 모달 상태 관리
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
+
+    // --- Effect: Navigation State Handling ---
+    // 네비게이션 상태 감지 및 필터 자동 적용
+    useEffect(() => {
+        if (location.state?.view === "unpaid_all") {
+            setPaymentFilter("UNPAID");
+
+            setIsAllUnpaidMode(true);
+
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     // --- 1. Data Fetching ---
     useEffect(() => {
@@ -157,8 +173,8 @@ export default function CourseList() {
             const courseDate = new Date(course.start_date);
             const matchesYear = courseDate.getFullYear() === parseInt(selectedYear);
             const matchesMonth =
-                selectedMonth === 0 ||
-                courseDate.getMonth() + 1 === parseInt(selectedMonth);
+            selectedMonth === 0 ||
+            courseDate.getMonth() + 1 === parseInt(selectedMonth);
             return matchesYear && matchesMonth;
         });
     }, [courses, selectedYear, selectedMonth]);
@@ -166,20 +182,24 @@ export default function CourseList() {
     // Filtered by Period AND Payment Status (For Table List)
     // 기간 및 결제 상태까지 필터링된 데이터 (테이블 리스트용)
     const filteredCourses = useMemo(() => {
+        if (isAllUnpaidMode && paymentFilter === "UNPAID") {
+            return courses
+            .filter((c) => !c.is_paid) 
+            .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+        }
+
         let filtered = coursesInPeriod.filter((course) => {
             const matchesPayment =
-                paymentFilter === "ALL" ||
-                (paymentFilter === "PAID" && course.is_paid) ||
-                (paymentFilter === "UNPAID" && !course.is_paid);
+            paymentFilter === "ALL" ||
+            (paymentFilter === "PAID" && course.is_paid) ||
+            (paymentFilter === "UNPAID" && !course.is_paid);
             return matchesPayment;
         });
 
-        // Sort by newest first
-        // 최신순 정렬
         return filtered.sort(
             (a, b) => new Date(b.start_date) - new Date(a.start_date),
         );
-    }, [coursesInPeriod, paymentFilter]);
+    }, [courses, coursesInPeriod, paymentFilter, isAllUnpaidMode]);
 
     // --- 4. Chart Data Preparation ---
     // Aggregate monthly revenue and count based on 'coursesInPeriod'
@@ -212,10 +232,24 @@ export default function CourseList() {
         0,
     );
 
-    const totalUnpaidAmount = coursesInPeriod
-        .filter((c) => !c.is_paid)
-        .reduce((sum, c) => sum + parseFloat(c.total_fee || 0), 0);
-    const unpaidCount = coursesInPeriod.filter((c) => !c.is_paid).length;
+    const totalHours = coursesInPeriod.reduce(
+        (sum, c) => sum + parseFloat(c.total_hours || 0),
+        0,
+    );
+
+    const avgHourlyRate = totalHours > 0 ? totalRevenue / totalHours : 0;
+
+    const avgHoursPerCourse =
+        coursesInPeriod.length > 0
+            ? (totalHours / coursesInPeriod.length).toFixed(1)
+            : 0;
+
+    const maxHourlyRate =
+        coursesInPeriod.length > 0
+            ? Math.max(
+                ...coursesInPeriod.map((c) => parseFloat(c.hourly_rate || 0)),
+            )
+            : 0;
 
     // --- Handlers ---
     const openCreateModal = () => {
@@ -238,6 +272,16 @@ export default function CourseList() {
         );
     }
 
+    const handleYearChange = (e) => {
+        setSelectedYear(Number(e.target.value));
+        setIsAllUnpaidMode(false);
+    };
+
+    const handleMonthChange = (e) => {
+        setSelectedMonth(Number(e.target.value));
+        setIsAllUnpaidMode(false);
+    };
+
     return (
         <div className="flex flex-col h-[calc(100vh-200px)] space-y-4 animate-in overflow-hidden">
             <AddCourseModal
@@ -256,7 +300,7 @@ export default function CourseList() {
                         <div className="relative">
                             <select
                                 value={selectedYear}
-                                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                onChange={handleYearChange}
                                 className="h-10 w-full sm:w-28 appearance-none rounded-xl border border-border bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
                             >
                                 {availableYears.map((year) => (
@@ -272,7 +316,7 @@ export default function CourseList() {
                         <div className="relative">
                             <select
                                 value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                                onChange={handleMonthChange}
                                 className="h-10 w-full sm:w-26 appearance-none rounded-xl border border-border bg-card px-3 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
                             >
                                 <option value={0}>
@@ -318,16 +362,14 @@ export default function CourseList() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
                 
                 {/* KPI Cards (Left) */}
-                <div className="lg:col-span-4 flex flex-col gap-4">
+                <div className="lg:col-span-4 flex flex-col gap-2.5">
                     
-                    {/* Revenue Card */}
-                    <div className="flex-1 bg-card border-2 border-primary p-5 rounded-xl shadow-sm">
-                        <p className="text-md font-semibold text-primary/70 uppercase tracking-wider mb-1">
-                            {selectedMonth === 0
-                                ? `${selectedYear}년 총 매출`
-                                : `${selectedMonth}월 매출`}
+                    {/* 1. 총 수익 (Revenue) */}
+                    <div className="flex-1 bg-card border-2 border-primary px-5 py-3 rounded-xl shadow-sm">
+                        <p className="text-md font-semibold text-primary uppercase tracking-wider mb-1">
+                            {selectedMonth === 0 ? `${selectedYear}년 총 수익` : `${selectedMonth}월 수익`}
                         </p>
-                        <div className="flex justify-around mt-7">
+                        <div className="flex justify-around mt-3">
                             <div className="flex gap-1 items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                                 <LucideIcons.CreditCard className="w-4 h-4" />
                                 총 수강 {filteredCourses.length}건
@@ -338,21 +380,38 @@ export default function CourseList() {
                         </div>
                     </div>
 
-                    {/* Unpaid Card */}
-                    <div className="bg-card border-2 border-destructive p-5 rounded-xl shadow-sm">
-                        <p className="text-md font-semibold text-destructive/70 uppercase tracking-wider mb-1">
-                            미납금
+                    {/* 총 수업 시간 (Total Hours) */}
+                    <div className="flex-1 bg-card border-2 border-accent px-5 py-3 rounded-xl shadow-sm">
+                        <p className="text-md font-semibold text-[#4a7a78] uppercase tracking-wider mb-1">
+                            {selectedMonth === 0 ? `${selectedYear}년 총 수업 시간` : `${selectedMonth}월 수업 시간`}
                         </p>
-                        <div className="flex justify-around mt-4">
-                            <div className="flex gap-1 items-center bg-destructive/10 text-destructive px-3 py-1 rounded-full text-sm font-medium">
-                                <LucideIcons.AlertCircle className="w-4 h-4" />
-                                총 미납 {unpaidCount}건
+                        <div className="flex justify-around mt-3">
+                            <div className="flex gap-1 items-center bg-accent/20 text-[#4a7a78] px-3 py-1 rounded-full text-sm font-medium">
+                                <LucideIcons.BarChart className="w-4 h-4 text-[#4a7a78]" />
+                                <span>건당 평균 {avgHoursPerCourse}시간</span>
                             </div>
-                            <h3 className="text-xl font-bold text-destructive tracking-tight">
-                                {formatCurrency(totalUnpaidAmount)}
+                            <h3 className="text-2xl font-bold text-[#4a7a78] tracking-tight">
+                                {Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}시간
                             </h3>
                         </div>
                     </div>
+
+                    {/* 평균 시간당 수익 (Hourly Rate) */}
+                    <div className="flex-1 bg-card border-2 border-warning px-5 py-3 rounded-xl shadow-sm">
+                        <p className="text-md font-semibold text-[#b8a05e] uppercase tracking-wider mb-1">
+                            {selectedMonth === 0 ? `${selectedYear}년 평균 시간당 수익` : `${selectedMonth}월 평균 시간당 수익`}
+                        </p>
+                        <div className="flex justify-around mt-3">
+                            <div className="flex gap-1 items-center bg-warning/20 text-[#b8a05e] px-3 py-1 rounded-full text-sm font-medium">
+                                <LucideIcons.Coins className="w-4 h-4 text-[#b8a05e]" />
+                                <span>최고 시급 {formatCurrency(maxHourlyRate)}</span>
+                            </div>
+                            <h3 className="text-2xl font-bold text-[#b8a05e] tracking-tight">
+                                {formatCurrency(avgHourlyRate)}/h
+                            </h3>
+                        </div>
+                    </div>
+
                 </div>
 
                 {/* Chart (Right) */}
@@ -365,7 +424,7 @@ export default function CourseList() {
                         </h3>
                             
                         {/* Chart Toggle Buttons */}
-                        {/* 차트 모드 전환 버튼 (매출 / 수강생) */}
+                        {/* 차트 모드 전환 버튼 (수익 / 수강생) */}
                         <div className="flex bg-muted/60 p-1 rounded-lg">
                             <button
                                 onClick={() => setChartMode("REVENUE")}
@@ -376,7 +435,7 @@ export default function CourseList() {
                                     : "text-muted-foreground hover:font-semibold hover:text-primary hover:bg-card/40"
                                 )}
                             >
-                                매출
+                                수익
                             </button>
                             <button
                                 onClick={() => setChartMode("COUNT")}
@@ -423,7 +482,7 @@ export default function CourseList() {
                                 boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                                 fontSize: "12px",
                                 }}
-                                formatter={(value) => [formatCurrency(value), "매출"]}
+                                formatter={(value) => [formatCurrency(value), "수익"]}
                             />
                             <Bar dataKey="revenue" radius={[4, 4, 0, 0]} barSize={24}>
                                 {chartData.map((entry, index) => (
@@ -507,7 +566,7 @@ export default function CourseList() {
                                     금액
                                 </th>
                                     <th className="px-4 py-3 font-semibold text-center select-none w-[13%]">
-                                    상태
+                                    수강 상태
                                 </th>
                                 <th className="px-4 py-3 font-semibold text-center select-none w-[13%]">
                                     결제 여부
