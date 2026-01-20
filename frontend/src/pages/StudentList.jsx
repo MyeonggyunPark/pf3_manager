@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import * as LucideIcons from "lucide-react";
 import api from "../api";
 import { cn } from "../lib/utils";
@@ -96,6 +96,11 @@ const formatCurrency = (amount) => {
 };
 
 export default function StudentList() {
+  // Ref and State for scroll detection
+  // 스크롤 감지를 위한 Ref와 State
+  const tableBodyRef = useRef(null);
+  const [hasScroll, setHasScroll] = useState(false);
+
   // State for student list and refresh mechanism
   // 학생 목록 데이터 및 리스트 갱신 트리거 상태
   const [students, setStudents] = useState([]);
@@ -130,6 +135,28 @@ export default function StudentList() {
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState("courses");
+
+  // Effect: Check for scrollbar presence in the table body
+  // 데이터나 탭이 변경될 때 스크롤 생성 여부 체크
+  useLayoutEffect(() => {
+    const checkScroll = () => {
+      if (tableBodyRef.current) {
+        const { scrollHeight, clientHeight } = tableBodyRef.current;
+        // 내용물(scrollHeight)이 보이는 영역(clientHeight)보다 크면 스크롤이 생긴 것
+        setHasScroll(scrollHeight > clientHeight);
+      }
+    };
+    checkScroll();
+    window.addEventListener("resize", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
+  }, [
+    activeTab,
+    studentCourses,
+    studentExams,
+    studentMockExams,
+    isDetailsLoading,
+    activeStudentId,
+  ]);
 
   // Effect: Fetch student list when filters or refresh trigger change
   // Effect: 필터나 갱신 트리거 변경 시 학생 목록 조회
@@ -289,36 +316,15 @@ export default function StudentList() {
       {/* Filter and Search Bar Section */}
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 shrink-0">
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-          {/* ... Search Input ... */}
-          <div className="flex items-center w-full sm:w-auto gap-2">
-            <div className="relative flex-1 sm:w-64">
-              <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
-                placeholder="이름 검색"
-              />
-            </div>
-            <Button
-              variant="default"
-              className="w-full xl:w-auto h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer"
-              onClick={handleSearchClick}
-            >
-              검색
-            </Button>
-          </div>
-
           {/* ... Filters ... */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="relative">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-card px-6 text-sm focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
               >
-                <option value="">전체 상태</option>
+                <option value="">전체(상태)</option>
                 <option value="ACTIVE">수강중</option>
                 <option value="PAUSED">일시중지</option>
                 <option value="FINISHED">종료</option>
@@ -330,9 +336,9 @@ export default function StudentList() {
               <select
                 value={levelFilter}
                 onChange={(e) => setLevelFilter(e.target.value)}
-                className="h-10 w-full sm:w-28 appearance-none rounded-xl border border-border bg-card px-4 text-sm focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                className="h-10 w-full sm:w-29 appearance-none rounded-xl border border-border bg-card px-3 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
               >
-                <option value="">전체 레벨</option>
+                <option value="">전체(레벨)</option>
                 {LEVEL_OPTIONS.map((level) => (
                   <option key={level} value={level}>
                     {level}
@@ -340,6 +346,27 @@ export default function StudentList() {
                 ))}
               </select>
               <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            </div>
+
+            {/* ... Search Input ... */}
+            <div className="flex items-center w-full sm:w-auto gap-2 group">
+              <div className="relative flex-1 sm:w-64">
+                <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors " />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-md"
+                  placeholder="학생의 이름을 입력하세요."
+                />
+              </div>
+              <Button
+                variant="default"
+                className="w-full xl:w-auto h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer"
+                onClick={handleSearchClick}
+              >
+                검색
+              </Button>
             </div>
           </div>
         </div>
@@ -583,350 +610,408 @@ export default function StudentList() {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                <div className="flex-1 flex flex-col overflow-hidden p-6">
                   {isDetailsLoading ? (
                     <div className="h-full flex items-center justify-center">
                       <LucideIcons.Loader2 className="w-8 h-8 text-primary animate-spin" />
                     </div>
                   ) : (
                     <>
-                      {/* Render Courses Table */}
-                      {/* 수강 이력 테이블 렌더링 */}
+                      {/* -- Tab Contents -- */}
+                      
+                      {/* 수강 이력 */}
                       {activeTab === "courses" && (
-                        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-                          <table className="w-full text-sm table-fixed">
-                            <thead className="text-xs text-muted-foreground uppercase bg-primary/10 border-b border-border">
-                              <tr>
-                                <th className="px-4 py-4 font-semibold text-center w-[30%]">
-                                  기간
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  총 시간
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  시간당 금액
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  총 금액
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[10%]">
-                                  상태
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  결제
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/50">
-                              {studentCourses.length > 0 ? (
-                                studentCourses.map((course) => (
-                                  <tr
-                                    key={course.id}
-                                    onClick={() => openEditCourseModal(course)}
-                                    className="hover:bg-muted/20 transition-colors cursor-pointer"
-                                  >
-                                    <td className="px-4 py-4 text-center text-foreground truncate">
-                                      {formatDate(course.start_date)} ~{" "}
-                                      {formatDate(course.end_date)}
-                                    </td>
-                                    <td className="px-4 py-4 text-center text-muted-foreground">
-                                      {Number(course.total_hours)}h
-                                    </td>
-                                    <td className="px-4 py-4 text-center text-muted-foreground">
-                                      {formatCurrency(course.hourly_rate)}
-                                    </td>
-                                    <td className="px-4 py-4 text-center font-bold text-foreground">
-                                      {formatCurrency(course.total_fee)}
-                                    </td>
-                                    <td className="px-1 py-4 text-center">
-                                      <div className="flex justify-center">
-                                        <Badge
-                                          className={cn(
-                                            "text-[11px] px-2 py-0.5 border font-medium shadow-none justify-center min-w-12.5",
-                                            statusStyles[course.status] ||
-                                              "bg-muted/50 text-muted-foreground",
-                                          )}
-                                        >
-                                          {STATUS_LABELS[course.status]}
-                                        </Badge>
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-center">
-                                      <div className="flex justify-center">
-                                        {course.is_paid ? (
-                                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-xl border bg-accent/20 text-[#4a7a78] border-accent/50">
-                                            <LucideIcons.CheckCircle2 className="w-3 h-3" />{" "}
-                                            완납
-                                          </span>
-                                        ) : (
-                                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-xl border border-destructive/20">
-                                            <LucideIcons.XCircle className="w-3 h-3" />{" "}
-                                            미납
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                ))
-                              ) : (
+                        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                          
+                          {/* Header */}
+                          <div
+                            className={cn(
+                              "bg-primary/10 border-b border-border",
+                              hasScroll ? "pr-2.75" : "",
+                            )}
+                          >
+                            <table className="w-full text-sm table-fixed">
+                              <thead className="text-xs text-muted-foreground uppercase">
                                 <tr>
-                                  <td
-                                    colSpan="6"
-                                    className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
-                                  >
-                                    <div className="flex flex-col items-center justify-center gap-2">
-                                      <LucideIcons.SearchX className="w-6 h-6" />
-                                      <p className="font-semibold">
-                                        등록된 수강 이력이 없습니다.
-                                      </p>
-                                    </div>
-                                  </td>
+                                  <th className="px-4 py-3 font-semibold text-center w-[29%]">
+                                    기간
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[14%]">
+                                    총 시간
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                    시간당 금액
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                    총 금액
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[12%]">
+                                    수강 상태
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                    결제
+                                  </th>
                                 </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                              </thead>
+                            </table>
+                          </div>
 
-                      {/* Render Mock Exams Table */}
-                      {/* 모의고사 테이블 렌더링 */}
-                      {activeTab === "mock-exams" && (
-                        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-                          <table className="w-full text-sm table-fixed">
-                            <thead className="text-xs text-muted-foreground uppercase bg-primary/10 border-b border-border">
-                              <tr>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  응시일
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[30%]">
-                                  시험명
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  유형
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  점수
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  등급
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[10%]">
-                                  파일
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/50">
-                              {studentMockExams.length > 0 ? (
-                                studentMockExams.map((exam) => (
-                                  <tr
-                                    key={exam.id}
-                                    onClick={() => openEditMockExamModal(exam)}
-                                    className="hover:bg-muted/20 transition-colors cursor-pointer"
-                                  >
-                                    <td className="px-4 py-4 text-center text-muted-foreground">
-                                      {formatDate(exam.exam_date)}
-                                    </td>
-                                    <td className="px-2 py-4 text-center font-bold text-foreground truncate">
-                                      {exam.exam_name}
-                                    </td>
-                                    <td className="px-4 py-4 text-center">
-                                      <div className="flex justify-center">
-                                        <Badge
-                                          variant="default"
-                                          className="text-[11px] border border-primary/10 rounded-md hover:bg-primary/10 px-2 py-0.5 justify-center"
-                                        >
-                                          {EXAM_MODE_LABELS[exam.exam_mode] ||
-                                            exam.exam_mode}
-                                        </Badge>
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-center text-muted-foreground">
-                                      <span className="font-bold text-foreground">
-                                        {Number(exam.total_score)}
-                                      </span>
-                                      <span className="mx-1">/</span>
-                                      <span>{exam.max_score || "-"}</span>
-                                    </td>
-                                    <td className="px-4 py-4 text-center">
-                                      <div className="flex justify-center">
-                                        {exam.grade ? (
+                          {/* Body */}
+                          <div
+                            ref={tableBodyRef}
+                            className="flex-1 overflow-y-auto custom-scrollbar"
+                          >
+                            <table className="w-full text-sm table-fixed">
+                              <tbody className="divide-y divide-border/50">
+                                {studentCourses.length > 0 ? (
+                                  studentCourses.map((course) => (
+                                    <tr
+                                      key={course.id}
+                                      onClick={() =>
+                                        openEditCourseModal(course)
+                                      }
+                                      className="hover:bg-muted/20 transition-colors cursor-pointer"
+                                    >
+                                      <td className="px-4 py-4 text-center text-foreground truncate w-[29%]">
+                                        {formatDate(course.start_date)} ~{" "}
+                                        {formatDate(course.end_date)}
+                                      </td>
+                                      <td className="px-4 py-4 text-center text-muted-foreground w-[14%]">
+                                        {Number(course.total_hours)}h
+                                      </td>
+                                      <td className="px-4 py-4 text-center text-muted-foreground w-[15%]">
+                                        {formatCurrency(course.hourly_rate)}
+                                      </td>
+                                      <td className="px-4 py-4 text-center font-bold text-foreground w-[15%]">
+                                        {formatCurrency(course.total_fee)}
+                                      </td>
+                                      <td className="px-1 py-4 text-center w-[12%]">
+                                        <div className="flex justify-center items-center w-full">
                                           <Badge
-                                            variant="default"
-                                            className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
+                                            className={cn(
+                                              "text-[11px] px-2 py-0.5 border font-medium shadow-none justify-center min-w-12.5",
+                                              statusStyles[course.status] ||
+                                                "bg-muted/50 text-muted-foreground",
+                                            )}
                                           >
-                                            {exam.grade}
+                                            {STATUS_LABELS[course.status]}
                                           </Badge>
-                                        ) : (
-                                          <span className="font-bold text-foreground">
-                                            -
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-center">
-                                      {exam.attachments &&
-                                      exam.attachments.length > 0 ? (
-                                        <div className="flex justify-center gap-1">
-                                          {exam.attachments.map((file) => (
-                                            <a
-                                              key={file.id}
-                                              href={file.file}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="p-1.5 rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                                              title="첨부파일 열기"
-                                            >
-                                              <LucideIcons.Paperclip className="w-4 h-4" />
-                                            </a>
-                                          ))}
                                         </div>
-                                      ) : (
-                                        <span className="text-muted-foreground/30 text-xs">
-                                          -
-                                        </span>
-                                      )}
+                                      </td>
+                                      <td className="px-4 py-4 text-center w-[15%]">
+                                        <div className="flex justify-center items-center w-full">
+                                          {course.is_paid ? (
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-xl border bg-accent/20 text-[#4a7a78] border-accent/50">
+                                              <LucideIcons.CheckCircle2 className="w-3 h-3" />{" "}
+                                              완납
+                                            </span>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-xl border border-destructive/20">
+                                              <LucideIcons.XCircle className="w-3 h-3" />{" "}
+                                              미납
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td
+                                      colSpan="6"
+                                      className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
+                                    >
+                                      <div className="flex flex-col items-center justify-center gap-2">
+                                        <LucideIcons.SearchX className="w-6 h-6" />
+                                        <p>등록된 수강 이력이 없습니다.</p>
+                                      </div>
                                     </td>
                                   </tr>
-                                ))
-                              ) : (
-                                <tr>
-                                  <td
-                                    colSpan="6"
-                                    className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
-                                  >
-                                    <div className="flex flex-col items-center justify-center gap-2">
-                                      <LucideIcons.SearchX className="w-6 h-6" />
-                                      <p className="font-semibold">
-                                        등록된 모의고사 기록이 없습니다.
-                                      </p>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       )}
 
-                      {/* Render Official Exams Table */}
-                      {/* 정규 시험 테이블 렌더링 */}
-                      {activeTab === "exams" && (
-                        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-                          <table className="w-full text-sm table-fixed">
-                            <thead className="text-xs text-muted-foreground uppercase bg-primary/10 border-b border-border">
-                              <tr>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  응시일
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[30%]">
-                                  시험명
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  유형
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  점수
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[15%]">
-                                  등급
-                                </th>
-                                <th className="px-4 py-4 font-semibold text-center w-[10%]">
-                                  결과
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/50">
-                              {studentExams.length > 0 ? (
-                                studentExams.map((exam) => (
-                                  <tr
-                                    key={exam.id}
-                                    onClick={() => openEditExamModal(exam)}
-                                    className="hover:bg-muted/20 transition-colors cursor-pointer"
-                                  >
-                                    <td className="px-4 py-4 text-center text-muted-foreground">
-                                      {formatDate(exam.exam_date)}
-                                    </td>
-                                    <td className="px-2 py-4 text-center font-bold text-foreground truncate">
-                                      {exam.exam_standard_name ||
-                                        exam.exam_name_manual}
-                                    </td>
-                                    <td className="px-4 py-4 text-center">
-                                      <div className="flex justify-center">
-                                        <Badge
-                                          variant="default"
-                                          className="text-[11px] border border-primary/10 rounded-md hover:bg-primary/10 px-2 py-0.5 justify-center"
-                                        >
-                                          {EXAM_MODE_LABELS[exam.exam_mode] ||
-                                            "Gesamt"}
-                                        </Badge>
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-4 text-center text-muted-foreground">
-                                      <span className="font-bold text-foreground">
-                                        {exam.total_score
-                                          ? `${exam.total_score}`
-                                          : "-"}
-                                      </span>
-                                      {exam.max_score && (
-                                        <>
-                                          <span className="mx-1">/</span>
-                                          <span>{exam.max_score}</span>
-                                        </>
-                                      )}
-                                    </td>
-
-                                    <td className="px-4 py-4 text-center">
-                                      <div className="flex justify-center">
-                                        {exam.grade ? (
+                      {/*-- Tab Contents -- */}
+                      {/* 모의고사 */}
+                      {activeTab === "mock-exams" && (
+                        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                          <div
+                            className={cn(
+                              "bg-primary/10 border-b border-border",
+                              hasScroll ? "pr-2.75" : "",
+                            )}
+                          >
+                            <table className="w-full text-sm table-fixed">
+                              <thead className="text-xs text-muted-foreground uppercase">
+                                <tr>
+                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                    응시일
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[30%]">
+                                    시험명
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                    응시 유형
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                    점수
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                    등급
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[10%]">
+                                    파일
+                                  </th>
+                                </tr>
+                              </thead>
+                            </table>
+                          </div>
+                          <div
+                            ref={tableBodyRef}
+                            className="flex-1 overflow-y-auto custom-scrollbar"
+                          >
+                            <table className="w-full text-sm table-fixed">
+                              <tbody className="divide-y divide-border/50">
+                                {studentMockExams.length > 0 ? (
+                                  studentMockExams.map((exam) => (
+                                    <tr
+                                      key={exam.id}
+                                      onClick={() =>
+                                        openEditMockExamModal(exam)
+                                      }
+                                      className="hover:bg-muted/20 transition-colors cursor-pointer"
+                                    >
+                                      <td className="px-4 py-4 text-center text-muted-foreground w-[15%]">
+                                        {formatDate(exam.exam_date)}
+                                      </td>
+                                      <td className="px-2 py-4 text-center font-bold text-foreground truncate w-[30%]">
+                                        {exam.exam_name}
+                                      </td>
+                                      <td className="px-4 py-4 text-center w-[15%]">
+                                        <div className="flex justify-center items-center w-full">
                                           <Badge
                                             variant="default"
-                                            className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
+                                            className="text-[11px] border border-primary/10 rounded-md hover:bg-primary/10 px-2 py-0.5 justify-center"
                                           >
-                                            {exam.grade}
+                                            {EXAM_MODE_LABELS[exam.exam_mode] ||
+                                              exam.exam_mode}
                                           </Badge>
-                                        ) : (
-                                          <span className="font-bold text-foreground">
-                                            -
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-center">
-                                      <div className="flex justify-center">
-                                        <Badge
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-4 text-center text-muted-foreground w-[15%]">
+                                        <span
                                           className={cn(
-                                            "text-[12px] px-2 py-0.5 border font-medium shadow-none justify-center min-w-12.5",
-                                            examResultStyles[exam.status],
+                                            "font-bold",
+                                            Number(exam.total_score) === 0
+                                              ? "text-muted-foreground"
+                                              : "text-foreground",
                                           )}
                                         >
-                                          {exam.status === "PASSED"
-                                            ? "합격"
-                                            : exam.status === "FAILED"
-                                              ? "불합격"
-                                              : "대기"}
-                                        </Badge>
+                                          {Number(exam.total_score) === 0
+                                            ? "-"
+                                            : Number(exam.total_score)}
+                                        </span>
+                                        <span className="mx-1">/</span>
+                                        <span>{exam.max_score || "-"}</span>
+                                      </td>
+                                      <td className="px-4 py-4 text-center w-[15%]">
+                                        <div className="flex justify-center items-center w-full">
+                                          {exam.grade ? (
+                                            <Badge
+                                              variant="default"
+                                              className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
+                                            >
+                                              {exam.grade}
+                                            </Badge>
+                                          ) : (
+                                            <span className="font-bold text-muted-foreground">
+                                              -
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-4 text-center w-[10%]">
+                                        <div className="flex justify-center items-center gap-1 w-full">
+                                          {exam.attachments?.length > 0 ? (
+                                            exam.attachments.map((file) => (
+                                              <a
+                                                key={file.id}
+                                                href={file.file}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-1.5 rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                                                title="첨부파일 열기"
+                                                onClick={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                              >
+                                                <LucideIcons.Paperclip className="w-4 h-4" />
+                                              </a>
+                                            ))
+                                          ) : (
+                                            <span className="text-muted-foreground/30 text-xs">
+                                              -
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td
+                                      colSpan="6"
+                                      className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
+                                    >
+                                      <div className="flex flex-col items-center justify-center gap-2">
+                                        <LucideIcons.SearchX className="w-6 h-6" />
+                                        <p>등록된 모의고사 기록이 없습니다.</p>
                                       </div>
                                     </td>
                                   </tr>
-                                ))
-                              ) : (
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* === 정규 시험 === */}
+                      {activeTab === "exams" && (
+                        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                          <div
+                            className={cn(
+                              "bg-primary/10 border-b border-border",
+                              hasScroll ? "pr-2.75" : "",
+                            )}
+                          >
+                            <table className="w-full text-sm table-fixed">
+                              <thead className="text-xs text-muted-foreground uppercase">
                                 <tr>
-                                  <td
-                                    colSpan="6"
-                                    className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
-                                  >
-                                    <div className="flex flex-col items-center justify-center gap-2">
-                                      <LucideIcons.SearchX className="w-6 h-6" />
-                                      <p className="font-semibold">
-                                        등록된 시험 결과가 없습니다.
-                                      </p>
-                                    </div>
-                                  </td>
+                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                    응시일
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[30%]">
+                                    시험명
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                    응시 유형
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[14%]">
+                                    점수
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[14%]">
+                                    등급
+                                  </th>
+                                  <th className="px-4 py-3 font-semibold text-center w-[12%]">
+                                    결과
+                                  </th>
                                 </tr>
-                              )}
-                            </tbody>
-                          </table>
+                              </thead>
+                            </table>
+                          </div>
+                          <div
+                            ref={tableBodyRef}
+                            className="flex-1 overflow-y-auto custom-scrollbar"
+                          >
+                            <table className="w-full text-sm table-fixed">
+                              <tbody className="divide-y divide-border/50">
+                                {studentExams.length > 0 ? (
+                                  studentExams.map((exam) => (
+                                    <tr
+                                      key={exam.id}
+                                      onClick={() => openEditExamModal(exam)}
+                                      className="hover:bg-muted/20 transition-colors cursor-pointer"
+                                    >
+                                      <td className="px-4 py-4 text-center text-muted-foreground w-[15%]">
+                                        {formatDate(exam.exam_date)}
+                                      </td>
+                                      <td className="px-2 py-4 text-center font-bold text-foreground truncate w-[30%]">
+                                        {exam.exam_standard_name ||
+                                          exam.exam_name_manual}
+                                      </td>
+                                      <td className="px-4 py-4 w-[15%]">
+                                        <div className="flex justify-center items-center w-full">
+                                          <Badge
+                                            variant="default"
+                                            className="text-[11px] border border-primary/10 rounded-md hover:bg-primary/10 px-2 py-0.5 justify-center"
+                                          >
+                                            {EXAM_MODE_LABELS[exam.exam_mode] ||
+                                              "Gesamt"}
+                                          </Badge>
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-4 text-center text-muted-foreground w-[14%]">
+                                        <span
+                                          className={cn(
+                                            "font-bold",
+                                            exam.total_score === ""
+                                              ? "text-foreground"
+                                              : "text-muted-foreground",
+                                          )}
+                                        >
+                                          {exam.total_score || "-"}
+                                        </span>
+                                        {exam.max_score && (
+                                          <>
+                                            <span className="mx-1">/</span>
+                                            <span>{exam.max_score}</span>
+                                          </>
+                                        )}
+                                      </td>
+                                      <td className="px-4 py-4 w-[14%]">
+                                        <div className="flex justify-center items-center w-full">
+                                          {exam.grade ? (
+                                            <Badge
+                                              variant="default"
+                                              className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
+                                            >
+                                              {exam.grade}
+                                            </Badge>
+                                          ) : (
+                                            <span className="font-bold text-muted-foreground">
+                                              -
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-4 w-[12%]">
+                                        <div className="flex justify-center items-center w-full">
+                                          <Badge
+                                            className={cn(
+                                              "text-[12px] px-2 py-0.5 border font-medium shadow-none justify-center min-w-12.5",
+                                              examResultStyles[exam.status],
+                                            )}
+                                          >
+                                            {exam.status === "PASSED"
+                                              ? "합격"
+                                              : exam.status === "FAILED"
+                                                ? "불합격"
+                                                : "대기"}
+                                          </Badge>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td
+                                      colSpan="6"
+                                      className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
+                                    >
+                                      <div className="flex flex-col items-center justify-center gap-2">
+                                        <LucideIcons.SearchX className="w-6 h-6" />
+                                        <p>등록된 시험 결과가 없습니다.</p>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       )}
                     </>
