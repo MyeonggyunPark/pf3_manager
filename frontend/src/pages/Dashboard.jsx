@@ -11,6 +11,7 @@ import {
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
+import { TabsList, TabsTrigger } from "../components/ui/Tabs";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import AddLessonModal from "../components/modals/AddLessonModal";
 import AddOfficialExamModal from "../components/modals/AddOfficialExamModal";
@@ -75,6 +76,18 @@ export default function Dashboard() {
     // State for selected lesson to edit
     // 수정할 수업 선택 상태 관리
     const [selectedLesson, setSelectedLesson] = useState(null);
+
+    // currencyDate calculation
+    // 현재 날짜 계산 로직 
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    // Calculate revenue percentage for progress bar
+    // 진행률 표시줄을 위한 수익 비율 계산
+    const revenuePercentage = stats.estimated_revenue > 0
+        ? Math.min(Math.round((stats.current_revenue / stats.estimated_revenue) * 100), 100)
+        : 0;
 
     // Function to open modal in edit mode
     // 수정 모드로 모달을 여는 함수
@@ -263,16 +276,19 @@ export default function Dashboard() {
                 {/* Header with Total Count */}
                 {/* 전체 개수가 포함된 헤더 */}
                 <div className="flex items-center justify-between px-1">
-                    <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <LucideIcons.GraduationCap className="w-5 h-5 text-primary" />
-                        예정된 정규 시험
+                    <div className="flex items-center gap-2">
+                        <TabsList className="text-sm font-bold flex items-center">
+                            <TabsTrigger className="" value="upcoming" activeValue="upcoming">
+                                예정된 정규 시험    
+                            </TabsTrigger>
+                        </TabsList>
                         <Badge
                             variant="secondary"
                             className="text-xs px-1.5 h-5 bg-slate-100 text-slate-600"
-                        >
+                            >
                             Total {totalExamCount}
-                        </Badge>
-                    </h3>
+                        </Badge> 
+                    </div>
                     {totalExamCount > 3 && (
                         <span
                             className="text-[14px] text-muted-foreground cursor-pointer hover:font-semibold"
@@ -403,51 +419,26 @@ export default function Dashboard() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-4 lg:col-span-5 border-none shadow-sm">
 
-                    {/* Header with Tabs - Separated icon and interactive text buttons */}
-                    {/* 탭이 포함된 헤더 - 아이콘을 분리하고 텍스트 버튼만 상호작용하도록 설정 */}
+                    {/* Header with Tabs */}
+                    {/* 탭이 포함된 헤더 */}
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                        <div className="flex items-center gap-1">
-
-                            {/* Static Icon */}
-                            {/* 정적 아이콘 */}
-                            <div className="p-2">
-                                <LucideIcons.BookOpen className="w-5 h-5 text-primary" />
-                            </div>
-
-                            <div className="flex items-center gap-4 ml-1">
-
-                                {/* Today Tab Button */}
-                                {/* 오늘의 수업 탭 버튼 */}
-                                <button 
-                                    onClick={() => setActiveTab('today')}
-                                    className={cn(
-                                        "transition-colors outline-none text-base cursor-pointer",
-                                        activeTab === 'today' 
-                                            ? "text-primary font-bold" 
-                                            : "text-slate-400 hover:text-primary font-medium"
-                                    )}
+                        <div className="flex items-center">
+                            <TabsList>
+                                <TabsTrigger 
+                                    value="today" 
+                                    activeValue={activeTab} 
+                                    onClick={() => setActiveTab("today")}
                                 >
                                     오늘의 수업
-                                </button>
-
-                                {/* Divider */}
-                                {/* 구분선 */}
-                                <span className="text-slate-300 font-light text-sm">|</span>
-
-                                {/* Tomorrow Tab Button */}
-                                {/* 내일의 수업 탭 버튼 */}
-                                <button 
-                                    onClick={() => setActiveTab('tomorrow')}
-                                    className={cn(
-                                        "transition-colors outline-none text-base cursor-pointer",
-                                        activeTab === 'tomorrow' 
-                                            ? "text-primary font-bold" 
-                                            : "text-slate-400 hover:text-primary font-medium"
-                                    )}
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="tomorrow" 
+                                    activeValue={activeTab} 
+                                    onClick={() => setActiveTab("tomorrow")}
                                 >
                                     내일의 수업
-                                </button>
-                            </div>
+                                </TabsTrigger>
+                            </TabsList>
                         </div>
                         <Badge variant="secondary" className="text-primary font-bold">
                             {displayDate}
@@ -525,23 +516,73 @@ export default function Dashboard() {
 
                 {/* Right Sidebar: Stats & Quick Actions */}
                 {/* 우측 사이드바: 통계 및 빠른 실행 */}
-                <div className="col-span-4 lg:col-span-2 space-y-6">
-                    <StatCard
-                        title="이번 달 예상 수익"
-                        value={formatEuro(stats?.estimated_revenue)}
-                        trend={`입금 완료: ${formatEuro(stats?.current_revenue) || 0}`}
-                        icon="TrendingUp"
-                        color="primary"
-                        onClick={() => navigate("/courses")}
-                    />
-                    <StatCard
-                        title="진행 중인 학생"
-                        value={`${stats?.active_students || 0}명`}
-                        trend={`이번 달 수업: ${stats?.monthly_lesson_count || 0}회`}
-                        icon="Users"
-                        color="accent"
-                        onClick={() => navigate("/students")}
-                    />
+                <div className="col-span-4 lg:col-span-2 flex flex-col gap-6 h-full">
+
+                    {/* 이번 달 예상 수익 카드 (Revenue Card) */}
+                    <div 
+                        onClick={() => navigate("/courses", { 
+                            state: { year: currentYear, month: currentMonth } 
+                        })}
+                        className="flex-1 flex flex-col justify-between bg-card border-2 border-primary px-5 py-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:shadow-md"
+                    >
+                        {/* Title (Top) */}
+                        <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
+                            이번 달 예상 수익
+                        </p>
+                        
+                        {/* Content (Bottom Split) */}
+                        <div className="flex justify-between items-center">
+                            
+                            {/* Left: Deposit Status (Gauge/Percent) */}
+                            <div className="flex gap-1 items-center bg-primary/10 text-primary px-3 py-2 rounded-full">
+                                <div className="flex flex-col gap-1 w-24">
+                                    <div className="flex justify-between text-xs font-bold text-primary/80">
+                                        <span>입금 상태</span>
+                                        <span>{revenuePercentage}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-primary transition-all duration-500 ease-out" 
+                                            style={{ width: `${revenuePercentage}%` }} 
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Big Number */}
+                            <h3 className="text-2xl font-extrabold text-primary tracking-tight">
+                                {formatEuro(stats?.estimated_revenue)}
+                            </h3>
+                        </div>
+                    </div>
+
+                    {/* 수강중인 학생 카드 (Active Student Card) */}
+                    <div 
+                        onClick={() => navigate("/students", { 
+                            state: { status: "ACTIVE" } 
+                        })}
+                        className="flex-1 flex flex-col justify-between bg-card border-2 border-accent px-5 py-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:shadow-md"
+                    >
+                        {/* Title (Top) */}
+                        <p className="text-sm font-semibold text-[#4a7a78] uppercase tracking-wider mb-2">
+                            수강중인 학생
+                        </p>
+
+                        {/* Content (Bottom Split) */}
+                        <div className="flex justify-between items-center">
+                            
+                            {/* Left: Badge Info */}
+                            <div className="flex gap-1.5 items-center bg-accent/20 text-[#4a7a78] px-3 py-2 rounded-full text-xs font-bold mb-1">
+                                <LucideIcons.BookOpen className="w-3.5 h-3.5" />
+                                <span>이번 달 수업 {stats?.monthly_lesson_count || 0}회</span>
+                            </div>
+
+                            {/* Right: Big Number */}
+                            <h3 className="text-2xl font-extrabold text-[#4a7a78] tracking-tight">
+                                총 {stats?.active_students || 0}명
+                            </h3>
+                        </div>
+                    </div>
                     <Card className="bg-linear-to-br from-[#4C72A9] to-[#3b5b8a] text-white border-none shadow-lg">
                         <CardHeader>
                             <CardTitle className="text-sm text-white">빠른 실행</CardTitle>

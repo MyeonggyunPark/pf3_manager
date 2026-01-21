@@ -294,7 +294,7 @@ export default function Schedule() {
             />
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <TabsList className="grid w-full sm:w-75 grid-cols-2">
+                <TabsList className="grid w-full sm:w-55 grid-cols-2">
                     <TabsTrigger
                         value="weekly"
                         activeValue={viewMode}
@@ -303,7 +303,7 @@ export default function Schedule() {
                         setCurrentDate(new Date());
                         }}
                     >
-                        이번 주 (Woche)
+                        이번 주
                     </TabsTrigger>
                     <TabsTrigger
                         value="monthly"
@@ -313,7 +313,7 @@ export default function Schedule() {
                         setCurrentDate(new Date());
                         }}
                     >
-                        이번 달 (Monat)
+                        이번 달
                     </TabsTrigger>
                 </TabsList>
 
@@ -365,7 +365,7 @@ export default function Schedule() {
                         <Card
                             key={idx}
                             className={cn(
-                            "h-96 border-t-4 shadow-sm flex flex-col",
+                            "h-86 border-t-4 shadow-sm flex flex-col",
                             isToday
                                 ? "border-t-accent ring-1 ring-accent/20 bg-white"
                                 : "border-t-transparent bg-slate-50/50",
@@ -516,24 +516,20 @@ export default function Schedule() {
 
         <div className="mt-8">
             <Card className="shadow-lg border-none bg-white">
-                <CardHeader className="pb-4 border-b border-slate-100 flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
-                            <LucideIcons.CheckSquare className="w-5 h-5 text-primary" />
-                            Planner
-                        </CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            여러가지 업무 관리
-                        </p>
-                        </div>
+                <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+                    <TabsList className="">
+                        <TabsTrigger className="cursor-default text-md py-1">
+                            할 일
+                        </TabsTrigger>
+                    </TabsList>
                     <div className="flex items-center gap-3">
-                    <Button
-                        variant="default"
-                        onClick={openCreateTodoModal}
-                        className="h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-white cursor-pointer whitespace-nowrap"
-                    >
-                        <LucideIcons.ListPlus className="w-4 h-4 mr-2" /> 업무 추가
-                    </Button>
+                        <Button
+                            variant="default"
+                            onClick={openCreateTodoModal}
+                            className="h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-white cursor-pointer whitespace-nowrap"
+                        >
+                            <LucideIcons.ListPlus className="w-4 h-4 mr-2" /> 업무 추가
+                        </Button>
                     </div>
                 </CardHeader>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
+import { useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
 import api from "../api";
 import { cn } from "../lib/utils";
@@ -96,6 +97,8 @@ const formatCurrency = (amount) => {
 };
 
 export default function StudentList() {
+  const location = useLocation();
+
   // Ref and State for scroll detection
   // 스크롤 감지를 위한 Ref와 State
   const tableBodyRef = useRef(null);
@@ -108,8 +111,8 @@ export default function StudentList() {
 
   // Search and Filter states
   // 검색 및 필터링 상태
+  const [statusFilter, setStatusFilter] = useState(location.state?.status || "");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
 
   // Modal and Selection states
@@ -142,7 +145,6 @@ export default function StudentList() {
     const checkScroll = () => {
       if (tableBodyRef.current) {
         const { scrollHeight, clientHeight } = tableBodyRef.current;
-        // 내용물(scrollHeight)이 보이는 영역(clientHeight)보다 크면 스크롤이 생긴 것
         setHasScroll(scrollHeight > clientHeight);
       }
     };
@@ -159,7 +161,7 @@ export default function StudentList() {
   ]);
 
   // Effect: Fetch student list when filters or refresh trigger change
-  // Effect: 필터나 갱신 트리거 변경 시 학생 목록 조회
+  // 필터나 갱신 트리거 변경 시 학생 목록 조회
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -191,10 +193,10 @@ export default function StudentList() {
     };
 
     fetchStudents();
-  }, [refreshTrigger, statusFilter, levelFilter]); // Dependency array: Re-run on these changes
+  }, [refreshTrigger, statusFilter, levelFilter]);
 
   // Effect: Fetch detailed records (courses, exams) for the active student
-  // Effect: 활성 학생의 상세 기록(수강 이력, 시험) 조회
+  // 활성 학생의 상세 기록(수강 이력, 시험) 조회
   useEffect(() => {
     if (!activeStudentId) return;
 

@@ -75,8 +75,12 @@ export default function CourseList() {
     // 필터 상태 관리 (연도, 월, 결제 상태)
     const currentYear = new Date().getFullYear();
 
-    const [selectedYear, setSelectedYear] = useState(currentYear);
-    const [selectedMonth, setSelectedMonth] = useState(0);
+    const [selectedYear, setSelectedYear] = useState(
+        location.state?.year ? Number(location.state.year) : currentYear
+    );
+    const [selectedMonth, setSelectedMonth] = useState(
+        location.state?.month ? Number(location.state.month) : 0
+    );
     const [paymentFilter, setPaymentFilter] = useState("ALL");
 
     const [isAllUnpaidMode, setIsAllUnpaidMode] = useState(false);
@@ -95,10 +99,7 @@ export default function CourseList() {
     useEffect(() => {
         if (location.state?.view === "unpaid_all") {
             setPaymentFilter("UNPAID");
-
             setIsAllUnpaidMode(true);
-
-            window.history.replaceState({}, document.title);
         }
     }, [location]);
 

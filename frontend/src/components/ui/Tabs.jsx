@@ -6,10 +6,10 @@ export const TabsList = ({ className, children }) => (
     </div>
 );
 
-export const TabsTrigger = ({ value, activeValue, onClick, children }) => (
+export const TabsTrigger = ({ value, activeValue, onClick, children, className }) => (
   <button 
     onClick={() => onClick(value)} 
-    className={cn("inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all cursor-pointer", activeValue === value ? "bg-card text-primary font-semibold shadow-sm" : "hover:bg-card/40 hover:font-semibold hover:text-primary")}
+    className={cn("inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all cursor-pointer", activeValue === value ? "bg-card text-primary font-semibold shadow-sm" : "hover:bg-card/40 hover:font-semibold hover:text-primary", className)}
   >
       {children}
   </button>
