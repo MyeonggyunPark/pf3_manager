@@ -413,8 +413,18 @@ export default function Schedule() {
                                             <LucideIcons.Clock className="w-3 h-3 text-muted-foreground" />
                                             {l.start_time.slice(0, 5)}
                                         </div>
-                                        <div className="font-bold text-base text-primary truncate mb-0.5">
-                                            {l.student_name}
+                                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                                            <span className="font-bold text-[15px] text-primary truncate">
+                                                {l.student_name}
+                                            </span>
+                                            {l.student_level && (
+                                                <Badge 
+                                                    variant="outline" 
+                                                    className="text-[9px] h-4 px-1 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+                                                >
+                                                    {l.student_level}
+                                                </Badge>
+                                            )}
                                         </div>
                                         {l.topic && (
                                             <div className="text-[10px] text-muted-foreground bg-black/5 px-1.5 py-0.5 rounded w-fit truncate max-w-full">
