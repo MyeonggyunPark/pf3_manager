@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
 import {
@@ -95,6 +95,11 @@ export default function CourseList() {
     // 모달 상태 관리
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
+
+    // Ref and State for scroll detection
+    // 스크롤 감지를 위한 Ref와 State
+    const tableBodyRef = useRef(null);
+    const [hasScroll, setHasScroll] = useState(false);
 
     // --- Effect: Navigation State Handling ---
     // 네비게이션 상태 감지 및 필터 자동 적용
@@ -209,6 +214,22 @@ export default function CourseList() {
             (a, b) => new Date(b.start_date) - new Date(a.start_date),
         );
     }, [courses, coursesInPeriod, paymentFilter, isAllUnpaidMode, appliedSearch, getStudentName]);
+
+    // Scroll detection effect
+    // 스크롤 감지 이펙트
+    useLayoutEffect(() => {
+        const checkScroll = () => {
+        if (tableBodyRef.current) {
+            const { scrollHeight, clientHeight } = tableBodyRef.current;
+            setHasScroll(scrollHeight > clientHeight);
+        }
+        };
+
+        checkScroll();
+
+        window.addEventListener("resize", checkScroll);
+        return () => window.removeEventListener("resize", checkScroll);
+    }, [filteredCourses, isLoading]);
 
     // --- 4. Chart Data Preparation ---
     // Aggregate monthly revenue and count based on 'coursesInPeriod'
@@ -591,7 +612,12 @@ export default function CourseList() {
             {/* --- Detailed List Section --- */}
             {/* 상세 리스트 섹션 (테이블) */}
             <div className="flex-1 h-full bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col min-h-0 mt-3">
-                <div className="bg-primary/10 border-b border-border pr-2">
+                <div 
+                    className={cn(
+                        "bg-primary/10 border-b border-border",
+                        hasScroll ? "pr-2" : "" 
+                    )}
+                >
                     <table className="w-full text-md table-fixed">
                         <thead className="text-md text-muted-foreground uppercase">
                             <tr>
@@ -621,7 +647,7 @@ export default function CourseList() {
                     </table>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div ref={tableBodyRef} className="flex-1 overflow-y-auto custom-scrollbar">
                     <table className="w-full text-md table-fixed">
                         <tbody className="divide-y divide-border/50">
                             {filteredCourses.length === 0 ? (

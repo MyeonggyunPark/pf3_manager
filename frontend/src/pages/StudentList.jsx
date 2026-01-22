@@ -321,12 +321,12 @@ export default function StudentList() {
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
           
           {/* Filters */}
-          { /* 필터들 */}
+          {/* 필터들 */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="relative">
 
               {/* Status Filter Dropdown */}
-              { /* 상태 필터 드롭다운 */ }
+              {/* 상태 필터 드롭다운 */}
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -357,7 +357,7 @@ export default function StudentList() {
               </select>
               <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
-            
+
             {/* Search Input */}
             {/* 검색 입력 */}
             <div className="flex items-center w-full sm:w-auto gap-2 group">
@@ -629,11 +629,10 @@ export default function StudentList() {
                   ) : (
                     <>
                       {/* -- Tab Contents -- */}
-                      
+
                       {/* 수강 이력 */}
                       {activeTab === "courses" && (
                         <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
-                          
                           {/* Header */}
                           <div
                             className={cn(
@@ -1045,7 +1044,7 @@ export default function StudentList() {
                 <p className="text-muted-foreground max-w-xs mx-auto leading-relaxed">
                   좌측 목록에서 학생을 선택하면
                   <br />
-                  선택된 학생의 상세 정보를 확인할 수 있습니다.
+                  선택된 학생의 <strong>상세 정보</strong>를 확인할 수 있습니다.
                 </p>
               </div>
             </div>
