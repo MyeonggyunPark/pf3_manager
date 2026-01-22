@@ -19,7 +19,6 @@ import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import AddCourseModal from "../components/modals/AddCourseModal";
 
-// --- Constants & Styles ---
 
 // Chart color configuration
 // 차트 색상 설정
@@ -74,7 +73,6 @@ export default function CourseList() {
     // Filter States (Year, Month, Payment)
     // 필터 상태 관리 (연도, 월, 결제 상태)
     const currentYear = new Date().getFullYear();
-
     const [selectedYear, setSelectedYear] = useState(
         location.state?.year ? Number(location.state.year) : currentYear
     );
@@ -82,8 +80,12 @@ export default function CourseList() {
         location.state?.month ? Number(location.state.month) : 0
     );
     const [paymentFilter, setPaymentFilter] = useState("ALL");
-
     const [isAllUnpaidMode, setIsAllUnpaidMode] = useState(false);
+
+    // Search State
+    // 검색 상태 관리
+    const [searchQuery, setSearchQuery] = useState("");
+    const [appliedSearch, setAppliedSearch] = useState("");
 
     // Chart View Mode State (Revenue vs Student Count)
     // 차트 보기 모드 상태 (매출 vs 수강생 수)
@@ -194,13 +196,19 @@ export default function CourseList() {
             paymentFilter === "ALL" ||
             (paymentFilter === "PAID" && course.is_paid) ||
             (paymentFilter === "UNPAID" && !course.is_paid);
-            return matchesPayment;
+            
+            const studentName = getStudentName(course.student).toLowerCase();
+            const matchesSearch =
+                appliedSearch === "" ||
+                studentName.includes(appliedSearch.toLowerCase());
+
+            return matchesPayment && matchesSearch;
         });
 
         return filtered.sort(
             (a, b) => new Date(b.start_date) - new Date(a.start_date),
         );
-    }, [courses, coursesInPeriod, paymentFilter, isAllUnpaidMode]);
+    }, [courses, coursesInPeriod, paymentFilter, isAllUnpaidMode, appliedSearch, getStudentName]);
 
     // --- 4. Chart Data Preparation ---
     // Aggregate monthly revenue and count based on 'coursesInPeriod'
@@ -283,6 +291,16 @@ export default function CourseList() {
         setIsAllUnpaidMode(false);
     };
 
+    const handleSearchClick = () => {
+        setAppliedSearch(searchQuery);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleSearchClick();
+        }
+    };
+
     return (
         <div className="flex flex-col h-[calc(100vh-200px)] space-y-4 animate-in overflow-hidden">
             <AddCourseModal
@@ -296,9 +314,11 @@ export default function CourseList() {
             {/* 상단 컨트롤 바: 연도/월 선택 및 결제 필터 */}
             <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 shrink-0">
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                        
                         {/* Year Selector */}
-                        <div className="relative">
+                        { /* 연도 선택 드롭다운 */ }
+                        <div className="relative w-full sm:w-auto">
                             <select
                                 value={selectedYear}
                                 onChange={handleYearChange}
@@ -314,7 +334,8 @@ export default function CourseList() {
                         </div>
 
                         {/* Month Selector */}
-                        <div className="relative">
+                        {/* 월 선택 드롭다운 */ }
+                        <div className="relative w-full sm:w-auto">
                             <select
                                 value={selectedMonth}
                                 onChange={handleMonthChange}
@@ -333,8 +354,8 @@ export default function CourseList() {
                         </div>
 
                         {/* Payment Filter */}
-                        {/* 결제 상태 필터 선택 */}
-                        <div className="relative">
+                        {/* 결제 상태 필터 */}
+                        <div className="relative w-full sm:w-auto">
                             <select
                                 value={paymentFilter}
                                 onChange={(e) => setPaymentFilter(e.target.value)}
@@ -347,7 +368,30 @@ export default function CourseList() {
                             <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                         </div>
                     </div>
+
+                    {/* Search Input */}
+                    {/* 검색 입력 */ }
+                    <div className="flex items-center w-full sm:w-auto gap-2 group">
+                        <div className="relative flex-1 sm:w-48">
+                            <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400  group-focus-within:text-primary transition-colors" />
+                            <input
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-md"
+                                placeholder="학생 이름 검색"
+                            />
+                        </div>
+                        <Button
+                            variant="default"
+                            onClick={handleSearchClick}
+                            className="w-full xl:w-auto h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer"
+                        >
+                            검색
+                        </Button>
+                    </div>
                 </div>
+
 
                 <Button
                 variant="default"

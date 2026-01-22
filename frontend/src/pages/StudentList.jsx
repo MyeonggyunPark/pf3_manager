@@ -316,11 +316,17 @@ export default function StudentList() {
       />
 
       {/* Filter and Search Bar Section */}
+      {/* 필터 및 검색 바 섹션 */}
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 shrink-0">
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-          {/* ... Filters ... */}
+          
+          {/* Filters */}
+          { /* 필터들 */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="relative">
+
+              {/* Status Filter Dropdown */}
+              { /* 상태 필터 드롭다운 */ }
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -334,6 +340,8 @@ export default function StudentList() {
               <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
 
+            {/* Level Filter Dropdown */}
+            {/* 레벨 필터 드롭다운 */}
             <div className="relative">
               <select
                 value={levelFilter}
@@ -349,17 +357,18 @@ export default function StudentList() {
               </select>
               <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
-
-            {/* ... Search Input ... */}
+            
+            {/* Search Input */}
+            {/* 검색 입력 */}
             <div className="flex items-center w-full sm:w-auto gap-2 group">
-              <div className="relative flex-1 sm:w-64">
-                <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors " />
+              <div className="relative flex-1 sm:w-48">
+                <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
                   className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-md"
-                  placeholder="학생의 이름을 입력하세요."
+                  placeholder="학생 이름 입력"
                 />
               </div>
               <Button
@@ -1034,9 +1043,9 @@ export default function StudentList() {
                   선택된 학생이 없습니다.
                 </h3>
                 <p className="text-muted-foreground max-w-xs mx-auto leading-relaxed">
-                  좌측 목록에서 학생을 선택하여
+                  좌측 목록에서 학생을 선택하면
                   <br />
-                  상세 정보와 수강 이력을 확인하세요.
+                  선택된 학생의 상세 정보를 확인할 수 있습니다.
                 </p>
               </div>
             </div>
