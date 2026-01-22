@@ -43,6 +43,14 @@ const FemaleIcon = ({ className }) => (
   </svg>
 );
 
+// Current Level Options
+// 현재 레벨: A0(왕초보)부터 C1까지
+const CURRENT_LEVEL_OPTIONS = ["A0", "A1", "A2", "B1", "B2", "C1"];
+
+// Target Level Options
+// 목표 레벨: A1부터 C2(원어민 수준)까지
+const TARGET_LEVEL_OPTIONS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
 export default function AddStudentModal({ isOpen, onClose, onSuccess, studentData = null }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -439,7 +447,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             <div className="space-y-2">
               <InputLabel label="현재 레벨" hasError={!!errors.current_level} />
               <div className="grid grid-cols-3 gap-1.5">
-                {["A1", "A2", "B1", "B2", "C1", "C2"].map((lv) => (
+                {CURRENT_LEVEL_OPTIONS.map((lv) => (
                   <SelectionChip
                     key={`curr-${lv}`}
                     label={lv}
@@ -458,7 +466,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             <div className="space-y-2">
               <InputLabel label="목표 레벨" hasError={!!errors.target_level} />
               <div className="grid grid-cols-3 gap-1.5">
-                {["A1", "A2", "B1", "B2", "C1", "C2"].map((lv) => (
+                {TARGET_LEVEL_OPTIONS.map((lv) => (
                   <SelectionChip
                     key={`target-${lv}`}
                     label={lv}

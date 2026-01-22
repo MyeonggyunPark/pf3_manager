@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { X, Loader2, Trash2, AlertTriangle, Clock } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -27,14 +27,16 @@ export default function AddLessonModal({
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
 
-  // Generate 30-minute time slots (00:00 to 23:30) for dropdown selection efficiently
-  // 드롭다운 선택을 위한 30분 단위 시간 슬롯(00:00 ~ 23:30)을 효율적으로 생성
+  // Generate 30-minute time slots (00:00 to 23:50) for dropdown selection efficiently
+  // 드롭다운 선택을 위한 10분 단위 시간 슬롯(00:00 ~ 23:50)을 효율적으로 생성
   const timeOptions = useMemo(() => {
     const times = [];
     for (let i = 0; i < 24; i++) {
-      const hour = i.toString().padStart(2, "0");
-      times.push(`${hour}:00`);
-      times.push(`${hour}:30`);
+      for (let j = 0; j < 60; j += 10) {
+        const hour = i.toString().padStart(2, "0");
+        const minute = j.toString().padStart(2, "0");
+        times.push(`${hour}:${minute}`);
+      }
     }
     return times;
   }, []);
@@ -57,13 +59,17 @@ export default function AddLessonModal({
   // 수정 모드로 열릴 때 폼 데이터를 채우거나, 생성 모드일 때 기본값으로 초기화
   useEffect(() => {
     if (isOpen && lessonData) {
+
+      const existingStart = lessonData.start_time.slice(0, 5);
+      const existingEnd = lessonData.end_time.slice(0, 5);
+      
       setFormData({
         student: lessonData.student,
         date: lessonData.date,
         // Format HH:MM:SS to HH:MM for input compatibility
         // 입력 필드 호환성을 위해 HH:MM:SS 형식을 HH:MM으로 포맷팅
-        start_time: lessonData.start_time.slice(0, 5),
-        end_time: lessonData.end_time.slice(0, 5),
+        start_time: existingStart,
+        end_time: existingEnd,
         topic: lessonData.topic || "",
         status: lessonData.status,
         memo: lessonData.memo || "",
@@ -268,9 +274,7 @@ export default function AddLessonModal({
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">
-              삭제 확인
-            </h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">삭제 확인</h3>
             <p className="text-slate-500 text-center mb-8 max-w-xs">
               정말로 삭제하시겠습니까?
               <br />
@@ -419,12 +423,25 @@ export default function AddLessonModal({
                     <option value="" disabled hidden>
                       시작
                     </option>
+                    {formData.start_time &&
+                      !timeOptions.includes(formData.start_time) && (
+                        <option value={formData.start_time}>
+                          {formData.start_time}
+                        </option>
+                      )}
                     {timeOptions.map((time) => (
                       <option key={`start-${time}`} value={time}>
                         {time}
                       </option>
                     ))}
                   </select>
+                  <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 ${
+                      formData.start_time === ""
+                        ? "text-slate-400"
+                        : "text-slate-800"
+                    }`}>
+                    <Clock className="w-3.5 h-3.5" />
+                  </div>
                 </div>
 
                 <span className="text-slate-400 font-bold">-</span>
@@ -443,12 +460,25 @@ export default function AddLessonModal({
                     <option value="" disabled hidden>
                       종료
                     </option>
+                    {formData.end_time &&
+                      !timeOptions.includes(formData.end_time) && (
+                        <option value={formData.end_time}>
+                          {formData.end_time}
+                        </option>
+                      )}
                     {timeOptions.map((time) => (
                       <option key={`end-${time}`} value={time}>
                         {time}
                       </option>
                     ))}
                   </select>
+                  <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 ${
+                      formData.end_time === ""
+                        ? "text-slate-400"
+                        : "text-slate-800"
+                    }`}>
+                    <Clock className="w-3.5 h-3.5" />
+                  </div>
                 </div>
               </div>
               <ErrorMessage message={errors.start_time || errors.end_time} />
