@@ -263,18 +263,18 @@ export default function Dashboard() {
     // 수업 상태 배지를 위한 스타일 정의
     const statusStyles = {
         SCHEDULED:
-        "border-border/50 bg-background hover:border-accent hover:shadow-md",
+        "border-warning/60 bg-warning/20 hover:border-warning hover:shadow-md",
         COMPLETED:
-        "border-accent/30 bg-accent/5 hover:border-accent hover:shadow-md",
-        CANCELLED: "border-slate-200 bg-slate-50 opacity-70 hover:opacity-100",
+        "border-accent/60 bg-accent/30 hover:border-accent hover:shadow-md",
+        CANCELLED: "border-slate-300 bg-slate-200 hover:border-slate-700 hover:shadow-md",
         NOSHOW:
-        "border-destructive/20 bg-destructive/5 hover:border-destructive/40",
+        "border-destructive/60 bg-destructive/30 hover:border-destructive hover:shadow-md",
     };
 
     // Icons mapping for lesson status
     // 수업 상태별 아이콘 매핑
     const statusIcons = {
-        SCHEDULED: <LucideIcons.Clock className="w-5 h-5 text-slate-400" />,
+        SCHEDULED: <LucideIcons.Clock className="w-5.5 h-5.5 text-warning" />,
         COMPLETED: <LucideIcons.CheckCircle2 className="w-6 h-6 text-accent" />,
         CANCELLED: <LucideIcons.XCircle className="w-6 h-6 text-slate-400" />,
         NOSHOW: <LucideIcons.AlertCircle className="w-6 h-6 text-destructive" />,
@@ -502,7 +502,7 @@ export default function Dashboard() {
         ) : (
             // Empty State: No exams scheduled
             // 빈 상태: 예정된 시험 없음
-            <div className="w-full rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 flex flex-col items-center justify-center text-center text-muted-foreground/70 gap-2">
+            <div className="w-full rounded-xl border-none bg-card p-8 flex flex-col items-center justify-center text-center text-muted-foreground/70 gap-2">
                 <LucideIcons.SearchX className="w-8 h-8" />
                 <h3 className="text-sm font-semibold">
                     예정된 정규 시험이 없습니다.
@@ -631,7 +631,7 @@ export default function Dashboard() {
                                             "group relative flex flex-col p-3 rounded-xl border bg-white transition-all hover:shadow-md cursor-pointer",
                                             isOverdue ? "border-destructive border-dashed bg-destructive/10" : (priorityBorderColors[todo.priority] || "border-l-slate-200"),
                                             todo.is_completed
-                                                ? "border-success bg-success/20 opacity-80"
+                                                ? "border-accent bg-accent/20 opacity-80"
                                                 : isOverdue
                                                 ? ""
                                                 : "border-slate-100",
@@ -679,8 +679,8 @@ export default function Dashboard() {
                                                 className={cn(
                                                     "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
                                                     todo.is_completed
-                                                        ? "bg-success border-success text-white"
-                                                        : "border-slate-300 bg-white hover:border-success hover:bg-success/10",
+                                                        ? "bg-accent border-accent text-white"
+                                                        : "border-slate-300 bg-white hover:border-accent hover:bg-accent/10",
                                                 )}
                                             >
                                                 {todo.is_completed && (

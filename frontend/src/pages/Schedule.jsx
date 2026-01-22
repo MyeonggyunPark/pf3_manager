@@ -10,7 +10,6 @@ import {
 import {
     Card,
     CardHeader,
-    CardTitle,
     CardContent,
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -22,13 +21,12 @@ import AddTodoModal from "../components/modals/AddTodoModal";
 
 const statusStyles = {
     SCHEDULED:
-        "border-l-4 border-l-primary/40 bg-white hover:border-l-primary hover:shadow-md",
-    COMPLETED:
-        "border-l-4 border-l-accent/40 bg-accent/5 hover:border-l-accent hover:shadow-md",
-    CANCELLED:
-        "border-l-4 border-l-slate-300 bg-slate-50 opacity-70 hover:opacity-100 hover:border-l-slate-400",
-    NOSHOW:
-        "border-l-4 border-l-destructive/40 bg-destructive/5 hover:border-l-destructive hover:border-destructive/60",
+        "border-warning/60 bg-warning/20 hover:shadow-md",
+        COMPLETED:
+        "border-accent/60 bg-accent/30 hover:shadow-md",
+        CANCELLED: "border-slate-300 bg-slate-200 hover:shadow-md",
+        NOSHOW:
+        "border-destructive/60 bg-destructive/30 hover:shadow-md",
 };
 
 const TODO_CATEGORIES = [
@@ -409,12 +407,12 @@ export default function Schedule() {
                                         statusStyles[l.status] || statusStyles.SCHEDULED,
                                     )}
                                     >
-                                        <div className="flex items-center gap-1.5 font-bold text-slate-700 mb-1">
-                                            <LucideIcons.Clock className="w-3 h-3 text-muted-foreground" />
+                                        <div className="flex items-center gap-1.5 font-bold text-muted-foreground mb-1">
+                                            <LucideIcons.Clock className="w-3 h-3" />
                                             {l.start_time.slice(0, 5)}
                                         </div>
                                         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                                            <span className="font-bold text-[15px] text-primary truncate">
+                                            <span className="font-bold text-[15px] text-slate-600 group-hover:text-primary transition-colors truncate ml-1">
                                                 {l.student_name}
                                             </span>
                                             {l.student_level && (
@@ -495,7 +493,7 @@ export default function Schedule() {
                                     </Badge>
                                 )}
                             </div>
-                            <div className="space-y-1 custom-scrollbar pr-1 flex-1">
+                            <div className="space-y-1.5 custom-scrollbar pr-1 flex-1">
                                 {dayLessons.map((l) => (
                                     <div
                                         key={l.id}
@@ -504,16 +502,16 @@ export default function Schedule() {
                                         openEditModal(l);
                                         }}
                                         className={cn(
-                                        "text-[10px] truncate rounded px-1.5 py-1 cursor-pointer transition-colors border-l-2 shadow-sm",
+                                        "text-[10px] truncate rounded px-3 py-1 cursor-pointer shadow-sm flex items-center gap-3 hover:text-primary ",
                                         statusStyles[l.status]
-                                            ? statusStyles[l.status].replace(
-                                                "border-l-4",
-                                                "border-l-2",
-                                            )
-                                            : "bg-slate-100 border-l-slate-400",
                                         )}
                                     >
-                                        {l.start_time.slice(0, 5)} {l.student_name}
+                                        <span>
+                                            {l.start_time.slice(0, 5)}
+                                        </span>
+                                        <span>
+                                            {l.student_name}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -583,7 +581,7 @@ export default function Schedule() {
                                                         "group relative flex flex-col p-3 rounded-xl border bg-white transition-all hover:shadow-md cursor-pointer",
                                                         isOverdue ? "border-destructive border-dashed bg-destructive/10" : (priorityBorderColors[todo.priority] || "border-l-slate-200"),
                                                         todo.is_completed
-                                                        ? "border-success bg-success/20 opacity-80"
+                                                        ? "border-accent bg-accent/20 opacity-80"
                                                         : isOverdue
                                                         ? ""
                                                         : "border-slate-100",
@@ -632,8 +630,8 @@ export default function Schedule() {
                                                             className={cn(
                                                                 "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
                                                                 todo.is_completed
-                                                                ? "bg-success border-success text-white"
-                                                                : "border-slate-300 bg-white hover:border-success hover:bg-success/10",
+                                                                ? "bg-accent border-accent text-white"
+                                                                : "border-slate-300 bg-white hover:border-accent hover:bg-accent/10",
                                                             )}
                                                             >
                                                                 {todo.is_completed && (
