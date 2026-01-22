@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
 import api from "../api";
-import { cn, getIcon } from "../lib/utils";
+import { cn } from "../lib/utils";
 import {
     Card,
     CardHeader,
-    CardTitle,
     CardContent,
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -15,34 +14,7 @@ import { TabsList, TabsTrigger } from "../components/ui/Tabs";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import AddLessonModal from "../components/modals/AddLessonModal";
 import AddOfficialExamModal from "../components/modals/AddOfficialExamModal";
-
-// StatCard Component
-// 통계 카드 컴포넌트
-const StatCard = ({ title, value, trend, icon, color, onClick }) => (
-    <Card
-        className="hover:shadow-md transition-shadow cursor-pointer hover:bg-slate-50"
-        onClick={onClick}
-    >
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {title}
-            </CardTitle>
-            <div
-                className={`p-2 rounded-lg ${
-                color === "primary"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-accent/10 text-accent"
-                }`}
-            >
-                {getIcon(icon, { className: "h-4 w-4" })}
-            </div>
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-extrabold text-slate-800">{value}</div>
-            <p className="text-xs text-muted-foreground mt-1 font-medium">{trend}</p>
-        </CardContent>
-    </Card>
-);
+import AddTodoModal from "../components/modals/AddTodoModal";
 
 export default function Dashboard() {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -63,19 +35,27 @@ export default function Dashboard() {
     const [tomorrowLessons, setTomorrowLessons] = useState([]); 
     const [activeTab, setActiveTab] = useState("today"); 
 
+    // States for upcoming exams
+    // 다가오는 시험 일정 관리 상태
     const [upcomingExams, setUpcomingExams] = useState([]);
     const [totalExamCount, setTotalExamCount] = useState(0);
     const [isExamModalOpen, setIsExamModalOpen] = useState(false);
     const [selectedExam, setSelectedExam] = useState(null);
 
+    // State for todo list
+    // 할 일 목록 상태
+    const [todos, setTodos] = useState([]);
+
     // Modal Visibility State
     // 모달 표시 상태 관리
     const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
     const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+    const [isTodoModalOpen, setIsTodoModalOpen] = useState(false);
 
     // State for selected lesson to edit
     // 수정할 수업 선택 상태 관리
     const [selectedLesson, setSelectedLesson] = useState(null);
+    const [selectedTodo, setSelectedTodo] = useState(null);
 
     // currencyDate calculation
     // 현재 날짜 계산 로직 
@@ -103,6 +83,40 @@ export default function Dashboard() {
         setIsLessonModalOpen(true);
     };
 
+    // Function to open exam modal in edit mode
+    // 수정 모드로 시험 모달을 여는 함수
+    const openExamModal = (exam) => {
+        setSelectedExam(exam);
+        setIsExamModalOpen(true);
+    };
+
+    // Function to open todo modal in create mode
+    // 생성 모드로 할 일 모달을 여는 함수
+    const openCreateTodoModal = () => {
+        setSelectedTodo(null); 
+        setIsTodoModalOpen(true);
+    };
+
+    // Function to open todo modal in edit mode
+    // 수정 모드로 할 일 모달을 여는 함수
+    const openTodoEditModal = (todo) => {
+        setSelectedTodo(todo);
+        setIsTodoModalOpen(true); 
+    };
+
+    // Function to toggle todo completion status
+    // 할 일 완료 상태 토글 함수
+    const handleToggleTodo = async (todo) => {
+        try {
+            await api.patch(`/api/todos/${todo.id}/`, {
+                is_completed: !todo.is_completed,
+            });
+            setRefreshTrigger((prev) => prev + 1);
+        } catch (e) {
+            console.error("Toggle Todo Error:", e);
+        }
+    };
+
     // Fetch initial dashboard data
     // 초기 대시보드 데이터 호출
     useEffect(() => {
@@ -110,10 +124,11 @@ export default function Dashboard() {
             try {
                 // Parallel API calls for performance
                 // 성능을 위해 API 병렬 호출
-                const [s, t, e] = await Promise.all([
+                const [s, t, e, todoRes] = await Promise.all([
                     api.get("/api/dashboard/stats/"),
                     api.get("/api/lessons/today/"),
                     api.get("/api/official-results/"),
+                    api.get("/api/todos/"),
                 ]);
 
                 // Update state with fetched data
@@ -124,6 +139,10 @@ export default function Dashboard() {
                 // 오늘 및 내일 수업 데이터 상태 설정
                 setTodayLessons(t.data);
                 setTomorrowLessons(s.data.tomorrow_lessons || []);
+
+                // Set todos
+                // 할 일 데이터 설정
+                setTodos(todoRes.data);
 
                 // Normalize current time to 00:00:00 for accurate date comparison
                 // 정확한 날짜 비교를 위해 현재 시간을 00:00:00으로 정규화
@@ -208,6 +227,38 @@ export default function Dashboard() {
         return { day, month };
     };
 
+    // Calculate D-Day and styling for Todo items
+    // 할 일 항목을 위한 D-Day 계산 및 스타일링 로직
+    const getTodoDDay = (dateString, isCompleted) => {
+        if (!dateString) return null;
+        if (isCompleted) return null;
+
+        const [year, month, day] = dateString.split("-").map(Number);
+        const target = new Date(year, month - 1, day);
+        const today = new Date();
+        target.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        const diffTime = target - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0)
+            return { text: "D-Day", color: "bg-destructive/10 text-destructive border-destructive/20" };
+        if (diffDays > 0 && diffDays <= 7)
+            return { text: `D-${diffDays}`, color: "bg-warning/30 text-yellow-500 border-warning/30" };
+        if (diffDays > 0)
+            return { text: `D-${diffDays}`, color: "bg-slate-50 text-slate-400 border-slate-100" };
+        return { text: `마감`, color: "bg-slate-600 text-white border-slate-700 font-medium" };
+    };
+
+    // Format todo date string (YYYY-MM-DD -> DD.MM.YYYY)
+    // 할 일 날짜 문자열 포맷팅
+    const formatTodoDate = (dateString) => {
+        if (!dateString) return "";
+        const [year, month, day] = dateString.split("-");
+        return `${day}.${month}.${year}`;
+    };
+
     // Styles for lesson status badges
     // 수업 상태 배지를 위한 스타일 정의
     const statusStyles = {
@@ -229,9 +280,42 @@ export default function Dashboard() {
         NOSHOW: <LucideIcons.AlertCircle className="w-6 h-6 text-destructive" />,
     };
 
-    const openExamModal = (exam) => {
-        setSelectedExam(exam);
-        setIsExamModalOpen(true);
+    // Filter and sort urgent todos
+    // 긴급 할 일 필터링 및 정렬
+    const urgentTodos = todos
+        .filter((t) => !t.is_completed && t.priority === 1)
+        .sort((a, b) => {
+            const dateA = new Date(a.due_date || "9999-12-31");
+            const dateB = new Date(b.due_date || "9999-12-31");
+            const diff = dateA - dateB;
+
+            if (diff !== 0) return diff;
+
+            return b.id - a.id;
+        })
+        .slice(0, 6);
+    
+    // Priority labels
+    // 우선순위 라벨 정의
+    const priorityLabels = {
+        1: "중요",
+        2: "보통",
+        3: "낮음",
+    };
+    // Priority badge colors
+    // 우선순위 배지 색상 정의
+    const priorityBadgeColors = {
+        1: "bg-destructive text-white border-destructive",
+        2: "bg-warning text-white border-warning",
+        3: "bg-slate-100 text-slate-500 border-slate-200",
+    };
+
+    // Priority border colors for todo items
+    // 할 일 항목의 우선순위 테두리 색상
+    const priorityBorderColors = {
+        1: "border-l-4 border-l-destructive",
+        2: "border-l-4 border-l-warning",
+        3: "border-l-4 border-l-slate-300",
     };
 
     return (
@@ -244,7 +328,7 @@ export default function Dashboard() {
                 onClose={() => setIsExamModalOpen(false)}
                 examData={selectedExam}
                 onSuccess={() => {
-                setRefreshTrigger(prev => prev + 1); // Refresh dashboard data
+                setRefreshTrigger(prev => prev + 1);
                 }}
             />
 
@@ -254,7 +338,7 @@ export default function Dashboard() {
                 isOpen={isLessonModalOpen}
                 onClose={() => setIsLessonModalOpen(false)}
                 onSuccess={() => {
-                setRefreshTrigger((prev) => prev + 1); // Trigger Refresh
+                setRefreshTrigger((prev) => prev + 1);
                 }}
                 lessonData={selectedLesson}
             />
@@ -269,16 +353,28 @@ export default function Dashboard() {
                 }}
             />
 
+            {/* Add/Edit Todo Modal */}
+            {/* 할 일 추가/수정 모달 */}
+            <AddTodoModal
+                isOpen={isTodoModalOpen}
+                onClose={() => setIsTodoModalOpen(false)}
+                todoData={selectedTodo}
+                onSuccess={() => {
+                setRefreshTrigger((prev) => prev + 1); 
+                }}
+            />
+
             {/* Upcoming Exams Section */}
             {/* 다가오는 시험 일정 섹션 */}
             {upcomingExams.length > 0 ? (
-                <div className="space-y-3">
+            <div className="space-y-3">
+
                 {/* Header with Total Count */}
                 {/* 전체 개수가 포함된 헤더 */}
                 <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
                         <TabsList className="text-sm font-bold flex items-center">
-                            <TabsTrigger className="" value="upcoming" activeValue="upcoming">
+                            <TabsTrigger className="cursor-default" value="upcoming" activeValue="upcoming">
                                 예정된 정규 시험    
                             </TabsTrigger>
                         </TabsList>
@@ -291,115 +387,115 @@ export default function Dashboard() {
                     </div>
                     {totalExamCount > 3 && (
                         <span
-                            className="text-[14px] text-muted-foreground cursor-pointer hover:font-semibold"
+                            className="text-xs text-muted-foreground rounded-full px-2 py-2 cursor-pointer hover:bg-muted hover:font-semibold duration-200"
                             onClick={() =>
                             navigate("/exams", { state: { tab: "official" } })
                             }
                         >
-                            전체 보기 →
+                            전체 보기
                         </span>
                     )}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
                     {upcomingExams.map((exam) => {
-                    const { day, month } = getExamDateBox(exam.exam_date);
-                    const dDayStr = getDDay(exam.exam_date);
-                    const daysLeft = parseInt(dDayStr.replace("D-", ""));
+                        const { day, month } = getExamDateBox(exam.exam_date);
+                        const dDayStr = getDDay(exam.exam_date);
+                        const daysLeft = parseInt(dDayStr.replace("D-", ""));
 
-                    // Determine urgency: Red (Today) vs Yellow (Within 7 days)
-                    // 긴급도 판별: 빨강 (당일) vs 노랑 (7일 이내)
-                    const isToday = dDayStr === "D-Day";
-                    const isUrgent = !isNaN(daysLeft) && daysLeft <= 7;
+                        // Determine urgency: Red (Today) vs Yellow (Within 7 days)
+                        // 긴급도 판별: 빨강 (당일) vs 노랑 (7일 이내)
+                        const isToday = dDayStr === "D-Day";
+                        const isUrgent = !isNaN(daysLeft) && daysLeft <= 7;
 
-                    // Default styles (Gray)
-                    // 기본 스타일 (회색)
-                    let boxColorClass = "bg-slate-50 border-slate-200 text-slate-500";
-                    let badgeColorClass = "bg-primary/10 text-primary";
+                        // Default styles (Gray)
+                        // 기본 스타일 (회색)
+                        let boxColorClass = "bg-slate-50 border-slate-200 text-slate-500";
+                        let badgeColorClass = "bg-primary/10 text-primary";
 
-                    // Apply color logic based on urgency
-                    // 긴급도에 따른 색상 로직 적용
-                    if (isToday) {
-                        boxColorClass =
-                        "bg-destructive/10 border-destructive/20 text-destructive";
-                        badgeColorClass = "bg-destructive text-white";
-                    } else if (isUrgent) {
-                        boxColorClass =
-                        "bg-warning/10 border-warning/20 text-[#C1AA60]";
-                        badgeColorClass = "bg-warning text-white";
-                    }
+                        // Apply color logic based on urgency
+                        // 긴급도에 따른 색상 로직 적용
+                        if (isToday) {
+                            boxColorClass =
+                            "bg-destructive/10 border-destructive/20 text-destructive";
+                            badgeColorClass = "bg-destructive text-white";
+                        } else if (isUrgent) {
+                            boxColorClass =
+                            "bg-warning/10 border-warning/20 text-[#C1AA60]";
+                            badgeColorClass = "bg-warning text-white";
+                        }
 
-                    // Exam Mode Labels & Colors
-                    // 응시 유형 라벨 및 색상 정의
-                    const modeLabel = {
-                        FULL: "Gesamt",
-                        WRITTEN: "Schriftlich",
-                        ORAL: "Mündlich",
-                    }[exam.exam_mode] || "Gesamt";
-                        
-                    return (
-                        <div
-                        key={exam.id}
-                        onClick={() => openExamModal(exam)}
-                        className="relative flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-slate-50 transition-all cursor-pointer group"
-                        >
-                        {/* Left: Date Box */}
-                        {/* 좌측: 날짜 박스 */}
-                        <div
-                            className={cn(
-                            "flex flex-col items-center justify-center min-w-12.5 h-12.5 rounded-lg border",
-                            boxColorClass,
-                            )}
-                        >
-                            <span className="text-[10px] font-bold leading-none">
-                            {month}
-                            </span>
-                            <span className="text-xl font-extrabold leading-none mt-0.5">
-                            {day}
-                            </span>
-                        </div>
-
-                            {/* Center: Info */}
-                            {/* 중앙: 시험 정보 */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
-                                        <p className="text-sm font-bold text-slate-800 truncate">
-                                            {exam.student_name}
-                                        </p>
-                                        {exam.student_level && (
-                                        <Badge
-                                            variant="outline"
-                                            className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
-                                        >
-                                            {exam.student_level}
-                                        </Badge>
-                                        )}
-                                    </div>
-                                    <Badge
-                                        variant="secondary"
-                                        className={cn(
-                                        "text-[10px] h-5 px-1.5 font-bold",
-                                        badgeColorClass,
-                                        )}
-                                    >
-                                        {dDayStr}
-                                    </Badge>
+                        // Exam Mode Labels & Colors
+                        // 응시 유형 라벨 및 색상 정의
+                        const modeLabel = {
+                            FULL: "Gesamt",
+                            WRITTEN: "Schriftlich",
+                            ORAL: "Mündlich",
+                        }[exam.exam_mode] || "Gesamt";
+                            
+                        return (
+                            <div
+                                key={exam.id}
+                                onClick={() => openExamModal(exam)}
+                                className="relative flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-slate-50 transition-all cursor-pointer group"
+                                >
+                                {/* Left: Date Box */}
+                                {/* 좌측: 날짜 박스 */}
+                                <div
+                                    className={cn(
+                                    "flex flex-col items-center justify-center min-w-12.5 h-12.5 rounded-lg border",
+                                    boxColorClass,
+                                    )}
+                                >
+                                    <span className="text-[10px] font-bold leading-none">
+                                        {month}
+                                    </span>
+                                    <span className="text-xl font-extrabold leading-none mt-0.5">
+                                        {day}
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                    <p className="text-[13px] text-muted-foreground">
-                                        {exam.exam_standard_name || exam.exam_name_manual}
-                                    </p>
-                                        <Badge 
-                                            variant="outline"
-                                            className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+
+                                {/* Center: Info */}
+                                {/* 중앙: 시험 정보 */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
+                                            <p className="text-sm font-bold text-slate-800 truncate">
+                                                {exam.student_name}
+                                            </p>
+                                            {exam.student_level && (
+                                            <Badge
+                                                variant="outline"
+                                                className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+                                            >
+                                                {exam.student_level}
+                                            </Badge>
+                                            )}
+                                        </div>
+                                        <Badge
+                                            variant="secondary"
+                                            className={cn(
+                                            "text-[10px] h-5 px-1.5 font-bold",
+                                            badgeColorClass,
+                                            )}
                                         >
-                                            {modeLabel}
+                                            {dDayStr}
                                         </Badge>
                                     </div>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <p className="text-[13px] text-muted-foreground">
+                                            {exam.exam_standard_name || exam.exam_name_manual}
+                                        </p>
+                                            <Badge 
+                                                variant="outline"
+                                                className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+                                            >
+                                                {modeLabel}
+                                            </Badge>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    );
+                        );
                     })}
                 </div>
             </div>
@@ -416,26 +512,18 @@ export default function Dashboard() {
 
             {/* Main Content Area */}
             {/* 메인 콘텐츠 영역 */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4 lg:col-span-5 border-none shadow-sm">
-
-                    {/* Header with Tabs */}
-                    {/* 탭이 포함된 헤더 */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-12">
+                
+                {/* Left Content*/}
+                {/* 좌측 콘텐츠: 오늘/내일 수업 탭 */ }
+                <Card className="col-span-12 lg:col-span-6 border-none shadow-sm flex flex-col h-full">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                         <div className="flex items-center">
                             <TabsList>
-                                <TabsTrigger 
-                                    value="today" 
-                                    activeValue={activeTab} 
-                                    onClick={() => setActiveTab("today")}
-                                >
+                                <TabsTrigger value="today" activeValue={activeTab} onClick={() => setActiveTab("today")}>
                                     오늘의 수업
                                 </TabsTrigger>
-                                <TabsTrigger 
-                                    value="tomorrow" 
-                                    activeValue={activeTab} 
-                                    onClick={() => setActiveTab("tomorrow")}
-                                >
+                                <TabsTrigger value="tomorrow" activeValue={activeTab} onClick={() => setActiveTab("tomorrow")}>
                                     내일의 수업
                                 </TabsTrigger>
                             </TabsList>
@@ -444,103 +532,203 @@ export default function Dashboard() {
                             {displayDate}
                         </Badge>
                     </CardHeader>
-                    <CardContent className="grid gap-4 h-110 custom-scrollbar content-start">
-
-                        {/* Display Lessons (Today or Tomorrow) - Render without filtering status */}
-                        {/* 수업 목록 표시 (오늘 또는 내일) - 상태 필터링 없이 그대로 렌더링 */}
+                    <CardContent 
+                        className={cn(
+                            "h-110 custom-scrollbar",
+                            displayLessons.length === 0 
+                                ? "flex flex-col items-center justify-center" 
+                                : "grid gap-4 content-start"
+                        )}
+                    >
                         {displayLessons.length === 0 ? (
-                            <div className="text-center py-10 text-muted-foreground/70 text-sm flex flex-col items-center justify-center gap-2">
+                            <div className="text-center text-muted-foreground/70 flex flex-col items-center justify-center gap-2">
                                 <LucideIcons.SearchX className="w-8 h-8" />
-                                <h3 className="text-sm font-semibold">
-                                    {emptyMessage}
-                                </h3>
+                                <h3 className="text-sm font-semibold">{emptyMessage}</h3>
                             </div>
                         ) : (
                             displayLessons.map((lesson) => (
                                 <div
                                     key={lesson.id}
-                                    // Open edit modal on click
-                                    // 클릭 시 수정 모달 열기
                                     onClick={() => openEditModal(lesson)}
                                     className={cn(
                                         "flex items-center justify-between rounded-xl border p-4 transition-all cursor-pointer group",
+                                        
                                         // Apply dynamic styles based on lesson status
                                         // 수업 상태에 따른 동적 스타일 적용
                                         statusStyles[lesson.status] || statusStyles.SCHEDULED,
                                     )}
                                 >
-                                <div className="flex items-center gap-4">
-                                    <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border text-sm font-bold bg-white border-border text-muted-foreground">
-                                        <span>{lesson.start_time.split(":")[0]}</span>
-                                        <span className="text-[10px] opacity-70">
-                                            {lesson.start_time.split(":")[1]}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-bold text-slate-700 group-hover:text-primary transition-colors">
-                                                {lesson.student_name}
-                                            </p>
-                                            {lesson.student_level && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
-                                                >
-                                                    {lesson.student_level}
-                                                </Badge>
-                                            )}
-                                            {lesson.topic && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="text-[10px] h-5 px-1.5 bg-white max-w-37.5 truncate"
-                                                >
-                                                    {lesson.topic}
-                                                </Badge>
-                                            )}
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border text-sm font-bold bg-white border-border text-muted-foreground">
+                                            <span>{lesson.start_time.split(":")[0]}</span>
+                                            <span className="text-[10px] opacity-70">{lesson.start_time.split(":")[1]}</span>
                                         </div>
-                                        <p className="text-sm text-muted-foreground mt-0.5">
-                                            {lesson.memo || "메모 없음"}
-                                        </p>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-slate-700 group-hover:text-primary transition-colors">
+                                                    {lesson.student_name}
+                                                </p>
+                                                {lesson.student_level && (
+                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0">
+                                                        {lesson.student_level}
+                                                    </Badge>
+                                                )}
+                                                {lesson.topic && (
+                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-white max-w-37.5 truncate">
+                                                        {lesson.topic}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-muted-foreground mt-0.5">{lesson.memo || "메모 없음"}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="p-2">
-                                    {/* Render status icon */}
-                                    {/* 상태 아이콘 렌더링 */}
-                                    {statusIcons[lesson.status] || statusIcons.SCHEDULED}
-                                </div>
+                                    <div className="p-2">
+                                        {statusIcons[lesson.status] || statusIcons.SCHEDULED}
+                                    </div>
                                 </div>
                             ))
                         )}
                     </CardContent>
                 </Card>
+                
+                {/* Middle Content */}
+                { /* 중간 콘텐츠: 중요 할 일 */ }
+                <Card className="col-span-12 lg:col-span-3 border-none shadow-sm flex flex-col h-full">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 px-4">
+                        <TabsList>
+                            <TabsTrigger className="cursor-default flex gap-2" value="urgent" activeValue="urgent">
+                                할 일
+                                <span className="text-[8px] px-1 py-0.5 rounded bg-destructive text-white">
+                                    중요
+                                </span>
+                            </TabsTrigger>
+                        </TabsList>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-xs rounded-full px-2 text-muted-foreground/70 cursor-pointer hover:py-0 "
+                            onClick={() => navigate("/schedule")}
+                        >
+                            전체 보기
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="h-110 overflow-y-auto custom-scrollbar px-4 space-y-3">
+                        {urgentTodos.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground/70 gap-2 pb-2">
+                                <LucideIcons.SearchX className="w-8 h-8" />
+                                <h3 className="text-sm font-semibold">중요 업무가 없습니다.</h3>
+                            </div>
+                        ) : (
+                            urgentTodos.map(todo => {
+                                const dDay = getTodoDDay(todo.due_date, todo.is_completed);
+                                const isOverdue = !todo.is_completed && todo.due_date && new Date(todo.due_date) < new Date().setHours(0, 0, 0, 0);
 
-                {/* Right Sidebar: Stats & Quick Actions */}
-                {/* 우측 사이드바: 통계 및 빠른 실행 */}
-                <div className="col-span-4 lg:col-span-2 flex flex-col gap-6 h-full">
+                                return (
+                                    <div
+                                        key={todo.id}
+                                        onClick={() => openTodoEditModal(todo)}
+                                        className={cn(
+                                            "group relative flex flex-col p-3 rounded-xl border bg-white transition-all hover:shadow-md cursor-pointer",
+                                            isOverdue ? "border-destructive border-dashed bg-destructive/10" : (priorityBorderColors[todo.priority] || "border-l-slate-200"),
+                                            todo.is_completed
+                                                ? "border-success bg-success/20 opacity-80"
+                                                : isOverdue
+                                                ? ""
+                                                : "border-slate-100",
+                                        )}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span
+                                                className={cn(
+                                                    "text-[10px] px-1.5 py-0.5 rounded border font-bold",
+                                                    priorityBadgeColors[todo.priority],
+                                                )}
+                                            >
+                                                {priorityLabels[todo.priority]}
+                                            </span>
+                                            <div className="flex gap-1.5">
+                                                {todo.due_date && (
+                                                    <span className={cn(
+                                                        "text-[10px] font-medium flex items-center gap-1",
+                                                        isOverdue ? "text-destructive font-bold" : "text-muted-foreground"
+                                                    )}>
+                                                        <LucideIcons.Calendar className="w-3 h-3" />
+                                                        {formatTodoDate(todo.due_date)}
+                                                    </span>
+                                                )}
 
-                    {/* 이번 달 예상 수익 카드 (Revenue Card) */}
+                                                {dDay && (
+                                                    <span
+                                                        className={cn(
+                                                            "text-[10px] px-1.5 py-0.5 rounded border font-bold tracking-wide",
+                                                            dDay.color,
+                                                        )}
+                                                    >
+                                                        {dDay.text}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 mt-4">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleToggleTodo(todo);
+                                                }}
+                                                className={cn(
+                                                    "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
+                                                    todo.is_completed
+                                                        ? "bg-success border-success text-white"
+                                                        : "border-slate-300 bg-white hover:border-success hover:bg-success/10",
+                                                )}
+                                            >
+                                                {todo.is_completed && (
+                                                    <LucideIcons.Check className="w-3.5 h-3.5 stroke-3" />
+                                                )}
+                                            </button>
+
+                                            <div className="flex-1 min-w-0">
+                                                <p
+                                                    className={cn(
+                                                        "text-[15px] font-medium wrap-break-word leading-tight",
+                                                        todo.is_completed
+                                                            ? "text-slate-400 line-through"
+                                                            : "text-slate-700",
+                                                    )}
+                                                >
+                                                    {todo.content}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </CardContent>
+                </Card>
+                
+                {/* Right Content */}
+                {/* 우측 콘텐츠: 통계카드 및 빠른 실행 버튼 */}
+                <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 h-full">
+
                     <div 
                         onClick={() => navigate("/courses", { 
                             state: { year: currentYear, month: currentMonth } 
                         })}
-                        className="flex-1 flex flex-col justify-between bg-card border-2 border-primary px-5 py-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:shadow-md"
+                        className="flex-1 flex flex-col justify-between bg-card border-2 border-primary p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:shadow-md"
                     >
-                        {/* Title (Top) */}
                         <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
                             이번 달 예상 수익
                         </p>
-                        
-                        {/* Content (Bottom Split) */}
                         <div className="flex justify-between items-center">
-                            
-                            {/* Left: Deposit Status (Gauge/Percent) */}
                             <div className="flex gap-1 items-center bg-primary/10 text-primary px-3 py-2 rounded-full">
-                                <div className="flex flex-col gap-1 w-24">
+                                <div className="flex flex-col gap-1 w-21">
                                     <div className="flex justify-between text-xs font-bold text-primary/80">
                                         <span>입금 상태</span>
                                         <span>{revenuePercentage}%</span>
                                     </div>
-                                    <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+                                    <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
                                         <div 
                                             className="h-full bg-primary transition-all duration-500 ease-out" 
                                             style={{ width: `${revenuePercentage}%` }} 
@@ -548,59 +736,59 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Right: Big Number */}
                             <h3 className="text-2xl font-extrabold text-primary tracking-tight">
                                 {formatEuro(stats?.estimated_revenue)}
                             </h3>
                         </div>
                     </div>
 
-                    {/* 수강중인 학생 카드 (Active Student Card) */}
                     <div 
                         onClick={() => navigate("/students", { 
                             state: { status: "ACTIVE" } 
                         })}
-                        className="flex-1 flex flex-col justify-between bg-card border-2 border-accent px-5 py-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:shadow-md"
+                        className="flex-1 flex flex-col justify-between bg-card border-2 border-accent p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:shadow-md"
                     >
-                        {/* Title (Top) */}
                         <p className="text-sm font-semibold text-[#4a7a78] uppercase tracking-wider mb-2">
-                            수강중인 학생
+                            현재 수강중 학생 
                         </p>
-
-                        {/* Content (Bottom Split) */}
                         <div className="flex justify-between items-center">
-                            
-                            {/* Left: Badge Info */}
-                            <div className="flex gap-1.5 items-center bg-accent/20 text-[#4a7a78] px-3 py-2 rounded-full text-xs font-bold mb-1">
-                                <LucideIcons.BookOpen className="w-3.5 h-3.5" />
-                                <span>이번 달 수업 {stats?.monthly_lesson_count || 0}회</span>
+                            <div className="flex bg-accent/20 text-[#4a7a78] px-3 py-2 rounded-full">
+                                <span className="text-xs mr-1">인당 평균 수업</span>
+                                <span className="text-xs font-semibold">
+                                    {stats?.active_students > 0 
+                                        ? (stats.monthly_lesson_count / stats.active_students).toFixed(1) 
+                                        : 0}회
+                                </span>
                             </div>
 
-                            {/* Right: Big Number */}
-                            <h3 className="text-2xl font-extrabold text-[#4a7a78] tracking-tight">
+                            <h3 className="text-2xl font-extrabold text-[#4a7a78]">
                                 총 {stats?.active_students || 0}명
                             </h3>
                         </div>
                     </div>
-                    <Card className="bg-linear-to-br from-[#4C72A9] to-[#3b5b8a] text-white border-none shadow-lg">
-                        <CardHeader>
-                            <CardTitle className="text-sm text-white">빠른 실행</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
+
+                    <Card className="bg-linear-to-br from-[#4C72A9] to-[#3b5b8a] text-white border-none shadow-lg shrink-0">
+                        <CardContent className="p-5 space-y-3">
                             <Button
                                 variant="secondary"
-                                className="w-full justify-start h-11 gap-2 cursor-pointer"
-                                onClick={openCreateModal}
+                                className="w-full justify-center bg-white text-primary hover:bg-white/90 h-11 gap-2 cursor-pointer"
+                                onClick={() => setIsStudentModalOpen(true)}
                             >
-                                <LucideIcons.CalendarPlus className="mr-1 h-4 w-4" /> 수업 추가
+                                <LucideIcons.UserPlus className="mr-1 h-5 w-5" /> 학생 등록
                             </Button>
                             <Button
                                 variant="secondary"
-                                className="w-full justify-start bg-white text-primary hover:bg-white/90 h-11 gap-2 cursor-pointer"
-                                onClick={() => setIsStudentModalOpen(true)}
+                                className="w-full justify-center h-11 gap-2 cursor-pointer"
+                                onClick={openCreateModal}
                             >
-                                <LucideIcons.UserPlus className="mr-1 h-4 w-4" /> 학생 등록
+                                <LucideIcons.CalendarPlus className="mr-1 h-5 w-5" /> 수업 추가
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                className="w-full justify-center h-11 gap-2 cursor-pointer"
+                                onClick={openCreateTodoModal}
+                            >
+                                <LucideIcons.ListPlus className="mr-1 h-5 w-5" /> 업무 추가
                             </Button>
                         </CardContent>
                     </Card>
