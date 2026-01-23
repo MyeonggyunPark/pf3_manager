@@ -430,10 +430,10 @@ class OfficialExamResult(models.Model):
         default=ResultStatusChoices.WAITING,
     )
 
-    # Optional score inputs (Text format for flexibility)
-    # 선택적 점수 입력 (유연성을 위해 텍스트 형식 사용)
-    total_score = models.CharField(
-        max_length=50, blank=True, null=True, 
+    # Optional score inputs
+    # 선택적 점수 입력
+    total_score = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True, 
         help_text="점수를 아는 경우 입력"
     )
 
