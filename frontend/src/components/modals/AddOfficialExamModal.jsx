@@ -4,6 +4,69 @@ import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
+// Grading Scales Configuration
+// 등급 체계 구성
+const OFFICIAL_GRADING_SCALES = {
+  "A2": {
+    ranges: [
+      { min: 54, grade: "sehr gut", status: "PASSED" },
+      { min: 48, grade: "gut", status: "PASSED" },
+      { min: 42, grade: "befriedigend", status: "PASSED" },
+      { min: 36, grade: "ausreichend", status: "PASSED" },
+      { min: 0, grade: "teilgenommen", status: "FAILED" },
+    ],
+  },
+  "B1": {
+    ranges: [
+      { min: 270, grade: "sehr gut", status: "PASSED" },
+      { min: 240, grade: "gut", status: "PASSED" },
+      { min: 210, grade: "befriedigend", status: "PASSED" },
+      { min: 180, grade: "ausreichend", status: "PASSED" },
+      { min: 0, grade: "nicht bestanden", status: "FAILED" },
+    ],
+  },
+  "B2": {
+    ranges: [
+      { min: 270, grade: "sehr gut", status: "PASSED" },
+      { min: 240, grade: "gut", status: "PASSED" },
+      { min: 210, grade: "befriedigend", status: "PASSED" },
+      { min: 180, grade: "ausreichend", status: "PASSED" },
+      { min: 0, grade: "nicht bestanden", status: "FAILED" },
+    ],
+  },
+  "C1": {
+    ranges: [
+      { min: 193, grade: "sehr gut", status: "PASSED" },
+      { min: 172, grade: "gut", status: "PASSED" },
+      { min: 151, grade: "befriedigend", status: "PASSED" },
+      { min: 128, grade: "ausreichend", status: "PASSED" },
+      { min: 0, grade: "nicht bestanden", status: "FAILED" },
+    ],
+  },
+};
+
+// Helper function to calculate grade & status
+// 등급 및 상태 계산 헬퍼 함수
+const calculateOfficialGrade = (examName, score) => {
+  if (!examName) return null;
+  
+  const upperName = examName.toUpperCase();
+  let scale = null;
+
+  if (upperName.includes("A2")) scale = OFFICIAL_GRADING_SCALES["A2"];
+  else if (upperName.includes("B1")) scale = OFFICIAL_GRADING_SCALES["B1"];
+  else if (upperName.includes("B2")) scale = OFFICIAL_GRADING_SCALES["B2"];
+  else if (upperName.includes("C1")) scale = OFFICIAL_GRADING_SCALES["C1"];
+
+  if (!scale) return null;
+
+  const numScore = parseFloat(score);
+  if (isNaN(numScore)) return null;
+
+  const result = scale.ranges.find((range) => numScore >= range.min);
+  return result ? { grade: result.grade, status: result.status } : null;
+};
+
 // Helper to format date string for input[type="date"] (YYYY-MM-DD)
 // input[type="date"]를 위한 날짜 문자열 포맷팅 헬퍼 (YYYY-MM-DD)
 const formatDateForInput = (dateString) => {
@@ -58,8 +121,8 @@ export default function AddOfficialExamModal({
   // examData prop을 처리하기 위해 지연 초기화를 사용하여 폼 데이터 초기화
   const [formData, setFormData] = useState(() => {
     if (examData) {
-
-      const isManualMode = !examData.exam_standard && !!examData.exam_name_manual;
+      const isManualMode =
+        !examData.exam_standard && !!examData.exam_name_manual;
 
       return {
         student: examData.student,
@@ -134,8 +197,8 @@ export default function AddOfficialExamModal({
   useEffect(() => {
     if (isOpen) {
       if (examData) {
-
-        const isManualMode = !examData.exam_standard && !!examData.exam_name_manual;
+        const isManualMode =
+          !examData.exam_standard && !!examData.exam_name_manual;
 
         setFormData({
           student: examData.student,
@@ -159,6 +222,37 @@ export default function AddOfficialExamModal({
       setErrors({});
     }
   }, [isOpen, examData]);
+
+  // Auto-calculate Grade & Status when Score or Standard changes
+  // 점수나 시험 종류가 변경될 때 등급과 합격 여부 자동 계산
+  useEffect(() => {
+    if (
+      !formData.total_score ||
+      !formData.exam_standard ||
+      formData.exam_standard === "manual"
+    ) {
+      return;
+    }
+
+    const selectedStandard = examStandards.find(
+      (std) => std.id === parseInt(formData.exam_standard),
+    );
+
+    if (!selectedStandard) return;
+
+    const result = calculateOfficialGrade(
+      selectedStandard.name,
+      formData.total_score,
+    );
+
+    if (result) {
+      setFormData((prev) => ({
+        ...prev,
+        grade: result.grade,
+        status: result.status,
+      }));
+    }
+  }, [formData.total_score, formData.exam_standard, examStandards]);
 
   if (!isOpen) return null;
 
@@ -657,11 +751,14 @@ export default function AddOfficialExamModal({
             <div className="space-y-1.5">
               <InputLabel label="점수" hasError={false} />
               <input
+                type="number"
+                step="0.01"
+                min="0"
                 name="total_score"
                 value={formData.total_score}
                 onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
-                placeholder="점수 입력"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-bold text-primary placeholder:text-slate-400 text-sm text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0"
               />
               <p className="text-[11px] text-slate-400 font-medium pl-1">
                 * 점수를 확인한 경우 입력하세요.
@@ -672,12 +769,12 @@ export default function AddOfficialExamModal({
               <input
                 name="grade"
                 value={formData.grade}
-                onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
-                placeholder="등급 입력"
+                readOnly
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 focus:outline-none font-bold text-sm pointer-events-none text-primary placeholder:text-slate-400 text-center"
+                placeholder="자동 입력"
               />
               <p className="text-[11px] text-slate-400 font-medium pl-1">
-                * 등급을 확인한 경우 입력하세요.
+                * 점수에 따라 자동 입력됩니다.
               </p>
             </div>
           </div>
