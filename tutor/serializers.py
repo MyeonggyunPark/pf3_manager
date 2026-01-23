@@ -28,11 +28,11 @@ class TutorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tutor
-        
+
         # Expose only necessary fields to the frontend
         # 프론트엔드에 필요한 필드만 노출합니다 (보안 및 데이터 최소화)
         fields = ("id", "email", "name", "provider", "is_staff")
-        
+
         # Prevent modification of critical fields via API
         # API를 통한 중요한 필드의 임의 수정을 방지합니다
         read_only_fields = ("email", "provider", "is_staff")
@@ -94,7 +94,7 @@ class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = "__all__"
-        
+
         # Tutor is automatically assigned based on the logged-in user in the ViewSet
         # 튜터는 ViewSet에서 로그인한 사용자를 기준으로 자동 할당되므로 읽기 전용으로 설정합니다
         read_only_fields = ("tutor",)
@@ -172,6 +172,16 @@ class ExamScoreInputSerializer(serializers.ModelSerializer):
     수동 점수 입력(예: 쓰기/말하기 영역)을 위한 시리얼라이저입니다.
     """
 
+    # Read-only fields to display section metadata (category, max score) on the frontend
+    # 프론트엔드 표시를 위해 섹션 메타데이터(카테고리, 만점)를 보여주는 읽기 전용 필드입니다.
+    category = serializers.CharField(source="exam_section.category", read_only=True)
+    section_max_score = serializers.DecimalField(
+        source="exam_section.section_max_score",
+        max_digits=5,
+        decimal_places=2,
+        read_only=True,
+    )
+
     class Meta:
         model = ExamScoreInput
         fields = "__all__"
@@ -182,6 +192,19 @@ class ExamDetailResultSerializer(serializers.ModelSerializer):
     Serializer for detailed question results (O/X).
     문항별 상세 결과(O/X 데이터)를 위한 시리얼라이저입니다.
     """
+
+    # Read-only fields to provide context (category, points) for the detailed results
+    # 상세 결과를 위한 컨텍스트(카테고리, 배점, 섹션 만점)를 제공하는 읽기 전용 필드입니다.
+    category = serializers.CharField(source="exam_section.category", read_only=True)
+    points = serializers.DecimalField(
+        source="exam_section.points_per_question",
+        max_digits=4,
+        decimal_places=2,
+        read_only=True,
+    )
+    section_max_score = serializers.IntegerField(
+        source="exam_section.section_max_score", read_only=True
+    )
 
     class Meta:
         model = ExamDetailResult
@@ -201,6 +224,10 @@ class ExamRecordSerializer(serializers.ModelSerializer):
     # UI를 위한 읽기 전용 필드: 'source' 속성의 점 표기법(.)을 사용하여 관계된 객체의 필드에 접근합니다
     student_name = serializers.CharField(source="student.name", read_only=True)
     exam_name = serializers.CharField(source="exam_standard.name", read_only=True)
+
+    # Changed to 'target_level' to display the student's goal instead of current level
+    # 현재 레벨 대신 학생의 목표 레벨을 표시하기 위해 'target_level'로 변경되었습니다
+    student_level = serializers.CharField(source="student.target_level", read_only=True)
 
     # Calculate max score dynamically based on exam mode (Full vs Partial)
     # 응시 유형(전체 vs 부분)에 따라 만점을 동적으로 계산하여 제공
@@ -258,9 +285,7 @@ class OfficialExamResultSerializer(serializers.ModelSerializer):
     # Read-only fields: Flatten student data for easier frontend display
     # 읽기 전용 필드: 프론트엔드 표시 편의를 위해 학생 데이터를 평탄화(Flatten)하여 제공합니다
     student_name = serializers.CharField(source="student.name", read_only=True)
-    student_level = serializers.CharField(
-        source="student.current_level", read_only=True
-    )
+    student_level = serializers.CharField(source="student.target_level", read_only=True)
 
     # Provide max score for reference if linked to a standard
     # 표준과 연결된 경우 참조용으로 만점 점수를 제공
@@ -280,7 +305,7 @@ class OfficialExamResultSerializer(serializers.ModelSerializer):
         """
         if obj.exam_standard:
             return obj.exam_standard.total_score
-        return None 
+        return None
 
 
 # ==========================================
@@ -298,9 +323,7 @@ class LessonSerializer(serializers.ModelSerializer):
     # Read-only fields for displaying related student info
     # 관련 학생 정보를 표시하기 위한 읽기 전용 필드
     student_name = serializers.CharField(source="student.name", read_only=True)
-    student_level = serializers.CharField(
-        source="student.current_level", read_only=True
-    )
+    student_level = serializers.CharField(source="student.target_level", read_only=True)
 
     # Computed fields for Calendar UI using SerializerMethodField
     # Format: ISO 8601 String ("YYYY-MM-DDTHH:MM:SS")

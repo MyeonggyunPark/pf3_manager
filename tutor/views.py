@@ -1,8 +1,10 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from django.db.models import Sum
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Sum, Count, Avg, Q
+from django.db.models.functions import TruncMonth
 
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
@@ -15,6 +17,8 @@ from .models import (
     ExamStandard,
     ExamRecord,
     ExamAttachment,
+    ExamDetailResult,
+    ExamScoreInput,
     OfficialExamResult,
     Lesson,
     Todo,
@@ -25,6 +29,8 @@ from .serializers import (
     ExamStandardSerializer,
     ExamRecordSerializer,
     ExamAttachmentSerializer,
+    ExamDetailResultSerializer,
+    ExamScoreInputSerializer,
     OfficialExamResultSerializer,
     LessonSerializer,
     TodoSerializer,
@@ -50,11 +56,11 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     search_fields = ["name"]
 
-    # Allow filtering by 'status' and 'current_level'
+    # Allow filtering by 'status' and 'target_level'
     # Useful for grouping students by proficiency in the frontend
-    # 'status' 및 'current_level' 필드를 기준으로 필터링을 허용
+    # 'status' 및 'target_level' 필드를 기준으로 필터링을 허용
     # 프론트엔드에서 숙련도별로 학생을 그룹화할 때 유용함
-    filterset_fields = ["status", "current_level"]
+    filterset_fields = ["status", "target_level"]
 
     def get_queryset(self):
         """
@@ -87,8 +93,12 @@ class CourseRegistrationViewSet(viewsets.ModelViewSet):
     # 'student' filter added to retrieve history for a specific student
     # 납부 상태 및 특정 학생에 따른 필터링을 허용
     # 특정 학생의 수강 이력을 조회하기 위해 'student' 필터 추가됨
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["is_paid", "student"]
+
+    # Enable search functionality by student name
+    # 학생 이름으로 검색 기능을 활성화
+    search_fields = ["student__name"]
 
     def get_queryset(self):
         """
@@ -126,7 +136,16 @@ class ExamRecordViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["student"]
+    
+    # Define detailed filtering options including date components (year, month)
+    # Useful for filtering records within a specific period in the frontend
+    # 날짜 구성 요소(연, 월)를 포함한 상세 필터링 옵션 정의
+    # 프론트엔드에서 특정 기간 내의 기록을 필터링할 때 유용함
+    filterset_fields = {
+        "student": ["exact"],
+        "exam_date": ["exact", "year", "month"],
+        "exam_mode": ["exact"],
+    }
 
     def get_queryset(self):
         """
@@ -188,7 +207,15 @@ class OfficialExamResultViewSet(viewsets.ModelViewSet):
     # 시험 유형(전체/필기/구술)별 필터링을 위해 'exam_mode' 추가
     # 부분 합격 현황을 분석하는 데 필수적임
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["student", "status", "exam_mode"]
+
+    # Expanded filtering capabilities to support exact matches and date parts
+    # 정확한 일치 및 날짜 부분 지원을 위해 필터링 기능 확장
+    filterset_fields = {
+        "student": ["exact"],
+        "status": ["exact"],
+        "exam_mode": ["exact"],
+        "exam_date": ["exact", "year", "month"],
+    }
 
     def get_queryset(self):
         """
@@ -387,3 +414,252 @@ class TodoViewSet(viewsets.ModelViewSet):
         로그인한 사용자를 투두의 소유자로 할당
         """
         serializer.save(tutor=self.request.user)
+
+
+class ExamStatsView(APIView):
+    """
+    API View for Exam Statistics.
+    Aggregates data for both Official Exams and Mock Exams to provide insights.
+
+    시험 통계 데이터를 제공하는 API View입니다.
+    정규 시험과 모의고사 데이터를 집계하여 인사이트를 제공합니다.
+    URL: /api/exams/stats/
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        year = request.query_params.get("year", datetime.now().year)
+
+        # Filter official results for the tutor's students within the selected year
+        # 선택된 연도 내 튜터 학생들의 정규 시험 결과 필터링
+        official_qs = OfficialExamResult.objects.filter(
+            student__tutor=user, exam_date__year=year
+        )
+
+        # Calculate KPIs excluding 'WAITING' status
+        # 'WAITING' 상태를 제외하고 KPI 계산
+        off_total = official_qs.exclude(status="WAITING").count()
+        off_passed = official_qs.filter(status="PASSED").count()
+        off_pass_rate = round((off_passed / off_total * 100), 1) if off_total > 0 else 0
+
+        # Aggregate pass/fail counts by target level
+        # 목표 레벨별 합격/불합격 카운트 집계
+        level_data = []
+        level_stats = (
+            official_qs.exclude(status="WAITING")
+            .values("student__target_level")
+            .annotate(
+                passed=Count("id", filter=Q(status="PASSED")),
+                failed=Count("id", filter=Q(status="FAILED")),
+            )
+            .order_by("student__target_level")
+        )
+        for entry in level_stats:
+            if entry["student__target_level"]:
+                level_data.append(
+                    {
+                        "level": entry["student__target_level"],
+                        "passed": entry["passed"],
+                        "failed": entry["failed"],
+                    }
+                )
+
+        mock_qs = ExamRecord.objects.filter(student__tutor=user, exam_date__year=year)
+
+        # [KPI] Calculate Total Average Score across all mock exams
+        # [KPI] 모든 모의고사에 대한 전체 평균 점수 계산
+        mock_avg_agg = mock_qs.aggregate(avg=Avg("total_score"))
+        mock_avg_score = round(mock_avg_agg["avg"] or 0, 1)
+
+        # [Chart 1] Monthly Average Score Trend using TruncMonth
+        # [Chart 1] TruncMonth를 사용한 월별 평균 점수 추이
+        mock_trend = (
+            mock_qs.annotate(month=TruncMonth("exam_date"))
+            .values("month")
+            .annotate(avg_score=Avg("total_score"))
+            .order_by("month")
+        )
+
+        trend_data = []
+        for entry in mock_trend:
+            trend_data.append(
+                {
+                    "month": entry["month"].strftime("%-m월"),
+                    "avg_score": round(entry["avg_score"] or 0, 1),
+                }
+            )
+
+        # [Chart 2] Weakness Analysis by Category
+        # [Chart 2] 카테고리별 취약점 분석
+        weakness_qs = ExamDetailResult.objects.filter(
+            exam_record__student__tutor=user, exam_record__exam_date__year=year
+        )
+
+        # Aggregate correct answers vs total questions per category
+        # 카테고리별 전체 문항 수 대비 정답 수 집계
+        category_stats = (
+            weakness_qs.values("exam_section__category")
+            .annotate(
+                total_questions=Count("id"),
+                correct_answers=Count("id", filter=Q(is_correct=True)),
+            )
+            .order_by("exam_section__category")
+        )
+
+        category_data = []
+        lowest_category = "-"
+        lowest_acc = 100
+
+        for entry in category_stats:
+            category = entry["exam_section__category"]
+            if not category:
+                continue
+
+            total = entry["total_questions"]
+            correct = entry["correct_answers"]
+            accuracy = round((correct / total * 100), 1) if total > 0 else 0
+
+            # Identify the category with the lowest accuracy for KPI
+            # KPI를 위해 정답률이 가장 낮은 카테고리 식별
+            if accuracy < lowest_acc:
+                lowest_acc = accuracy
+                lowest_category = category
+
+            category_data.append(
+                {
+                    "category": category,
+                    "accuracy": accuracy,
+                    "fullMark": 100,
+                }
+            )
+
+        # Handle case where no data exists to avoid incorrect KPI display
+        # 데이터가 없을 경우 잘못된 KPI 표시를 방지하기 위한 처리
+        if lowest_category == "-":
+            lowest_acc = 0
+
+        return Response(
+            {
+                "official": {
+                    "kpi": {
+                        "total": off_total,
+                        "pass_rate": off_pass_rate,
+                        "passed_count": off_passed,
+                    },
+                    "chart": level_data,
+                },
+                "mock": {
+                    "kpi": {
+                        "avg_score": mock_avg_score,
+                        "weakest_category": lowest_category,
+                        "weakest_score": lowest_acc,
+                    },
+                    "trend_chart": trend_data,
+                    "weakness_chart": category_data,
+                },
+            }
+        )
+
+
+class ExamDetailResultViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing detailed exam results (O/X).
+    Handles creation and updates of individual question results.
+
+    시험 문항별 상세 결과(O/X)를 관리하는 ViewSet입니다.
+    개별 문항 결과의 생성 및 수정을 처리합니다.
+    """
+
+    serializer_class = ExamDetailResultSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    # 대량 생성을 위한 필터링 등은 필요 시 추가, 기본 CRUD만 있어도 됨
+    def get_queryset(self):
+        """
+        Retrieve detailed results only for the logged-in tutor's students.
+        로그인한 튜터가 관리하는 학생들의 상세 결과만 조회합니다.
+        """
+
+        return ExamDetailResult.objects.filter(
+            exam_record__student__tutor=self.request.user
+        )
+
+    def create(self, request, *args, **kwargs):
+        """
+        Create or update a detail result record.
+        Uses 'update_or_create' to avoid duplicates for the same question.
+
+        상세 결과 기록을 생성하거나 수정합니다.
+        동일한
+        문항에 대한 중복을 피하기 위해 'update_or_create'를 사용합니다.
+        """
+
+        data = request.data
+
+        # Perform update if exists, otherwise create new record based on identifiers
+        # 식별자를 기반으로 존재하면 수정하고, 그렇지 않으면 새 기록을 생성
+        obj, created = ExamDetailResult.objects.update_or_create(
+            exam_record_id=data.get("exam_record"),
+            exam_section_id=data.get("exam_section"),
+            question_number=data.get("question_number"),
+            defaults={"is_correct": data.get("is_correct")},
+        )
+
+        # Return the serialized data with appropriate status code
+        # 적절한 상태 코드와 함께 시리얼라이즈된 데이터 반환
+        serializer = self.get_serializer(obj)
+        status_code = 201 if created else 200
+        return Response(serializer.data, status=status_code)
+
+
+class ExamScoreInputViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing subjective score inputs.
+    Handles scores for Writing/Speaking sections where partial points are possible.
+
+    주관식 영역(쓰기/말하기) 점수 입력을 관리하는 ViewSet입니다.
+    부분 점수가 가능한 쓰기/말하기 영역의 점수를 처리합니다.
+    """
+
+    serializer_class = ExamScoreInputSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Retrieve score inputs only for the logged-in tutor's students.
+        Ensures tutors can only access data related to their own students.
+
+        로그인한 튜터가 관리하는 학생들의 점수 입력만 조회합니다.
+        튜터가 자신의 학생 데이터에만 접근할 수 있도록 보장합니다.
+        """
+        
+        return ExamScoreInput.objects.filter(
+            exam_record__student__tutor=self.request.user
+        )
+
+    def create(self, request, *args, **kwargs):
+        """
+        Create or update a score input record.
+        Ensures only one score record exists per section per exam record.
+
+        점수 입력 기록을 생성하거나 수정합니다.
+        시험 기록당 섹션별로 하나의 점수 기록만 존재하도록 보장합니다.
+        """
+
+        data = request.data
+
+        # Update existing score or create a new one
+        # 기존 점수를 업데이트하거나 새로 생성
+        obj, created = ExamScoreInput.objects.update_or_create(
+            exam_record_id=data.get("exam_record"),
+            exam_section_id=data.get("exam_section"),
+            defaults={"score": data.get("score")},
+        )
+
+        # Return response
+        # 결과 반환
+        serializer = self.get_serializer(obj)
+        status_code = 201 if created else 200
+        return Response(serializer.data, status=status_code)

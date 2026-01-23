@@ -6,6 +6,9 @@ from .views import (
     ExamStandardViewSet,
     ExamRecordViewSet,
     ExamAttachmentViewSet,
+    ExamStatsView,
+    ExamDetailResultViewSet,
+    ExamScoreInputViewSet,
     OfficialExamResultViewSet,
     LessonViewSet,
     DashboardStatsView,
@@ -35,9 +38,13 @@ router.register(r"exam-standards", ExamStandardViewSet, basename="exam-standard"
 # /api/exam-records/ -> 시험 기록 CRUD 작업
 router.register(r"exam-records", ExamRecordViewSet, basename="exam-record")
 
-# /api/attachments/ -> Exam Attachments CRUD operations
-# /api/attachments/ -> 시험 첨부 파일 CRUD 작업
-router.register(r"attachments", ExamAttachmentViewSet, basename="exam-attachment")
+# /api/exam-detail-results/ -> Exam Detail Results CRUD operations
+# /api/exam-detail-results/ -> 시험 상세 결과(O/X) CRUD 작업
+router.register(r"exam-detail-results", ExamDetailResultViewSet, basename="exam-detail-result")
+
+# /api/exam-score-inputs/ -> Exam Score Inputs CRUD operations
+# /api/exam-score-inputs/ -> 시험 점수 입력(주관식) CRUD 작업
+router.register(r"exam-score-inputs", ExamScoreInputViewSet, basename="exam-score-input")
 
 # /api/official-results/ -> Official Exam Results CRUD operations
 # /api/official-results/ -> 정규 시험 결과 CRUD 작업
@@ -59,4 +66,8 @@ urlpatterns = [
     # Dashboard Stats Endpoint
     # 대시보드 통계 엔드포인트
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard-stats"),
+    
+    # Exam Stats Endpoint
+    # 시험 통계 엔드포인트
+    path("exams/stats/", ExamStatsView.as_view(), name="exam-stats"),
 ]
