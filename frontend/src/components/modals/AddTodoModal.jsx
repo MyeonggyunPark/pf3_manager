@@ -185,15 +185,15 @@ export default function AddTodoModal({
     );
   };
 
-  // Helper component for Labels with optional icon and error styling
-  // 선택적 아이콘 및 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
-  const InputLabel = ({ label, icon: Icon, hasError }) => (
+  // Helper component for Labels with error styling
+  // 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
+  const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 transition-colors ${
         hasError ? "text-destructive" : "text-slate-500"
       }`}
     >
-      {Icon && <Icon className="w-3 h-3" />} {label}
+      {label} {required && <span className="text-destructive">*</span>}
     </label>
   );
 
@@ -202,7 +202,6 @@ export default function AddTodoModal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
-        
         {/* Delete Confirmation Overlay (Conditional Rendering) */}
         {/* 삭제 확인 오버레이 (조건부 렌더링) */}
         {showDeleteConfirm && (
@@ -272,8 +271,9 @@ export default function AddTodoModal({
           )}
 
           <div className="space-y-1.5">
-            <InputLabel label="내용" hasError={!!errors.content} />
+            <InputLabel label="내용" hasError={!!errors.content} required />
             <input
+              required
               type="text"
               value={content}
               onChange={(e) => {
@@ -289,7 +289,7 @@ export default function AddTodoModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <InputLabel label="우선순위" hasError={!!errors.priority} />
+              <InputLabel label="우선순위" hasError={!!errors.priority} required />
               <div className="flex gap-2">
                 {PRIORITIES.map((p) => (
                   <SelectionChip
@@ -317,7 +317,7 @@ export default function AddTodoModal({
                   onChange={(e) => {
                     setDueDate(e.target.value);
                   }}
-                  
+
                   // Open native date picker on click for better UX
                   // 사용자 경험 개선을 위해 클릭 시 네이티브 날짜 선택창 열기
                   onClick={(e) => e.target.showPicker()}
@@ -332,7 +332,7 @@ export default function AddTodoModal({
           </div>
 
           <div className="space-y-1.5">
-            <InputLabel label="카테고리" hasError={!!errors.category} />
+            <InputLabel label="카테고리" hasError={!!errors.category} required />
             <div className="grid grid-cols-2 gap-2">
               {CATEGORIES.map((cat) => (
                 <SelectionChip

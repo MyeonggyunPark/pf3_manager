@@ -294,13 +294,13 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
 
   // Helper component for Labels with conditional error styling
   // 조건부 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
-  const InputLabel = ({ label, hasError }) => (
+  const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center ${
         hasError ? "text-destructive" : "text-slate-500"
       }`}
     >
-      {label}
+      {label} {required && <span className="text-destructive">*</span>}
     </label>
   );
 
@@ -385,7 +385,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Name Input */}
             {/* 이름 입력 */}
             <div className="col-span-12 sm:col-span-5 space-y-1.5">
-              <InputLabel label="이름" hasError={!!errors.name} />
+              <InputLabel label="이름" hasError={!!errors.name} required />
               <input
                 required
                 name="name"
@@ -400,7 +400,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Age Input */}
             {/* 나이 입력 */}
             <div className="col-span-4 sm:col-span-2 space-y-1.5">
-              <InputLabel label="나이" hasError={!!errors.age} />
+              <InputLabel label="나이" hasError={!!errors.age} required />
               <input
                 required
                 type="number"
@@ -416,7 +416,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Gender Selection */}
             {/* 성별 선택 */}
             <div className="col-span-8 sm:col-span-5 space-y-1.5">
-              <InputLabel label="성별" hasError={!!errors.gender} />
+              <InputLabel label="성별" hasError={!!errors.gender} required />
               <div className="grid grid-cols-2 gap-2 h-10">
                 <SelectionChip
                   label="남성"
@@ -445,7 +445,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Current Level */}
             {/* 현재 레벨 */}
             <div className="space-y-2">
-              <InputLabel label="현재 레벨" hasError={!!errors.current_level} />
+              <InputLabel label="현재 레벨" hasError={!!errors.current_level} required />
               <div className="grid grid-cols-3 gap-1.5">
                 {CURRENT_LEVEL_OPTIONS.map((lv) => (
                   <SelectionChip
@@ -464,7 +464,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Target Level */}
             {/* 목표 레벨 */}
             <div className="space-y-2">
-              <InputLabel label="목표 레벨" hasError={!!errors.target_level} />
+              <InputLabel label="목표 레벨" hasError={!!errors.target_level} required />
               <div className="grid grid-cols-3 gap-1.5">
                 {TARGET_LEVEL_OPTIONS.map((lv) => (
                   <SelectionChip
@@ -487,10 +487,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Target Exam Mode */}
             {/* 목표 시험 유형 */}
             <div className="col-span-12 sm:col-span-7 space-y-2">
-              <InputLabel
-                label="목표 응시 유형"
-                hasError={!!errors.target_exam_mode}
-              />
+              <InputLabel label="목표 응시 유형" hasError={!!errors.target_exam_mode} required />
               <div className="grid grid-cols-3 gap-1.5">
                 <SelectionChip
                   label="Gesamt"
@@ -520,7 +517,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Status */}
             {/* 수강 상태 */}
             <div className="col-span-12 sm:col-span-5 space-y-2">
-              <InputLabel label="수강 상태" hasError={!!errors.status} />
+              <InputLabel label="수강 상태" hasError={!!errors.status} required />
               <div className="grid grid-cols-3 gap-1.5">
                 <SelectionChip
                   label="수강중"

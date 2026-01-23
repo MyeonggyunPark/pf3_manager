@@ -58,12 +58,13 @@ export default function AddOfficialExamModal({
   // examData prop을 처리하기 위해 지연 초기화를 사용하여 폼 데이터 초기화
   const [formData, setFormData] = useState(() => {
     if (examData) {
+
+      const isManualMode = !examData.exam_standard && !!examData.exam_name_manual;
+
       return {
         student: examData.student,
-        exam_standard: examData.exam_standard || "",
+        exam_standard: isManualMode ? "manual" : examData.exam_standard || "",
         exam_name_manual: examData.exam_name_manual || "",
-        // Format date for input field
-        // 입력 필드를 위해 날짜 포맷팅
         exam_date: formatDateForInput(examData.exam_date),
         exam_mode: examData.exam_mode || "",
         status: examData.status || "",
@@ -133,9 +134,12 @@ export default function AddOfficialExamModal({
   useEffect(() => {
     if (isOpen) {
       if (examData) {
+
+        const isManualMode = !examData.exam_standard && !!examData.exam_name_manual;
+
         setFormData({
           student: examData.student,
-          exam_standard: examData.exam_standard || "",
+          exam_standard: isManualMode ? "manual" : examData.exam_standard || "",
           exam_name_manual: examData.exam_name_manual || "",
           exam_date: formatDateForInput(examData.exam_date),
           exam_mode: examData.exam_mode || "FULL",
@@ -227,8 +231,15 @@ export default function AddOfficialExamModal({
     if (!formData.student) newErrors.student = "학생을 선택해주세요.";
     if (!formData.exam_date) newErrors.exam_date = "응시일을 선택해주세요.";
     if (!formData.exam_mode) newErrors.exam_mode = "응시 유형을 선택해주세요.";
-    if (!formData.exam_standard && !formData.exam_name_manual.trim()) {
-      newErrors.exam_standard = "시험 종류를 선택하거나 직접 입력해주세요.";
+    if (
+      (!formData.exam_standard || formData.exam_standard === "manual") &&
+      !formData.exam_name_manual.trim()
+    ) {
+      if (formData.exam_standard === "manual") {
+        newErrors.exam_name_manual = "시험 명칭을 입력해주세요.";
+      } else {
+        newErrors.exam_standard = "시험 종류를 선택하거나 직접 입력해주세요.";
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -244,9 +255,11 @@ export default function AddOfficialExamModal({
       const payload = {
         ...formData,
         student: parseInt(formData.student, 10),
-        exam_standard: formData.exam_standard
-          ? parseInt(formData.exam_standard, 10)
-          : null,
+        exam_standard:
+          formData.exam_standard === "manual" || !formData.exam_standard
+            ? null
+            : parseInt(formData.exam_standard, 10),
+        exam_name_manual: formData.exam_name_manual,
         total_score: formData.total_score
           ? parseFloat(formData.total_score)
           : null,
@@ -305,13 +318,13 @@ export default function AddOfficialExamModal({
 
   // Helper component for labels with error state styling
   // 에러 상태 스타일링이 적용된 라벨 헬퍼 컴포넌트
-  const InputLabel = ({ label, hasError }) => (
+  const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 ${
         hasError ? "text-destructive" : "text-slate-500"
       }`}
     >
-      {label}
+      {label} {required && <span className="text-destructive">*</span>}
     </label>
   );
 
@@ -346,7 +359,6 @@ export default function AddOfficialExamModal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
-        
         {/* Delete Confirmation Overlay */}
         {/* 삭제 확인 오버레이 */}
         {showDeleteConfirm && (
@@ -422,7 +434,7 @@ export default function AddOfficialExamModal({
             {/* Student Selection */}
             {/* 학생 선택 */}
             <div className="space-y-1.5">
-              <InputLabel label="학생" hasError={!!errors.student} />
+              <InputLabel label="학생" hasError={!!errors.student} required />
               <div className="relative">
                 <select
                   name="student"
@@ -438,7 +450,11 @@ export default function AddOfficialExamModal({
                     학생을 선택하세요.
                   </option>
                   {students.map((student) => (
-                    <option key={student.id} value={student.id}>
+                    <option
+                      key={student.id}
+                      value={student.id}
+                      className="text-slate-800"
+                    >
                       {student.name}
                     </option>
                   ))}
@@ -470,8 +486,13 @@ export default function AddOfficialExamModal({
             {/* Exam Date Input */}
             {/* 응시일 입력 */}
             <div className="space-y-1.5">
-              <InputLabel label="응시일" hasError={!!errors.exam_date} />
+              <InputLabel
+                label="응시일"
+                hasError={!!errors.exam_date}
+                required
+              />
               <input
+                required
                 type="date"
                 name="exam_date"
                 value={formData.exam_date}
@@ -490,21 +511,38 @@ export default function AddOfficialExamModal({
           {/* Exam Standard Selection */}
           {/* 시험 종류 선택 */}
           <div className="space-y-1.5">
-            <InputLabel label="시험 종류" hasError={!!errors.exam_standard} />
+            <InputLabel
+              label="시험 종류"
+              hasError={!!errors.exam_standard}
+              required
+            />
             <div className="relative">
               <select
                 name="exam_standard"
                 value={formData.exam_standard}
                 onChange={(e) => {
                   handleChange(e);
-                  if (e.target.value) handleValueChange("exam_name_manual", "");
+                  if (e.target.value !== "manual") {
+                    handleValueChange("exam_name_manual", "");
+                  }
                 }}
                 className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer
-                ${formData.exam_standard === "" ? "text-slate-400" : "text-slate-800"}`}
+                ${
+                  !formData.exam_standard ? "text-slate-400" : "text-slate-800"
+                }`}
               >
-                <option value="">(선택지 없을 시) 직접 입력</option>
+                <option value="" disabled hidden>
+                  시험 종류를 선택하세요.
+                </option>
+                <option value="manual" className="text-slate-800">
+                  (선택지 없을 시) 직접 입력
+                </option>
                 {examStandards.map((std) => (
-                  <option key={std.id} value={std.id}>
+                  <option
+                    key={std.id}
+                    value={std.id}
+                    className="text-slate-800"
+                  >
                     {std.name}
                   </option>
                 ))}
@@ -530,22 +568,21 @@ export default function AddOfficialExamModal({
 
           {/* Manual Exam Name Input (Conditionally rendered) */}
           {/* 직접 입력 필드 (조건부 렌더링) */}
-          {!formData.exam_standard && (
+          {formData.exam_standard === "manual" && (
             <div className="space-y-1.5 animate-in slide-in-from-top-2">
               <InputLabel
                 label="시험 종류 (직접 입력)"
-                hasError={!!errors.exam_standard}
+                hasError={!!errors.exam_name_manual}
               />
               <input
+                required
                 name="exam_name_manual"
                 value={formData.exam_name_manual}
-                onChange={(e) => {
-                  handleChange(e);
-                  if (e.target.value) handleValueChange("exam_standard", "");
-                }}
+                onChange={handleChange}
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
                 placeholder="시험 명칭 입력"
               />
+              <ErrorMessage message={errors.exam_name_manual} />
             </div>
           )}
 
@@ -554,7 +591,11 @@ export default function AddOfficialExamModal({
           {/* Exam Mode Selection */}
           {/* 응시 유형 선택 */}
           <div className="space-y-2">
-            <InputLabel label="응시 유형" hasError={!!errors.exam_mode} />
+            <InputLabel
+              label="응시 유형"
+              hasError={!!errors.exam_mode}
+              required
+            />
             <div className="grid grid-cols-3 gap-2">
               <SelectionChip
                 label="Gesamt"
@@ -584,7 +625,7 @@ export default function AddOfficialExamModal({
           {/* Exam Status Selection */}
           {/* 시험 상태 선택 */}
           <div className="space-y-2">
-            <InputLabel label="시험 상태" hasError={false} />
+            <InputLabel label="시험 상태" hasError={false} required />
             <div className="grid grid-cols-3 gap-2">
               <SelectionChip
                 label="대기"
@@ -620,7 +661,7 @@ export default function AddOfficialExamModal({
                 value={formData.total_score}
                 onChange={handleChange}
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
-                placeholder="z.B. 점수/총점"
+                placeholder="점수 입력"
               />
               <p className="text-[11px] text-slate-400 font-medium pl-1">
                 * 점수를 확인한 경우 입력하세요.
@@ -633,7 +674,7 @@ export default function AddOfficialExamModal({
                 value={formData.grade}
                 onChange={handleChange}
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
-                placeholder="z.B. gut, sehr gut"
+                placeholder="등급 입력"
               />
               <p className="text-[11px] text-slate-400 font-medium pl-1">
                 * 등급을 확인한 경우 입력하세요.

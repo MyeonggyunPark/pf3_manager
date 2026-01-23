@@ -245,13 +245,13 @@ export default function AddCourseModal({
 
   // Helper component for Labels with conditional error styling
   // 조건부 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
-  const InputLabel = ({ label, hasError }) => (
+  const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 block mb-1.5 ${
         hasError ? "text-destructive" : "text-slate-500"
       }`}
     >
-      {label}
+      {label} {required && <span className="text-destructive">*</span>}
     </label>
   );
 
@@ -348,7 +348,7 @@ export default function AddCourseModal({
           {/* Row 1: Student & Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <InputLabel label="학생" hasError={!!errors.student} />
+              <InputLabel label="학생" hasError={!!errors.student} required />
               <div className="relative">
                 <select
                   name="student"
@@ -399,7 +399,11 @@ export default function AddCourseModal({
             </div>
 
             <div>
-              <InputLabel label="수강 상태" hasError={!!errors.status} />
+              <InputLabel
+                label="수강 상태"
+                hasError={!!errors.status}
+                required
+              />
               <div className="grid grid-cols-3 gap-2">
                 <SelectionChip
                   label="진행중"
@@ -430,8 +434,13 @@ export default function AddCourseModal({
           {/* Row 2: Date Range */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <InputLabel label="시작일" hasError={!!errors.start_date} />
+              <InputLabel
+                label="시작일"
+                hasError={!!errors.start_date}
+                required
+              />
               <input
+                required
                 type="date"
                 name="start_date"
                 value={formData.start_date}
@@ -446,8 +455,13 @@ export default function AddCourseModal({
               <ErrorMessage message={errors.start_date} />
             </div>
             <div>
-              <InputLabel label="종료일" hasError={!!errors.end_date} />
+              <InputLabel
+                label="종료일"
+                hasError={!!errors.end_date}
+                required
+              />
               <input
+                required
                 type="date"
                 name="end_date"
                 value={formData.end_date}
@@ -469,8 +483,13 @@ export default function AddCourseModal({
           <div className="grid grid-cols-12 gap-3 items-end">
             {/* 1. Total Hours */}
             <div className="col-span-6 sm:col-span-3">
-              <InputLabel label="총 시간 (h)" hasError={!!errors.total_hours} />
+              <InputLabel
+                label="총 시간 (h)"
+                hasError={!!errors.total_hours}
+                required
+              />
               <input
+                required
                 type="number"
                 name="total_hours"
                 value={formData.total_hours}
@@ -483,8 +502,9 @@ export default function AddCourseModal({
 
             {/* 2. Hourly Rate */}
             <div className="col-span-6 sm:col-span-3">
-              <InputLabel label="시간당 (€)" hasError={!!errors.hourly_rate} />
+              <InputLabel label="시간당 (€)" hasError={!!errors.hourly_rate} required />
               <input
+                required
                 type="number"
                 name="hourly_rate"
                 value={formData.hourly_rate}

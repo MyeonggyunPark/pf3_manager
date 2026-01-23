@@ -252,13 +252,13 @@ export default function AddLessonModal({
 
   // Helper component for Labels with conditional error styling
   // 조건부 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
-  const InputLabel = ({ label, hasError }) => (
+  const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 ${
         hasError ? "text-destructive" : "text-slate-500"
       }`}
     >
-      {label}
+      {label} {required && <span className="text-destructive">*</span>}
     </label>
   );
 
@@ -339,9 +339,10 @@ export default function AddLessonModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
-              <InputLabel label="학생" hasError={!!errors.student} />
+              <InputLabel label="학생" hasError={!!errors.student} required />
               <div className="relative">
                 <select
+                  required
                   name="student"
                   value={formData.student}
                   onChange={handleChange}
@@ -389,8 +390,9 @@ export default function AddLessonModal({
             </div>
 
             <div className="space-y-1.5">
-              <InputLabel label="수업일" hasError={!!errors.date} />
+              <InputLabel label="수업일" hasError={!!errors.date} required />
               <input
+                required
                 type="date"
                 name="date"
                 value={formData.date}
@@ -407,6 +409,7 @@ export default function AddLessonModal({
               <InputLabel
                 label="수업 시간"
                 hasError={!!errors.start_time || !!errors.end_time}
+                required
               />
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -435,11 +438,13 @@ export default function AddLessonModal({
                       </option>
                     ))}
                   </select>
-                  <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 ${
+                  <div
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 ${
                       formData.start_time === ""
                         ? "text-slate-400"
                         : "text-slate-800"
-                    }`}>
+                    }`}
+                  >
                     <Clock className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -472,11 +477,13 @@ export default function AddLessonModal({
                       </option>
                     ))}
                   </select>
-                  <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 ${
+                  <div
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 ${
                       formData.end_time === ""
                         ? "text-slate-400"
                         : "text-slate-800"
-                    }`}>
+                    }`}
+                  >
                     <Clock className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -499,7 +506,7 @@ export default function AddLessonModal({
           <div className="h-px bg-slate-100 w-full my-2" />
 
           <div className="space-y-2">
-            <InputLabel label="수업 상태" hasError={!!errors.status} />
+            <InputLabel label="수업 상태" hasError={!!errors.status} required />
             <div className="grid grid-cols-4 gap-2">
               <SelectionChip
                 label="예정"
@@ -548,14 +555,12 @@ export default function AddLessonModal({
           {/* Action Buttons with Delete Option */}
           {/* 삭제 옵션이 포함된 액션 버튼 */}
           <div className="flex items-center gap-3 pt-2">
-
             {/* Show delete button only in edit mode */}
             {/* 수정 모드일 때만 삭제 버튼 표시 */}
             {isEditMode && (
               <Button
                 type="button"
                 className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
-                
                 // Call handleRequestDelete to show overlay
                 // 오버레이 표시를 위해 handleRequestDelete 호출
                 onClick={handleRequestDelete}
