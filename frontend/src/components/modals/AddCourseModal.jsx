@@ -601,7 +601,7 @@ export default function AddCourseModal({
             </Button>
             <Button
               type="submit"
-              className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 cursor-pointer"
+              className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
               disabled={isLoading || isDeleting}
             >
               {isLoading ? (

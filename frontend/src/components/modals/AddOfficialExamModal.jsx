@@ -764,7 +764,7 @@ export default function AddOfficialExamModal({
                 * 점수를 확인한 경우 입력하세요.
               </p>
             </div>
-            <div className="space-y-1.5">
+            <div className="cursor-not-allowed">
               <InputLabel label="등급" hasError={false} />
               <input
                 name="grade"
@@ -773,9 +773,6 @@ export default function AddOfficialExamModal({
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 focus:outline-none font-bold text-sm pointer-events-none text-primary placeholder:text-slate-400 text-center"
                 placeholder="자동 입력"
               />
-              <p className="text-[11px] text-slate-400 font-medium pl-1">
-                * 점수에 따라 자동 입력됩니다.
-              </p>
             </div>
           </div>
 

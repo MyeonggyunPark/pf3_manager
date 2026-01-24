@@ -947,7 +947,7 @@ export default function AddMockExamModal({
                 <div className="grid grid-cols-2 gap-4 items-end">
                   <div>
                     <InputLabel label="점수" />
-                    <div className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 flex items-center overflow-hidden">
+                    <div className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 flex items-center overflow-hidden cursor-not-allowed">
                       <span
                         className={`text-sm font-bold truncate w-full text-end ${formData.total_score > 0 ? "text-primary" : "text-slate-400"}`}
                       >
@@ -958,7 +958,7 @@ export default function AddMockExamModal({
                       </span>
                     </div>
                   </div>
-                  <div>
+                  <div className="cursor-not-allowed">
                     <InputLabel label="등급" />
                     <input
                       name="grade"
@@ -1013,7 +1013,7 @@ export default function AddMockExamModal({
 
         {/* Action Buttons Footer */}
         {/* 액션 버튼 푸터 */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50 shrink-0 flex gap-3 z-10">
+        <div className="flex gap-3 p-4">
           {isEditMode && (
             <Button
               type="button"
