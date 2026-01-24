@@ -653,7 +653,8 @@ export default function ExamResults() {
             </>
           ) : (
             <>
-              <LucideIcons.Award className="w-4 h-4 mr-2" /> 정규시험 추가
+              <LucideIcons.GraduationCap className="w-4 h-4 mr-2" /> 정규시험
+              추가
             </>
           )}
         </Button>

@@ -517,7 +517,7 @@ export default function AddCourseModal({
             {/* 3. Total Fee (Read Only) */}
             <div className="col-span-6 sm:col-span-3">
               <InputLabel label="총 금액" hasError={false} />
-              <div className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 flex items-center justify-center overflow-hidden">
+              <div className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 flex items-center justify-center overflow-hidden cursor-not-allowed">
                 <span className="text-sm font-bold text-primary truncate">
                   {formatCurrency(calculatedTotalFee)}
                 </span>
