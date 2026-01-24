@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
+from dj_rest_auth.serializers import PasswordChangeSerializer
+
 from .models import (
     Tutor,
     Student,
@@ -388,3 +390,26 @@ class TodoSerializer(serializers.ModelSerializer):
         model = Todo
         fields = "__all__"
         read_only_fields = ("tutor", "category_display", "priority_display")
+
+
+# ==========================================
+# 8. Password Management Serializers
+# ==========================================
+class CustomPasswordChangeSerializer(PasswordChangeSerializer):
+    """
+    Custom serializer for changing user password.
+    Includes additional validation for the current (old) password.
+
+    사용자 비밀번호 변경을 위한 커스텀 시리얼라이저입니다.
+    현재(기존) 비밀번호에 대한 추가 검증 로직을 포함합니다.
+    """
+
+    def validate_old_password(self, value):
+        """
+        Check if the provided old password matches the user's current password.
+        입력된 기존 비밀번호가 사용자의 현재 비밀번호와 일치하는지 확인합니다.
+        """
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("현재 비밀번호와 일치하지 않습니다.")
+        return value

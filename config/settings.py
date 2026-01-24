@@ -154,17 +154,23 @@ DATABASES = {
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    # },
+    
+    # Custom password validator to enforce specific complexity requirements
+    # 특정 복잡성 요구 사항을 적용하기 위한 커스텀 비밀번호 검증기
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        "NAME": "tutor.validators.CustomPasswordValidator",
     },
 ]
 
@@ -252,9 +258,15 @@ REST_AUTH = {
     "JWT_AUTH_COOKIE_USE_CSRF": False,
     "SESSION_LOGIN": False,
     
+    # Password change settings
+    # 비밀번호 변경 설정
+    'OLD_PASSWORD_FIELD_ENABLED': True, 
+    'LOGOUT_ON_PASSWORD_CHANGE': False,
+    
     # Serializers
     "USER_DETAILS_SERIALIZER": "tutor.serializers.TutorSerializer",
     "REGISTER_SERIALIZER": "tutor.serializers.CustomRegisterSerializer",
+    'PASSWORD_CHANGE_SERIALIZER': 'tutor.serializers.CustomPasswordChangeSerializer',
 }
 
 SIMPLE_JWT = {

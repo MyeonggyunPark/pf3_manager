@@ -19,10 +19,8 @@ urlpatterns = [
     # Tutor 애플리케이션의 메인 API 엔드포인트
     path("api/", include("tutor.urls")),
     
-    # Authentication Endpoints (dj-rest-auth & allauth)
-    # 인증 엔드포인트 (dj-rest-auth 및 allauth)
-    # Standard Login/Logout/Password Reset
-    # 표준 로그인/로그아웃/비밀번호 재설정
+    # Authentication Endpoints (Login, Logout, User Details, Password Change)
+    # 인증 엔드포인트 (로그인, 로그아웃, 유저 정보, 비밀번호 변경)
     path("api/auth/", include("dj_rest_auth.urls")),
     
     # Registration (Signup)
