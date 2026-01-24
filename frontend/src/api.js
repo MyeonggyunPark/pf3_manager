@@ -1,15 +1,16 @@
 import axios from "axios";
 
-// Helper function to extract CSRF token from cookies
-// 쿠키에서 CSRF 토큰을 추출하는 헬퍼 함수
+// Extract CSRF token from cookies
+// 쿠키에서 CSRF 토큰 추출
 function getCookie(name) {
   let cookieValue = null;
   if (document.cookie && document.cookie !== "") {
     const cookies = document.cookie.split(";");
     for (let i = 0; i < cookies.length; i++) {
       const cookie = cookies[i].trim();
-      // Check if the cookie string begins with the name
-      // 쿠키 문자열의 시작이 'name=' 인지 확인
+
+      // Check for cookie name match
+      // 쿠키 이름 일치 확인
       if (cookie.substring(0, name.length + 1) === name + "=") {
         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
         break;
@@ -19,50 +20,71 @@ function getCookie(name) {
   return cookieValue;
 }
 
-// Get URL from environment variables (use local address if missing)
-// 환경 변수에서 URL을 가져오도록 수정 (없으면 로컬 주소 사용)
+// Set API base URL
+// API 기본 URL 설정
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 const api = axios.create({
   baseURL: BASE_URL,
+
+  // Enable cookie transmission (HttpOnly)
+  // 쿠키 전송 허용 (HttpOnly)
   withCredentials: true,
-  // [Required] Allow sending/receiving cookies (Session ID, CSRF Token)
-  // [필수] 쿠키(세션ID, CSRF토큰) 주고받기 허용
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request Interceptor: Inject CSRF Token
-// 요청 인터셉터: CSRF 토큰 주입
+// Request interceptor
+// 요청 인터셉터
 api.interceptors.request.use(
   (config) => {
     const csrfToken = getCookie("csrftoken");
-    // Django typically checks CSRF only on state-changing requests like POST, PUT, DELETE
-    // Django는 보통 POST, PUT, DELETE 등 데이터 변경 요청에만 CSRF 검사를 함
+
+    // Inject CSRF token if present
+    // CSRF 토큰 존재 시 헤더 주입
     if (csrfToken) {
       config.headers["X-CSRFToken"] = csrfToken;
     }
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => {
+    return Promise.reject(error);
+  },
 );
 
-// Response Interceptor: Handle 401 Unauthorized
-// 응답 인터셉터: 401 처리
+// Response interceptor
+// 응답 인터셉터
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   async (error) => {
+    const originalRequest = error.config;
+
+    // Handle 401 Unauthorized errors
+    // 401 인증 에러 처리
     if (error.response && error.response.status === 401) {
-      if (!error.config.url.includes("/login/")) {
-        console.warn("Unauthorized! Session expired.");
+      
+      // Exclude login requests
+      // 로그인 요청 제외
+      if (!originalRequest.url.includes("/login/")) {
+        console.warn("[API] Session expired. Logging out...");
+
+        // Clear local storage
+        // 로컬 스토리지 초기화
         localStorage.removeItem("user_info");
         localStorage.removeItem("is_logged_in");
-        // Uncomment if redirect is needed
-        // 필요 시 주석 해제
-        // window.location.href = "/";
+
+        // Redirect to login page if not already there
+        // 로그인 페이지가 아닌 경우 이동
+        if (window.location.pathname !== "/login") {
+          alert("Session expired. Please log in again.");
+          window.location.href = "/login";
+        }
       }
     }
+
     return Promise.reject(error);
   },
 );
