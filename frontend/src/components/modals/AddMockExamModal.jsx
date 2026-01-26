@@ -653,7 +653,7 @@ export default function AddMockExamModal({
                     </div>
                   </div>
                   {students.length === 0 && (
-                    <p className="text-xs text-slate-400 mt-1 ml-1">
+                    <p className="text-xs text-destructive mt-1 ml-1">
                       * 등록된 수강중 학생이 없습니다.
                     </p>
                   )}

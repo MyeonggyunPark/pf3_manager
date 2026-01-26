@@ -1,16 +1,13 @@
 import axios from "axios";
 
-// Extract CSRF token from cookies
-// 쿠키에서 CSRF 토큰 추출
+// Helper to retrieve cookie by name
+// 쿠키 이름으로 값 조회
 function getCookie(name) {
   let cookieValue = null;
   if (document.cookie && document.cookie !== "") {
     const cookies = document.cookie.split(";");
     for (let i = 0; i < cookies.length; i++) {
       const cookie = cookies[i].trim();
-
-      // Check for cookie name match
-      // 쿠키 이름 일치 확인
       if (cookie.substring(0, name.length + 1) === name + "=") {
         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
         break;
@@ -20,41 +17,35 @@ function getCookie(name) {
   return cookieValue;
 }
 
-// Set API base URL
-// API 기본 URL 설정
+// Base API URL setup from env
+// 환경 변수에서 API 기본 URL 설정
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
+// Create Axios instance with cookie support (HttpOnly)
+// 쿠키 지원(HttpOnly)을 포함한 Axios 인스턴스 생성
 const api = axios.create({
   baseURL: BASE_URL,
-
-  // Enable cookie transmission (HttpOnly)
-  // 쿠키 전송 허용 (HttpOnly)
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor
-// 요청 인터셉터
+// Request interceptor: Attach CSRF token
+// 요청 인터셉터: CSRF 토큰 헤더 첨부
 api.interceptors.request.use(
   (config) => {
     const csrfToken = getCookie("csrftoken");
-
-    // Inject CSRF token if present
-    // CSRF 토큰 존재 시 헤더 주입
     if (csrfToken) {
       config.headers["X-CSRFToken"] = csrfToken;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
-// Response interceptor
-// 응답 인터셉터
+// Response interceptor: Global error handling
+// 응답 인터셉터: 전역 에러 처리
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -62,24 +53,34 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle 401 Unauthorized errors
-    // 401 인증 에러 처리
+    // Handle 401 Unauthorized (Session expired)
+    // 401 미인증 에러 처리 (세션 만료)
     if (error.response && error.response.status === 401) {
-      
-      // Exclude login requests
-      // 로그인 요청 제외
-      if (!originalRequest.url.includes("/login/")) {
-        console.warn("[API] Session expired. Logging out...");
+      // Skip for login/registration requests
+      // 로그인/회원가입 요청은 로직 제외
+      if (
+        !originalRequest.url.includes("/login/") &&
+        !originalRequest.url.includes("/registration/")
+      ) {
+        console.warn("[API] Session expired or invalid. Logging out...");
 
         // Clear local storage
         // 로컬 스토리지 초기화
         localStorage.removeItem("user_info");
         localStorage.removeItem("is_logged_in");
+        localStorage.removeItem("saved_email");
 
-        // Redirect to login page if not already there
-        // 로그인 페이지가 아닌 경우 이동
-        if (window.location.pathname !== "/login") {
-          alert("Session expired. Please log in again.");
+        const currentPath = window.location.pathname;
+
+        // Prevent redirect loop on password reset pages
+        // 비밀번호 재설정 페이지에서는 리다이렉트 방지
+        if (currentPath.includes("/password-reset")) {
+          return Promise.reject(error);
+        }
+
+        // Redirect to login page
+        // 로그인 페이지로 이동
+        if (currentPath !== "/login") {
           window.location.href = "/login";
         }
       }
