@@ -13,6 +13,7 @@ from .views import (
     LessonViewSet,
     DashboardStatsView,
     TodoViewSet,
+    social_login_callback,
 )
 
 # Initialize DefaultRouter to automatically generate URLs for ViewSets
@@ -70,4 +71,8 @@ urlpatterns = [
     # Exam Stats Endpoint
     # 시험 통계 엔드포인트
     path("exams/stats/", ExamStatsView.as_view(), name="exam-stats"),
+    
+    # social login callback endpoint
+    # 소셜 로그인 콜백 엔드포인트
+    path("social/callback/", social_login_callback, name="social_callback"),
 ]

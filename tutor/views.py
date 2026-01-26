@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 
-from django.db.models import Sum
+from django.shortcuts import redirect
+from django.conf import settings
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, Count, Avg, Q
@@ -10,6 +11,14 @@ from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    authentication_classes,
+)
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import (
     Student,
@@ -136,7 +145,7 @@ class ExamRecordViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     filter_backends = [DjangoFilterBackend]
-    
+
     # Define detailed filtering options including date components (year, month)
     # Useful for filtering records within a specific period in the frontend
     # 날짜 구성 요소(연, 월)를 포함한 상세 필터링 옵션 정의
@@ -281,12 +290,12 @@ class LessonViewSet(viewsets.ModelViewSet):
         커스텀 엔드포인트: 오늘 날짜의 수업만 조회.
         """
         today_date = date.today()
-        
+
         # Filter today's lessons and sort by start time
         # 오늘 수업 필터링 및 시작 시간순 정렬
         lessons = self.get_queryset().filter(date=today_date).order_by("start_time")
         serializer = self.get_serializer(lessons, many=True)
-        
+
         return Response(serializer.data)
 
 
@@ -430,6 +439,9 @@ class ExamStatsView(APIView):
 
     def get(self, request):
         user = request.user
+
+        # Default to current year if not specified
+        # 연도 파라미터가 없으면 현재 연도를 기본값으로 사용
         year = request.query_params.get("year", datetime.now().year)
 
         # Filter official results for the tutor's students within the selected year
@@ -474,7 +486,9 @@ class ExamStatsView(APIView):
         mock_avg_score = round(mock_avg_agg["avg"] or 0, 1)
 
         # [Chart 1] Monthly Average Score Trend using TruncMonth
-        # [Chart 1] TruncMonth를 사용한 월별 평균 점수 추이
+        # Group mock exam records by month and calculate average score
+        # [Chart 1] TruncMonth를 이용한 월별 평균 점수 추이 분석
+        # 모의고사 기록을 월별로 그룹화하여 평균 점수 산출
         mock_trend = (
             mock_qs.annotate(month=TruncMonth("exam_date"))
             .values("month")
@@ -492,13 +506,17 @@ class ExamStatsView(APIView):
             )
 
         # [Chart 2] Weakness Analysis by Category
+        # Analyze which exam sections have the lowest accuracy
         # [Chart 2] 카테고리별 취약점 분석
+        # 정답률이 가장 낮은 시험 영역(섹션)을 분석하여 취약점 도출
         weakness_qs = ExamDetailResult.objects.filter(
             exam_record__student__tutor=user, exam_record__exam_date__year=year
         )
 
         # Aggregate correct answers vs total questions per category
+        # Uses conditional aggregation (filter inside Count)
         # 카테고리별 전체 문항 수 대비 정답 수 집계
+        # 조건부 집계(Count 내부 필터)를 사용하여 한 번의 쿼리로 처리
         category_stats = (
             weakness_qs.values("exam_section__category")
             .annotate(
@@ -589,17 +607,16 @@ class ExamDetailResultViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """
         Create or update a detail result record.
-        Uses 'update_or_create' to avoid duplicates for the same question.
+        Uses 'update_or_create' to ensure idempotency (safe to retry requests).
 
         상세 결과 기록을 생성하거나 수정합니다.
-        동일한
-        문항에 대한 중복을 피하기 위해 'update_or_create'를 사용합니다.
+        'update_or_create'를 사용하여 멱등성을 보장합니다 (중복 요청이 와도 데이터 무결성 유지).
         """
 
         data = request.data
 
-        # Perform update if exists, otherwise create new record based on identifiers
-        # 식별자를 기반으로 존재하면 수정하고, 그렇지 않으면 새 기록을 생성
+        # Perform update if exists based on unique constraint fields, otherwise create
+        # 유니크 제약 조건 필드(기록ID, 섹션ID, 문제번호)를 기준으로 존재하면 수정, 없으면 생성
         obj, created = ExamDetailResult.objects.update_or_create(
             exam_record_id=data.get("exam_record"),
             exam_section_id=data.get("exam_section"),
@@ -634,7 +651,7 @@ class ExamScoreInputViewSet(viewsets.ModelViewSet):
         로그인한 튜터가 관리하는 학생들의 점수 입력만 조회합니다.
         튜터가 자신의 학생 데이터에만 접근할 수 있도록 보장합니다.
         """
-        
+
         return ExamScoreInput.objects.filter(
             exam_record__student__tutor=self.request.user
         )
@@ -663,3 +680,57 @@ class ExamScoreInputViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(obj)
         status_code = 201 if created else 200
         return Response(serializer.data, status=status_code)
+
+
+@api_view(["GET"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def social_login_callback(request):
+    """
+    Callback function after successful social login via Allauth.
+    Issues JWT via HttpOnly cookies for enhanced security.
+
+    Allauth 소셜 로그인 성공 후 호출되는 콜백 함수.
+    보안 강화를 위해 JWT를 HttpOnly 쿠키로 발급합니다.
+    """
+    user = request.user
+
+    # Generate JWT tokens for the authenticated user
+    # 인증된 사용자를 위한 JWT 토큰(Access/Refresh) 생성
+    refresh = RefreshToken.for_user(user)
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
+
+    # Get the frontend base URL from settings
+    # 설정 파일에서 프론트엔드 베이스 URL을 가져옴
+    frontend_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+
+    # Secure redirection: Tokens are no longer exposed in the URL
+    # 보안 리다이렉션: 더 이상 URL에 토큰을 노출하지 않음
+    response = redirect(f"{frontend_url}/social/success")
+
+    # Set access token in HttpOnly cookie
+    # Security Note: Prevents JavaScript access to the token (XSS Protection)
+    # HttpOnly 쿠키에 액세스 토큰 설정
+    # 보안 참고: 자바스크립트가 토큰에 접근하는 것을 방지하여 XSS 공격을 차단함
+    response.set_cookie(
+        key=settings.REST_AUTH["JWT_AUTH_COOKIE"],
+        value=access_token,
+        httponly=settings.REST_AUTH["JWT_AUTH_HTTPONLY"],
+        secure=settings.REST_AUTH["JWT_AUTH_SECURE"],
+        samesite=settings.REST_AUTH["JWT_AUTH_SAMESITE"],
+        max_age=24 * 60 * 60,
+    )
+
+    # Set refresh token in HttpOnly cookie
+    # HttpOnly 쿠키에 리프레시 토큰 설정
+    response.set_cookie(
+        key=settings.REST_AUTH["JWT_AUTH_REFRESH_COOKIE"],
+        value=refresh_token,
+        httponly=settings.REST_AUTH["JWT_AUTH_HTTPONLY"],
+        secure=settings.REST_AUTH["JWT_AUTH_SECURE"],
+        samesite=settings.REST_AUTH["JWT_AUTH_SAMESITE"],
+        max_age=7 * 24 * 60 * 60,
+    )
+
+    return response

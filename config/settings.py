@@ -17,7 +17,11 @@ from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+# 프로젝트 내부 경로 생성 예시: BASE_DIR / 'subdir'
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+# .env 파일에서 환경변수 로드
 load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
@@ -31,9 +35,20 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
+# Define allowed hosts (domain names/IPs) that can serve this site
+# 이 사이트를 서비스할 수 있는 허용된 호스트(도메인/IP) 정의
 hosts = os.environ.get("ALLOWED_HOSTS", "")
-ALLOWED_HOSTS = hosts.split(",") if hosts else []
+ALLOWED_HOSTS = hosts.split(",") 
 
+# Base URLs for Frontend and Backend separation
+# 프론트엔드와 백엔드 분리 구조를 위한 기본 URL 설정
+FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL", "http://127.0.0.1:8000")
+
+# OAuth callback URLs constructed dynamically
+# 동적으로 생성되는 OAuth 콜백 URL
+GOOGLE_CALLBACK_URL = f"{BACKEND_BASE_URL}/api/social/login/google/callback/"
+KAKAO_CALLBACK_URL = f"{BACKEND_BASE_URL}/api/social/login/kakao/callback/"
 
 # Application definition
 
@@ -52,16 +67,18 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     # REST Framework & Authentication
+    # REST 프레임워크 및 인증 관련
     "rest_framework",
     "rest_framework.authtoken",
     "dj_rest_auth",
     "dj_rest_auth.registration",
     
     # CORS Headers for frontend communication
-    # 프론트엔드 통신을 위한 CORS 헤더 설정
+    # 프론트엔드 통신을 위한 CORS 헤더
     "corsheaders",
     
     # Allauth for Social Login
+    # 소셜 로그인을 위한 Allauth
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
@@ -69,6 +86,7 @@ THIRD_PARTY_APPS = [
     "allauth.socialaccount.providers.kakao",
     
     # Development Utilities
+    # 개발 편의 도구
     "django_seed",
     "django_extensions",
     
@@ -91,16 +109,37 @@ MIDDLEWARE = [
     # CORS middleware must be placed as high as possible to handle preflight requests
     # 프리플라이트 요청 처리를 위해 CORS 미들웨어는 가능한 최상단에 위치해야 함
     "corsheaders.middleware.CorsMiddleware",
+    
+    # Enforces security enhancements (e.g., SSL redirect, XSS protection)
+    # 보안 강화 (SSL 리다이렉트, XSS 보호 등) 적용
     "django.middleware.security.SecurityMiddleware",
     
     # Optimized static file serving for production
     # 배포 환경을 위한 최적화된 정적 파일 서빙
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    
+    # Manages user sessions across requests
+    # 요청 간 사용자 세션 관리
     "django.contrib.sessions.middleware.SessionMiddleware",
+    
+    # Adds common functionality (e.g., forbidding access to user agents)
+    # 일반적인 기능 추가 (예: 특정 사용자 에이전트 접근 금지 등)
     "django.middleware.common.CommonMiddleware",
+    
+    # Protects against Cross-Site Request Forgery (CSRF)
+    # 사이트 간 요청 위조(CSRF) 공격 방지
     "django.middleware.csrf.CsrfViewMiddleware",
+    
+    # Associates users with requests using sessions
+    # 세션을 사용하여 사용자와 요청을 연결 (인증 처리)
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    
+    # Enables cookie- and session-based message storage
+    # 쿠키 및 세션 기반 메시지 저장 기능 활성화
     "django.contrib.messages.middleware.MessageMiddleware",
+    
+    # Protects against clickjacking
+    # 클릭재킹 공격 방지
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     
     # Middleware for allauth account management
@@ -113,7 +152,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -131,6 +170,8 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# Helper function to get environment variables or raise an error
+# 환경 변수를 가져오거나 누락 시 에러를 발생시키는 도우미 함수
 def get_env_variable(var_name):
     try:
         return os.environ[var_name]
@@ -216,29 +257,46 @@ AUTHENTICATION_BACKENDS = [
 # Allauth & dj-rest-auth compatibility settings
 # Allauth와 dj-rest-auth 간의 호환성 설정
 ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_AUTHENTICATION_METHOD = "email"
-
-# Account registration settings
-# 계정 등록 설정
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_EMAIL_VERIFICATION = "none"
 
 # Fields required during signup
 # 가입 시 필수 입력 필드
 ACCOUNT_SIGNUP_FIELDS = [
-    "email",
+    "email*",
 ]
 
-# Map username field to the model's default
-# username 필드를 모델의 기본값으로 매핑
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+
+# Email verification settings
+# 이메일 인증 필수
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_UNIQUE_EMAIL = True
+
+# Account registration settings
+# 계정 등록 설정
+ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
+ACCOUNT_ADAPTER = "tutor.adapters.CustomAccountAdapter"
+
+
+# Email configuration
+# 이메일 설정
+# Settings for SMTP (Gmail)
+# SMTP 설정 (Gmail)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com" 
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Login/Logout redirects
 # 로그인/로그아웃 리다이렉트
-LOGIN_REDIRECT_URL = "/"
-ACCOUNT_LOGOUT_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "/api/social/callback/"
+ACCOUNT_LOGOUT_REDIRECT_URL = f"{FRONTEND_BASE_URL}/login"
 
 # JWT configuration (dj-rest-auth)
 REST_AUTH = {
@@ -246,10 +304,12 @@ REST_AUTH = {
     "JWT_AUTH_COOKIE": "my-app-auth",
     "JWT_AUTH_REFRESH_COOKIE": "my-app-refresh-token",
     
-    # Security adjustments for development (Set secure=True in production)
+    # Secure adjustments for development (Set secure=True in production)
     # 개발 환경 보안 조정 (프로덕션에서는 secure=True 설정 필요)
-    "JWT_AUTH_SECURE": False,
-    "JWT_AUTH_HTTPONLY": False,
+    # Changed: Set HTTPONLY to True to prevent XSS attacks
+    # 변경사항: XSS 공격 방지를 위해 HTTPONLY를 True로 설정
+    "JWT_AUTH_SECURE": not DEBUG,
+    "JWT_AUTH_HTTPONLY": True,
     "JWT_AUTH_SAMESITE": "Lax",
     "JWT_AUTH_COOKIE_DOMAIN": None,
     
@@ -260,23 +320,50 @@ REST_AUTH = {
     
     # Password change settings
     # 비밀번호 변경 설정
-    'OLD_PASSWORD_FIELD_ENABLED': True, 
-    'LOGOUT_ON_PASSWORD_CHANGE': False,
+    "OLD_PASSWORD_FIELD_ENABLED": True,
+    "LOGOUT_ON_PASSWORD_CHANGE": False,
+    "PASSWORD_RESET_CONFIRM_URL": "password-reset/confirm",
     
     # Serializers
+    # 시리얼라이저 설정
     "USER_DETAILS_SERIALIZER": "tutor.serializers.TutorSerializer",
     "REGISTER_SERIALIZER": "tutor.serializers.CustomRegisterSerializer",
-    'PASSWORD_CHANGE_SERIALIZER': 'tutor.serializers.CustomPasswordChangeSerializer',
+    "PASSWORD_CHANGE_SERIALIZER": "tutor.serializers.CustomPasswordChangeSerializer",
+    "PASSWORD_RESET_SERIALIZER": "tutor.serializers.CustomPasswordResetSerializer",
+    "PASSWORD_RESET_CONFIRM_SERIALIZER": "tutor.serializers.CustomPasswordResetConfirmSerializer",
 }
 
+# Security settings for Production
+# 배포 환경을 위한 보안 설정
+if not DEBUG:
+
+    # Enforce HTTPS and browser security headers
+    # HTTPS 강제 적용 및 브라우저 보안 헤더 설정
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 SIMPLE_JWT = {
+    # Token validity periods
+    # 토큰 유효 기간 설정
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=24),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    
+    # Enable refresh token rotation (new refresh token on use)
+    # 리프레시 토큰 로테이션 활성화 (사용 시 새로운 리프레시 토큰 발급)
     "ROTATE_REFRESH_TOKENS": True,
+    
+    # Blacklist old refresh tokens after rotation
+    # 로테이션 후 이전 리프레시 토큰을 블랙리스트 처리 (재사용 방지)
     "BLACKLIST_AFTER_ROTATION": True,
     "SIGNING_KEY": SECRET_KEY,
 }
 
+# Social login configuration using django-allauth
+# django-allauth를 이용한 소셜 로그인 설정
+SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "APP": {

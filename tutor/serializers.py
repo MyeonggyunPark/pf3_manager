@@ -1,6 +1,21 @@
+import os
+
+from django.conf import settings
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+from django.contrib.auth import get_user_model
+
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+
 from dj_rest_auth.registration.serializers import RegisterSerializer
-from dj_rest_auth.serializers import PasswordChangeSerializer
+from dj_rest_auth.serializers import (
+    PasswordChangeSerializer,
+    PasswordResetSerializer,
+    PasswordResetConfirmSerializer,
+)
 
 from .models import (
     Tutor,
@@ -49,6 +64,8 @@ class CustomRegisterSerializer(RegisterSerializer):
     settings.py의 dj-rest-auth 설정(ACCOUNT_ADAPTER 등)과 연동하여 사용됩니다.
     """
 
+    username = serializers.CharField(required=False, allow_blank=True)
+
     # Add 'name' field which is not in the default RegisterSerializer
     # 기본 RegisterSerializer에는 없는 'name' 필드를 명시적으로 추가합니다
     name = serializers.CharField(required=False)
@@ -56,14 +73,21 @@ class CustomRegisterSerializer(RegisterSerializer):
     def custom_signup(self, request, user):
         """
         Override standard signup method.
-        Save additional fields to the user model after successful signup.
+        Logic: If name is provided, use it. Otherwise, extract from email.
 
-        기본 회원가입 메서드를 오버라이드합니다.
-        회원가입 성공 후, 요청 데이터에 있는 추가 필드(name)를 유저 모델에 저장합니다.
+        기본 회원가입 로직 오버라이드.
+        로직: 이름이 제공되면 저장하고, 없으면 이메일 앞부분을 추출하여 이름으로 사용.
         """
-        if "name" in request.data:
+
+        if "name" in request.data and request.data["name"]:
             user.name = request.data["name"]
-            user.save()
+        else:
+            user.name = user.email.split("@")[0]
+
+        if not user.username:
+            user.username = user.email.split("@")[0]
+
+        user.save()
 
 
 # ==========================================
@@ -262,6 +286,8 @@ class ExamRecordSerializer(serializers.ModelSerializer):
         if obj.exam_mode == "FULL":
             return obj.exam_standard.total_score
 
+        # Find the module corresponding to the exam mode
+        # 응시 모드에 해당하는 모듈 탐색
         module = obj.exam_standard.modules.filter(module_type=obj.exam_mode).first()
         return module.max_score if module else 0
 
@@ -358,6 +384,9 @@ class LessonSerializer(serializers.ModelSerializer):
     def validate(self, data):
         start = data.get("start_time")
         end = data.get("end_time")
+
+        # Logic: End time must be after start time
+        # 로직: 종료 시간은 반드시 시작 시간보다 뒤여야 함
         if start and end and start >= end:
             raise serializers.ValidationError(
                 "종료 시간은 시작 시간보다 늦어야 합니다."
@@ -413,3 +442,91 @@ class CustomPasswordChangeSerializer(PasswordChangeSerializer):
         if not user.check_password(value):
             raise serializers.ValidationError("현재 비밀번호와 일치하지 않습니다.")
         return value
+
+
+# ==========================================
+# 9. Password Reset Custom Serializer
+# ==========================================
+class CustomPasswordResetSerializer(PasswordResetSerializer):
+    """
+    Custom Serializer for Password Reset in Headless Architecture.
+    Redirects the email link to the Frontend URL instead of the Backend.
+
+    헤드리스 아키텍처를 위한 비밀번호 재설정 시리얼라이저.
+    이메일 링크가 백엔드(Django)가 아닌 프론트엔드(React/Vue) URL을 가리키도록 조정합니다.
+    """
+
+    @property
+    def password_reset_form_class(self):
+        return PasswordResetForm
+
+    def get_email_options(self):
+        return {
+            "email_template_name": "registration/password_reset_email.html",
+            "html_email_template_name": "registration/password_reset_email.html",
+        }
+
+    def save(self):
+        request = self.context.get("request")
+
+        # Get Frontend domain from env (e.g., localhost:5173 or myapp.com)
+        # 환경 변수에서 프론트엔드 도메인 획득
+        frontend_domain = os.environ.get("FRONTEND_DOMAIN", "localhost:5173")
+
+        opts = {
+            "use_https": request.is_secure() if request else False,
+            "from_email": getattr(settings, "DEFAULT_FROM_EMAIL"),
+            "request": request,
+            "email_template_name": "registration/password_reset_email.html",
+            "html_email_template_name": "registration/password_reset_email.html",
+        }
+
+        if request:
+            # Hack: Temporarily replace HTTP_HOST with Frontend domain
+            # Reason: Django generates links based on the request host. We need the link to point to the Frontend.
+            # 중요: HTTP_HOST를 프론트엔드 도메인으로 일시 교체
+            # 이유: Django는 요청 호스트를 기반으로 링크를 생성하는데, 우리는 링크가 프론트엔드를 가리켜야 함.
+            original_host = request.META.get("HTTP_HOST")
+            request.META["HTTP_HOST"] = frontend_domain
+
+            try:
+                self.reset_form.save(**opts)
+            finally:
+                # Restore original host
+                # 원래 호스트로 복구
+                request.META["HTTP_HOST"] = original_host
+        else:
+            self.reset_form.save(**opts)
+
+
+class CustomPasswordResetConfirmSerializer(PasswordResetConfirmSerializer):
+    """
+    Serializer for confirming password reset.
+    Decodes UID and validates the token.
+
+    비밀번호 재설정 확인 시리얼라이저.
+    UID를 디코딩하고 토큰의 유효성을 검증합니다.
+    """
+
+    def validate(self, attrs):
+        uid = attrs.get("uid")
+        token = attrs.get("token")
+
+        try:
+            decoded_pk = force_str(urlsafe_base64_decode(uid))
+            User = get_user_model()
+            self.user = User.objects.get(pk=decoded_pk)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise ValidationError({"uid": ["유효하지 않은 유저 ID입니다."]})
+
+        # Check if token is valid for the specific user
+        # 해당 사용자에 대한 토큰이 유효한지 검증
+        if not default_token_generator.check_token(self.user, token):
+            raise ValidationError({"token": ["유효하지 않거나 만료된 토큰입니다."]})
+
+        return attrs
+
+    def save(self):
+        self.user.set_password(self.validated_data["new_password1"])
+        self.user.save()
+        return self.user

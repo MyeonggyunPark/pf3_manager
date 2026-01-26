@@ -9,6 +9,24 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
+
+
+# Placeholder view for password reset confirmation
+# This view is required by dj-rest-auth to generate the email link,
+# but the actual reset page will be handled by the Frontend (React/Vue).
+# 비밀번호 재설정 확인을 위한 플레이스홀더 뷰
+# dj-rest-auth가 이메일 링크를 생성하기 위해 이 URL 패턴을 필요로 하지만,
+# 실제 비밀번호 재설정 화면은 프론트엔드에서 처리합니다.
+def password_reset_confirm_placeholder(request, uidb64, token):
+    return JsonResponse(
+        {
+            "detail": "Password reset link generated successfully.",
+            "uid": uidb64,
+            "token": token,
+        }
+    )
+
 
 urlpatterns = [
     # Django Admin Interface
@@ -27,9 +45,17 @@ urlpatterns = [
     # 회원가입
     path("api/auth/registration/", include("dj_rest_auth.registration.urls")),
     
-    # Social Login (Google, Kakao, etc.)
-    # 소셜 로그인 (구글, 카카오 등)
-    path("api/auth/social/", include("allauth.socialaccount.urls")),
+    # Allauth URLs for additional account management
+    # 추가 계정 관리를 위한 Allauth URLs
+    path("accounts/", include("allauth.urls")),
+    
+    # Password Reset Confirmation Placeholder
+    # dj-rest-auth가 이 URL 이름을 찾아서 이메일 링크 생성
+    path(
+        "password-reset/confirm/<uidb64>/<token>/",
+        password_reset_confirm_placeholder,
+        name="password_reset_confirm"
+    ),
 ]
 
 # Serve media files during development
