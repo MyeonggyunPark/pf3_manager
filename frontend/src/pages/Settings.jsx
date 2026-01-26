@@ -74,6 +74,29 @@ export default function Settings() {
     }
   };
 
+  // Helper function to get badge styles based on provider
+  // 제공자에 따른 뱃지 스타일 반환 헬퍼 함수
+  const getProviderBadge = (provider) => {
+    switch (provider) {
+      case "google":
+        return {
+          label: "GOOGLE",
+          className: "bg-primary/10 text-primary border-primary/20",
+        };
+      case "kakao":
+        return {
+          label: "KAKAO",
+          className: "bg-warning/20 text-yellow-700 border-warning/50",
+        };
+      default: // 'email'
+        return {
+          label: "EMAIL",
+          className:
+            "bg-secondary/30 text-secondary-foreground border-secondary/50",
+        };
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="h-[calc(100vh-200px)] flex items-center justify-center">
@@ -82,9 +105,13 @@ export default function Settings() {
     );
   }
 
-  // Identify auth provider to restrict password logic
-  // 비밀번호 로직 제한을 위한 인증 수단 식별
-  const isSocialUser = user.provider && user.provider !== "email";
+  // Determine badge info
+  // 뱃지 정보 결정
+  const badgeInfo = getProviderBadge(user.provider);
+
+  // Check if password change is allowed (only for email users)
+  // 비밀번호 변경 허용 여부 확인 (이메일 유저만 가능)
+  const isEmailUser = !user.provider || user.provider === "email";
 
   return (
     <div className="max-w-xl mx-auto space-y-6 animate-in fade-in">
@@ -122,11 +149,11 @@ export default function Settings() {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <CardTitle className="text-2xl font-bold">{user.name}</CardTitle>
-              {isSocialUser && (
-                <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold border border-yellow-200">
-                  {user.provider.toUpperCase()}
-                </span>
-              )}
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${badgeInfo.className}`}
+              >
+                {badgeInfo.label}
+              </span>
             </div>
             <p className="text-sm text-muted-foreground/90 font-medium">
               {user.email}
@@ -144,7 +171,7 @@ export default function Settings() {
       </Card>
 
       {/* System Settings */}
-      {/* 시스템 설정 */ }
+      {/* 시스템 설정 */}
       <Card className="overflow-hidden border-none shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-muted-foreground">
@@ -198,7 +225,7 @@ export default function Settings() {
       </Card>
 
       {/* Account & Security */}
-      { /* 계정 및 보안 */ }
+      {/* 계정 및 보안 */}
       <Card className="overflow-hidden border-none shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-muted-foreground">
@@ -211,7 +238,7 @@ export default function Settings() {
         <CardContent className="space-y-2">
           {/* password change for non-social login users */}
           {/* 비소셜 로그인 사용자의 비밀번호 변경 */}
-          {!isSocialUser && (
+          {!isEmailUser && (
             <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="text-sm font-bold text-foreground/80">
