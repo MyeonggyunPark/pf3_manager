@@ -1,0 +1,99 @@
+{% load account %}
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>이메일 인증</title>
+    </head>
+    <body style="margin: 0;
+                padding: 0;
+                font-family: 'Pretendard', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                background-color: #F0EEE9">
+        <div style="max-width: 600px;
+                    margin: 0 auto;
+                    background-color: #ffffff;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    margin-top: 40px;
+                    box-shadow: 0 4px 20px rgba(76, 114, 169, 0.15)">
+            <div style="background-color: #4C72A9;
+                        padding: 40px 20px;
+                        text-align: center">
+                <div style="display: inline-block;
+                            background-color: #ffffff;
+                            padding: 12px;
+                            border-radius: 16px;
+                            margin-bottom: 15px;
+                            box-shadow: 0 4px 6px rgba(0,0,0,0.1)">
+                    <img src="http://127.0.0.1:8000{% static 'images/logo.svg' %}"
+                        alt="MS Planer Logo"
+                        width="72"
+                        height="72"
+                        style="display: block;
+                                border: 0" />
+                </div>
+                <h1 style="color: #ffffff;
+                        margin: 0;
+                        font-size: 26px;
+                        font-weight: 800;
+                        letter-spacing: -0.5px">MS Planer</h1>
+                <p style="color: #C1D0E6;
+                        font-size: 14px;
+                        margin-top: 5px;
+                        margin-bottom: 0">Smart Management System</p>
+            </div>
+            <div style="padding: 50px 30px;
+                        text-align: center;
+                        background-color: #ffffff">
+                <h2 style="color: #78C0BE;
+                        font-size: 22px;
+                        font-weight: bold;
+                        margin-top: 0;
+                        margin-bottom: 20px">메일 인증을 완료해주세요.</h2>
+                <p style="color: #555555;
+                        font-size: 16px;
+                        line-height: 1.6;
+                        margin-bottom: 40px;
+                        word-break: keep-all">
+                    안녕하세요, <strong>{{ user.username }}</strong>님!
+                    <br>
+                    MS Planer에 가입해 주셔서 진심으로 감사드립니다.
+                    <br>
+                    아래 버튼을 클릭하여 회원가입을 완료해주세요.
+                </p>
+                <div>
+                    <a href="{{ activate_url }}"
+                    target="_blank"
+                    style="display: inline-block;
+                            background-color: #78C0BE;
+                            color: #ffffff;
+                            text-decoration: none;
+                            padding: 16px 40px;
+                            border-radius: 50px;
+                            font-weight: bold;
+                            font-size: 16px;
+                            box-shadow: 0 4px 15px rgba(76, 114, 169, 0.4);
+                            transition: background-color 0.3s">계정 활성화</a>
+                </div>
+                <div style="margin-top: 40px;
+                            border-top: 1px solid #F0EEE9;
+                            padding-top: 30px">
+                    <p style="color: #8DA9BE; font-size: 13px; line-height: 1.5; margin: 0;">
+                        혹시 본인이 요청하지 않으셨다면 이 메일을 삭제해 주세요.
+                        <br>
+                        계정은 안전하게 보호됩니다.
+                    </p>
+                </div>
+            </div>
+            <div style="background-color: #f9f9f9;
+                        padding: 20px;
+                        text-align: center;
+                        border-top: 1px solid #eaeaea">
+                <p style="color: #8DA9BE; font-size: 12px; margin: 0;">
+                    &copy; 2026 <strong>MS Planer</strong>. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </body>
+</html>
