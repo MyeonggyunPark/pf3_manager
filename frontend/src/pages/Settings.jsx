@@ -238,7 +238,7 @@ export default function Settings() {
         <CardContent className="space-y-2">
           {/* password change for non-social login users */}
           {/* 비소셜 로그인 사용자의 비밀번호 변경 */}
-          {!isEmailUser && (
+          {isEmailUser && (
             <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="text-sm font-bold text-foreground/80">
