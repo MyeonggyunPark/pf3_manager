@@ -1,5 +1,4 @@
 from django.conf import settings
-
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 
@@ -17,13 +16,13 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     헤드리스 프론트엔드(React)와의 호환성을 보장하기 위해 기본 동작을 재정의합니다.
     구체적으로, 이메일 인증 링크가 백엔드 템플릿 대신 프론트엔드 라우트를 가리키도록 생성합니다.
     """
-    
+
     def get_email_confirmation_url(self, request, emailconfirmation):
         # Override to generate a Frontend-compatible verification link
         # 프론트엔드 호환 인증 링크를 생성하도록 재정의
 
-        # Get Frontend Base URL from settings
-        # 설정에서 프론트엔드 기본 URL 가져오기
+        # Get Frontend Base URL from settings (Railway Env Var or Localhost)
+        # 설정에서 프론트엔드 기본 URL 가져오기 (Railway 환경변수 또는 로컬호스트)
         base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
 
         # Remove trailing slash to prevent double slashes
@@ -53,7 +52,6 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
 
         # Set the provider field (e.g., 'google', 'kakao')
         # provider 필드 설정 (예: 'google', 'kakao')
-        # sociallogin.account.provider holds the provider ID
         user.provider = sociallogin.account.provider
 
         # Ignore social provider's name data and force email prefix for consistency
@@ -66,3 +64,20 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         user.save()
 
         return user
+
+    def get_login_redirect_url(self, request):
+        """
+        Redirects user to the Frontend success page after successful social login.
+        Crucial for splitting Backend/Frontend on different domains (e.g., Railway).
+
+        소셜 로그인 성공 후 사용자를 프론트엔드 성공 페이지로 리다이렉트합니다.
+        백엔드와 프론트엔드가 다른 도메인(예: Railway)에 있을 때 필수적입니다.
+        """
+        # Get Frontend Base URL from settings
+        # 설정에서 프론트엔드 기본 URL 가져오기
+        base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+        base_url = base_url.rstrip("/")
+
+        # Return the absolute URL to the frontend social success page
+        # 프론트엔드 소셜 로그인 성공 페이지의 절대 경로 반환
+        return f"{base_url}/social/success/"
