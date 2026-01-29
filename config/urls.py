@@ -11,6 +11,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
 
+from tutor.views import social_login_callback
 
 # Placeholder view for password reset confirmation
 # This view is required by dj-rest-auth to generate the email link,
@@ -56,6 +57,10 @@ urlpatterns = [
         password_reset_confirm_placeholder,
         name="password_reset_confirm"
     ),
+    
+    # Explicitly map the callback URL to our view function
+    # 콜백 URL을 우리의 뷰 함수(JWT발급 + 신규유저체크)로 명시적 연결
+    path("api/social/callback/", social_login_callback, name="social_callback"),
 ]
 
 # Serve media files during development

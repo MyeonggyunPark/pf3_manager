@@ -688,10 +688,10 @@ class ExamScoreInputViewSet(viewsets.ModelViewSet):
 def social_login_callback(request):
     """
     Callback function after successful social login via Allauth.
-    Issues JWT via HttpOnly cookies for enhanced security.
+    Issues JWT tokens and handles redirection with New User check.
 
     Allauth 소셜 로그인 성공 후 호출되는 콜백 함수.
-    보안 강화를 위해 JWT를 HttpOnly 쿠키로 발급합니다.
+    JWT 토큰을 발급하고 신규 유저 확인 후 리다이렉션 처리.
     """
     user = request.user
 
@@ -704,15 +704,28 @@ def social_login_callback(request):
     # Get the frontend base URL from settings
     # 설정 파일에서 프론트엔드 베이스 URL을 가져옴
     frontend_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+    frontend_url = frontend_url.rstrip("/")
 
-    # Secure redirection: Tokens are no longer exposed in the URL
-    # 보안 리다이렉션: 더 이상 URL에 토큰을 노출하지 않음
-    response = redirect(f"{frontend_url}/social/success")
+    # Default Target URL
+    # 기본 리다이렉트 URL
+    target_url = f"{frontend_url}/social/success"
+
+    # Check for New User (Joined within last 60 seconds)
+    # 신규 유저 확인 (최근 60초 이내 가입)
+    if user.is_authenticated:
+        join_delta = timezone.now() - user.date_joined
+        if join_delta < timedelta(seconds=60):
+            target_url += "?new_user=true"
+            print(f"🚀 [DEBUG] 신규 유저 감지! (가입 후 {join_delta.seconds}초 경과)")
+        else:
+            print(f"👀 [DEBUG] 기존 유저 (가입 후 {join_delta.days}일 경과)")
+
+    # Secure redirection
+    # 보안 리다이렉션
+    response = redirect(target_url)
 
     # Set access token in HttpOnly cookie
-    # Security Note: Prevents JavaScript access to the token (XSS Protection)
     # HttpOnly 쿠키에 액세스 토큰 설정
-    # 보안 참고: 자바스크립트가 토큰에 접근하는 것을 방지하여 XSS 공격을 차단함
     response.set_cookie(
         key=settings.REST_AUTH["JWT_AUTH_COOKIE"],
         value=access_token,
