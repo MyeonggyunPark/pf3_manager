@@ -67,15 +67,19 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         # Automatically verify email for trusted social providers
         # 신뢰할 수 있는 소셜 제공자에 대해 이메일 자동 인증
         if sociallogin.account.provider in ['google', 'kakao']:
-                email_address, created = EmailAddress.objects.get_or_create(
+            email_address, created = EmailAddress.objects.get_or_create(
                     user=user,
                     email=user.email,
                     defaults={'primary': True, 'verified': True} 
                 )
-                
-                if not email_address.verified:
-                    email_address.verified = True
-                    email_address.save()
+
+            if not email_address.verified:
+                email_address.verified = True
+                email_address.save()
+
+        # Mark session for new user welcome message
+        # 신규 유저 환영 메시지를 위해 세션에 플래그 설정
+        request.session["is_new_social_user"] = True
 
         return user
 
@@ -92,6 +96,15 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
         base_url = base_url.rstrip("/")
 
+        # Base success URL
+        # 기본 성공 URL
+        url = f"{base_url}/social/success/"
+
+        # Check session flag and append query param if new user
+        # 세션 플래그를 확인하여 신규 유저인 경우 쿼리 파라미터 추가
+        if request.session.pop("is_new_social_user", False):
+            url += "?new_user=true"
+
         # Return the absolute URL to the frontend social success page
         # 프론트엔드 소셜 로그인 성공 페이지의 절대 경로 반환
-        return f"{base_url}/social/success/"
+        return url
