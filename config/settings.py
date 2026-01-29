@@ -301,11 +301,11 @@ REST_AUTH = {
     "JWT_AUTH_COOKIE": "my-app-auth",
     "JWT_AUTH_REFRESH_COOKIE": "my-app-refresh-token",
     
-    # Secure adjustments for development (Set secure=True in production)
-    # 개발 환경 보안 조정 (프로덕션에서는 secure=True 설정 필요)
+    # Secure adjustments for development
+    # 개발 환경 보안 조정
     # Changed: Set HTTPONLY to True to prevent XSS attacks
     # 변경사항: XSS 공격 방지를 위해 HTTPONLY를 True로 설정
-    "JWT_AUTH_SECURE": not DEBUG,
+    "JWT_AUTH_SECURE": True,
     "JWT_AUTH_HTTPONLY": True,
     "JWT_AUTH_SAMESITE": "None",
     "JWT_AUTH_COOKIE_DOMAIN": None,

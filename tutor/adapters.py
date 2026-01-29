@@ -1,6 +1,7 @@
 from django.conf import settings
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.account.models import EmailAddress
 
 
 # Custom adapter to bridge Backend auth with Frontend routes
@@ -62,6 +63,19 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         # Save the updated user instance
         # 업데이트된 유저 인스턴스 저장
         user.save()
+
+        # Automatically verify email for trusted social providers
+        # 신뢰할 수 있는 소셜 제공자에 대해 이메일 자동 인증
+        if sociallogin.account.provider in ['google', 'kakao']:
+                email_address, created = EmailAddress.objects.get_or_create(
+                    user=user,
+                    email=user.email,
+                    defaults={'primary': True, 'verified': True} 
+                )
+                
+                if not email_address.verified:
+                    email_address.verified = True
+                    email_address.save()
 
         return user
 
