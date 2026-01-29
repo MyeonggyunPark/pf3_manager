@@ -20,11 +20,11 @@ from django.core.exceptions import ImproperlyConfigured
 
 # Force IPv4 resolution to avoid IPv6 issues in certain environments
 # 특정 환경에서 발생하는 IPv6 문제를 피하기 위해 IPv4 해상도 강제
+original_getaddrinfo = socket.getaddrinfo
 def getaddrinfo_ipv4(host, port, family=0, type=0, proto=0, flags=0):
-    return socket.getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
-
-
+    return original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
 socket.getaddrinfo = getaddrinfo_ipv4
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # 프로젝트 내부 경로 생성 예시: BASE_DIR / 'subdir'
 BASE_DIR = Path(__file__).resolve().parent.parent
