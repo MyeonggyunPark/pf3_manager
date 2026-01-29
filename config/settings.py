@@ -307,7 +307,7 @@ REST_AUTH = {
     # 변경사항: XSS 공격 방지를 위해 HTTPONLY를 True로 설정
     "JWT_AUTH_SECURE": not DEBUG,
     "JWT_AUTH_HTTPONLY": True,
-    "JWT_AUTH_SAMESITE": "Lax",
+    "JWT_AUTH_SAMESITE": "None",
     "JWT_AUTH_COOKIE_DOMAIN": None,
     
     # Disable CSRF check for cookie-based auth in this setup
@@ -433,3 +433,5 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SAMESITE = "None"
