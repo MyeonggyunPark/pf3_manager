@@ -385,21 +385,35 @@ SOCIALACCOUNT_PROVIDERS = {
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
+# Define base allowed origins for development and production
+# 개발 및 배포를 위한 기본 허용 출처 정의
+base_origins = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+    "https://ms-planer.up.railway.app",  
+    "https://ms-planer-backend.up.railway.app",
+]
+
 # Load allowed origins from environment variable or use defaults
 # 환경변수에서 허용 출처 로드 또는 기본값 사용
-cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
-if cors_origins:
-    
-    # Split and strip origins from comma-separated string
-    # 쉼표로 구분된 문자열에서 출처 분리 및 공백 제거
-    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(",")]
-    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in cors_origins.split(",")]
+cors_origins_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+if cors_origins_env:
+
+    extra_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+    CORS_ALLOWED_ORIGINS = base_origins + extra_origins
+    CSRF_TRUSTED_ORIGINS = base_origins + extra_origins
 else:
-    
+
     # Default local development origins
     # 기본 로컬 개발 출처
-    CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"]
-    CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"]
+    CORS_ALLOWED_ORIGINS = base_origins
+    CSRF_TRUSTED_ORIGINS = base_origins
+
+# Social Login HTTPS Setting (Crucial for Production!)
+# 소셜 로그인 시 HTTPS 프로토콜 강제 (이게 없으면 소셜 로그인 에러 남)
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
