@@ -12,12 +12,11 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     """
     Custom Adapter for Allauth Account Management.
     Overrides default behavior to ensure compatibility with the Headless Frontend (React).
-    Specifically, it generates email confirmation links pointing to the frontend route
-    instead of the backend template.
+    Responsible for Redirect URLs and Email Confirmation URLs.
 
     Allauth 계정 관리를 위한 커스텀 어댑터입니다.
     헤드리스 프론트엔드(React)와의 호환성을 보장하기 위해 기본 동작을 재정의합니다.
-    구체적으로, 이메일 인증 링크가 백엔드 템플릿 대신 프론트엔드 라우트를 가리키도록 생성합니다.
+    리다이렉트 URL과 이메일 인증 URL 생성을 담당합니다.
     """
 
     def get_email_confirmation_url(self, request, emailconfirmation):
@@ -35,6 +34,48 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         # Return URL pointing to the Frontend route
         # 프론트엔드 라우트를 가리키는 URL 반환
         return f"{base_url}/accounts/confirm-email/{emailconfirmation.key}/"
+
+    def get_login_redirect_url(self, request):
+        """
+        Redirects user to the Frontend success page after successful login.
+        Crucial for splitting Backend/Frontend on different domains (e.g., Railway).
+
+        Uses 'date_joined' instead of session to reliably detect new users.
+
+        로그인 성공 후 사용자를 프론트엔드 성공 페이지로 리다이렉트합니다.
+        백엔드와 프론트엔드가 다른 도메인(예: Railway)에 있을 때 필수적입니다.
+        세션 대신 '가입 시간(date_joined)'을 사용하여 신규 유저를 안정적으로 감지합니다.
+        """
+        print("🔍 [DEBUG] get_login_redirect_url 호출됨! (AccountAdapter)")
+
+        # Get Frontend Base URL from settings
+        # 설정에서 프론트엔드 기본 URL 가져오기
+        base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+        base_url = base_url.rstrip("/")
+
+        # Base success URL
+        # 기본 성공 URL
+        url = f"{base_url}/social/success/"
+
+        # Check if the user is authenticated
+        # 사용자가 인증되었는지 확인
+        if request.user.is_authenticated:
+            # Calculate time difference between now and join time
+            # 현재 시간과 가입 시간의 차이 계산
+            # (timezone.now() uses settings.TIME_ZONE, usually UTC)
+            join_delta = timezone.now() - request.user.date_joined
+
+            # Check if user joined within the last 60 seconds
+            # 사용자가 최근 60초 이내에 가입했는지 확인
+            if join_delta < timedelta(seconds=60):
+                url += "?new_user=true"
+                print(
+                    f"🚀 [DEBUG] 신규 가입 유저 감지! (가입 후 {join_delta.seconds}초 경과)"
+                )
+            else:
+                print(f"👀 [DEBUG] 기존 유저 로그인 (가입 후 {join_delta.days}일 경과)")
+
+        return url
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
@@ -80,51 +121,6 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
                 email_address.verified = True
                 email_address.save()
 
-        # Removed session storage logic as session ID rotates upon login
-        # 로그인 시 세션 ID가 교체되므로 세션 저장 로직 제거
         print("✅ [DEBUG] 유저 저장 완료 (세션 저장 로직 제거됨)")
 
         return user
-
-    def get_login_redirect_url(self, request):
-        """
-        Redirects user to the Frontend success page after successful social login.
-        Crucial for splitting Backend/Frontend on different domains (e.g., Railway).
-
-        Uses 'date_joined' instead of session to reliably detect new users.
-
-        소셜 로그인 성공 후 사용자를 프론트엔드 성공 페이지로 리다이렉트합니다.
-        백엔드와 프론트엔드가 다른 도메인(예: Railway)에 있을 때 필수적입니다.
-        세션 대신 '가입 시간(date_joined)'을 사용하여 신규 유저를 안정적으로 감지합니다.
-        """
-        print("🔍 [DEBUG] get_login_redirect_url 호출됨!")
-
-        # Get Frontend Base URL from settings
-        # 설정에서 프론트엔드 기본 URL 가져오기
-        base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
-        base_url = base_url.rstrip("/")
-
-        # Base success URL
-        # 기본 성공 URL
-        url = f"{base_url}/social/success/"
-
-        # Check if the user is authenticated
-        # 사용자가 인증되었는지 확인
-        if request.user.is_authenticated:
-            # Calculate time difference between now and join time
-            # 현재 시간과 가입 시간의 차이 계산
-            join_delta = timezone.now() - request.user.date_joined
-
-            # Check if user joined within the last 60 seconds
-            # 사용자가 최근 60초 이내에 가입했는지 확인
-            if join_delta < timedelta(seconds=60):
-                url += "?new_user=true"
-                print(
-                    f"🚀 [DEBUG] 신규 가입 유저 감지! (가입 후 {join_delta.seconds}초 경과)"
-                )
-            else:
-                print(f"👀 [DEBUG] 기존 유저 로그인 (가입 후 {join_delta.days}일 경과)")
-
-        # Return the absolute URL to the frontend social success page
-        # 프론트엔드 소셜 로그인 성공 페이지의 절대 경로 반환
-        return url
