@@ -46,7 +46,7 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         소셜 회원가입 과정에 개입하여 기본적으로 처리되지 않는 커스텀 사용자 필드
         (provider, name)를 자동으로 채워 넣습니다.
         """
-
+        print("🔍 [DEBUG] save_user 호출됨! (신규 가입 시도)")
         # Run the default save logic (creates the user instance)
         # 기본 저장 로직 실행 (유저 인스턴스 생성)
         user = super().save_user(request, sociallogin, form)
@@ -84,7 +84,7 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         # Ensure session is saved
         # 세션이 저장되도록 보장
         request.session.modified = True
-
+        print("✅ [DEBUG] 세션에 is_new_social_user 저장 완료!")
         return user
 
     def get_login_redirect_url(self, request):
@@ -95,6 +95,7 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         소셜 로그인 성공 후 사용자를 프론트엔드 성공 페이지로 리다이렉트합니다.
         백엔드와 프론트엔드가 다른 도메인(예: Railway)에 있을 때 필수적입니다.
         """
+        print("🔍 [DEBUG] get_login_redirect_url 호출됨!")
         # Get Frontend Base URL from settings
         # 설정에서 프론트엔드 기본 URL 가져오기
         base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
@@ -104,10 +105,14 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         # 기본 성공 URL
         url = f"{base_url}/social/success/"
 
+        is_new = request.session.pop("is_new_social_user", False)
+        print(f"🧐 [DEBUG] 세션에서 값 확인: {is_new}")
+        
         # Check session flag and append query param if new user
         # 세션 플래그를 확인하여 신규 유저인 경우 쿼리 파라미터 추가
-        if request.session.pop("is_new_social_user", False):
+        if is_new:
             url += "?new_user=true"
+            print("🚀 [DEBUG] URL에 ?new_user=true 추가함!")
 
         # Return the absolute URL to the frontend social success page
         # 프론트엔드 소셜 로그인 성공 페이지의 절대 경로 반환
