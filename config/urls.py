@@ -62,3 +62,34 @@ urlpatterns = [
 # 개발 중 미디어 파일 제공
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+from django.urls import path
+from django.http import HttpResponse
+from django.core.mail import send_mail
+from django.conf import settings
+
+
+def debug_email_view(request):
+    try:
+        send_mail(
+            "[테스트] MS Planer 이메일 설정 확인",
+            "이 메일이 도착했다면 SMTP 설정(SSL/465)이 완벽한 것입니다.",
+            settings.EMAIL_HOST_USER,
+            ["audrbs92@naver.com"],  # 👈 님 이메일 주소로 잘 들어갔는지 확인!
+            fail_silently=False,
+        )
+        return HttpResponse(
+            "<h1>✅ 이메일 발송 성공!</h1><p>설정이 완벽합니다. 메일함을 확인하세요.</p>"
+        )
+    except Exception as e:
+        # 에러가 나면 화면에 바로 에러 메시지를 띄워줍니다.
+        return HttpResponse(
+            f"<h1>❌ 이메일 발송 실패</h1><p>에러 로그:</p><pre>{e}</pre>"
+        )
+
+
+# 기존 urlpatterns에 테스트 경로 추가
+urlpatterns += [
+    path("debug-email/", debug_email_view),
+]
