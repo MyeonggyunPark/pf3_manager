@@ -95,6 +95,10 @@ THIRD_PARTY_APPS = [
     # Advanced filtering support
     # 고급 필터링 기능 지원
     "django_filters",
+    
+    # Email handling
+    # 이메일 처리
+    "anymail",
 ]
 
 LOCAL_APPS = [
@@ -279,19 +283,12 @@ ACCOUNT_ADAPTER = "tutor.adapters.CustomAccountAdapter"
 SOCIALACCOUNT_ADAPTER = "tutor.adapters.CustomSocialAccountAdapter"
 
 
-# Email configuration
-# 이메일 설정
-# Settings for SMTP (Brevo)
-# SMTP 설정 (Brevo)
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp-relay.brevo.com"
-EMAIL_PORT = 2525
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+# Email Configuration (Brevo API / Anymail)
+EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+ANYMAIL = {
+    "BREVO_API_KEY": os.environ.get("BREVO_API_KEY"),
+}
 DEFAULT_FROM_EMAIL = "audrbs92@gmail.com"
-EMAIL_TIMEOUT = 15
 
 # Login/Logout redirects
 # 로그인/로그아웃 리다이렉트
