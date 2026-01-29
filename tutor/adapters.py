@@ -2,6 +2,8 @@ from django.conf import settings
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.account.models import EmailAddress
+from django.utils import timezone
+from datetime import timedelta
 
 
 # Custom adapter to bridge Backend auth with Frontend routes
@@ -47,6 +49,7 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         (provider, name)를 자동으로 채워 넣습니다.
         """
         print("🔍 [DEBUG] save_user 호출됨! (신규 가입 시도)")
+
         # Run the default save logic (creates the user instance)
         # 기본 저장 로직 실행 (유저 인스턴스 생성)
         user = super().save_user(request, sociallogin, form)
@@ -66,25 +69,21 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
 
         # Automatically verify email for trusted social providers
         # 신뢰할 수 있는 소셜 제공자에 대해 이메일 자동 인증
-        if sociallogin.account.provider in ['google', 'kakao']:
+        if sociallogin.account.provider in ["google", "kakao"]:
             email_address, created = EmailAddress.objects.get_or_create(
-                    user=user,
-                    email=user.email,
-                    defaults={'primary': True, 'verified': True} 
-                )
+                user=user,
+                email=user.email,
+                defaults={"primary": True, "verified": True},
+            )
 
             if not email_address.verified:
                 email_address.verified = True
                 email_address.save()
 
-        # Mark session for new user welcome message
-        # 신규 유저 환영 메시지를 위해 세션에 플래그 설정
-        request.session["is_new_social_user"] = True
+        # Removed session storage logic as session ID rotates upon login
+        # 로그인 시 세션 ID가 교체되므로 세션 저장 로직 제거
+        print("✅ [DEBUG] 유저 저장 완료 (세션 저장 로직 제거됨)")
 
-        # Ensure session is saved
-        # 세션이 저장되도록 보장
-        request.session.modified = True
-        print("✅ [DEBUG] 세션에 is_new_social_user 저장 완료!")
         return user
 
     def get_login_redirect_url(self, request):
@@ -92,10 +91,14 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         Redirects user to the Frontend success page after successful social login.
         Crucial for splitting Backend/Frontend on different domains (e.g., Railway).
 
+        Uses 'date_joined' instead of session to reliably detect new users.
+
         소셜 로그인 성공 후 사용자를 프론트엔드 성공 페이지로 리다이렉트합니다.
         백엔드와 프론트엔드가 다른 도메인(예: Railway)에 있을 때 필수적입니다.
+        세션 대신 '가입 시간(date_joined)'을 사용하여 신규 유저를 안정적으로 감지합니다.
         """
         print("🔍 [DEBUG] get_login_redirect_url 호출됨!")
+
         # Get Frontend Base URL from settings
         # 설정에서 프론트엔드 기본 URL 가져오기
         base_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
@@ -105,14 +108,22 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         # 기본 성공 URL
         url = f"{base_url}/social/success/"
 
-        is_new = request.session.pop("is_new_social_user", False)
-        print(f"🧐 [DEBUG] 세션에서 값 확인: {is_new}")
-        
-        # Check session flag and append query param if new user
-        # 세션 플래그를 확인하여 신규 유저인 경우 쿼리 파라미터 추가
-        if is_new:
-            url += "?new_user=true"
-            print("🚀 [DEBUG] URL에 ?new_user=true 추가함!")
+        # Check if the user is authenticated
+        # 사용자가 인증되었는지 확인
+        if request.user.is_authenticated:
+            # Calculate time difference between now and join time
+            # 현재 시간과 가입 시간의 차이 계산
+            join_delta = timezone.now() - request.user.date_joined
+
+            # Check if user joined within the last 60 seconds
+            # 사용자가 최근 60초 이내에 가입했는지 확인
+            if join_delta < timedelta(seconds=60):
+                url += "?new_user=true"
+                print(
+                    f"🚀 [DEBUG] 신규 가입 유저 감지! (가입 후 {join_delta.seconds}초 경과)"
+                )
+            else:
+                print(f"👀 [DEBUG] 기존 유저 로그인 (가입 후 {join_delta.days}일 경과)")
 
         # Return the absolute URL to the frontend social success page
         # 프론트엔드 소셜 로그인 성공 페이지의 절대 경로 반환
