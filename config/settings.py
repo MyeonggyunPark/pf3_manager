@@ -413,3 +413,5 @@ REST_FRAMEWORK = {
     # 모든 ViewSet에서 filterset_fields를 통한 필터링 활성화
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 }
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
