@@ -784,9 +784,10 @@ export default function AddMockExamModal({
                       if (formData.exam_mode === "FULL") return true;
                       return mod.module_type === formData.exam_mode;
                     })
+                    .sort((a, b) => b.module_type.localeCompare(a.module_type))
                     .map((mod) => {
                       const sortedSections = [...(mod.sections || [])].sort(
-                        (a, b) => b.id - a.id,
+                        (a, b) => a.id - b.id,
                       );
                       const groupedSections =
                         groupSectionsByCategory(sortedSections);
