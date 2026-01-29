@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import dj_database_url
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
@@ -37,7 +38,7 @@ DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
 # Define allowed hosts (domain names/IPs) that can serve this site
 # 이 사이트를 서비스할 수 있는 허용된 호스트(도메인/IP) 정의
-hosts = os.environ.get("ALLOWED_HOSTS", "")
+hosts = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1")
 ALLOWED_HOSTS = hosts.split(",") 
 
 # Base URLs for Frontend and Backend separation
@@ -170,24 +171,14 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-# Helper function to get environment variables or raise an error
-# 환경 변수를 가져오거나 누락 시 에러를 발생시키는 도우미 함수
-def get_env_variable(var_name):
-    try:
-        return os.environ[var_name]
-    except KeyError:
-        error_msg = f"Set the {var_name} environment variable in your .env file."
-        raise ImproperlyConfigured(error_msg)
-
+# Database configuration using dj-database-url for flexibility
+# 유연성을 위한 dj-database-url을 이용한 데이터베이스 설정
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": get_env_variable("DB_NAME"),
-        "USER": get_env_variable("DB_USER"),
-        "PASSWORD": get_env_variable("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
-    }
+    "default": dj_database_url.config(
+        default=os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 
@@ -233,6 +224,10 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# WhiteNoise static files storage for efficient serving in production
+# 배포 환경에서 효율적인 서빙을 위한 WhiteNoise 정적 파일 스토리지
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Media configuration for user-uploaded files
 # 사용자 업로드 파일을 위한 미디어 설정
@@ -390,16 +385,21 @@ SOCIALACCOUNT_PROVIDERS = {
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
-# Allowed origins for client applications
-# 클라이언트 애플리케이션 허용 출처
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-]
-CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-]
+# Load allowed origins from environment variable or use defaults
+# 환경변수에서 허용 출처 로드 또는 기본값 사용
+cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+if cors_origins:
+    
+    # Split and strip origins from comma-separated string
+    # 쉼표로 구분된 문자열에서 출처 분리 및 공백 제거
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(",")]
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in cors_origins.split(",")]
+else:
+    
+    # Default local development origins
+    # 기본 로컬 개발 출처
+    CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"]
+    CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
