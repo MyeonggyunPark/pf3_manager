@@ -16,7 +16,6 @@ from rest_framework.decorators import (
     permission_classes,
     authentication_classes,
 )
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -684,7 +683,7 @@ class ExamScoreInputViewSet(viewsets.ModelViewSet):
 
 @api_view(["GET"])
 @authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([permissions.AllowAny])
 def social_login_callback(request):
     """
     Callback function after successful social login via Allauth.
@@ -694,6 +693,12 @@ def social_login_callback(request):
     JWT 토큰을 발급하고 신규 유저 확인 후 리다이렉션 처리.
     """
     user = request.user
+
+    # If user is not authenticated, redirect to frontend login with error
+    # 사용자가 인증되지 않은 경우, 프론트엔드 로그인 페이지로 에러와 함께 리다이렉트
+    if not user.is_authenticated:
+        frontend_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+        return redirect(f"{frontend_url.rstrip('/')}/login?error=auth_failed")
 
     # Generate JWT tokens for the authenticated user
     # 인증된 사용자를 위한 JWT 토큰(Access/Refresh) 생성

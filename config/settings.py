@@ -308,7 +308,7 @@ REST_AUTH = {
     "JWT_AUTH_SECURE": True,
     "JWT_AUTH_HTTPONLY": True,
     "JWT_AUTH_SAMESITE": "None",
-    "JWT_AUTH_COOKIE_DOMAIN": ".railway.app",
+    "JWT_AUTH_COOKIE_DOMAIN": None,
     
     # Disable CSRF check for cookie-based auth in this setup
     # 현재 설정에서 쿠키 기반 인증을 위한 CSRF 체크 비활성화
@@ -435,5 +435,3 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = "None"
     CSRF_COOKIE_SAMESITE = "None"
-    SESSION_COOKIE_DOMAIN = ".railway.app"
-    CSRF_COOKIE_DOMAIN = ".railway.app"
