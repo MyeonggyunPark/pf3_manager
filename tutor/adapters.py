@@ -81,6 +81,10 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         # 신규 유저 환영 메시지를 위해 세션에 플래그 설정
         request.session["is_new_social_user"] = True
 
+        # Ensure session is saved
+        # 세션이 저장되도록 보장
+        request.session.modified = True
+
         return user
 
     def get_login_redirect_url(self, request):
