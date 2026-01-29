@@ -786,7 +786,7 @@ export default function AddMockExamModal({
                     })
                     .map((mod) => {
                       const sortedSections = [...(mod.sections || [])].sort(
-                        (a, b) => a.id - b.id,
+                        (a, b) => b.id - a.id,
                       );
                       const groupedSections =
                         groupSectionsByCategory(sortedSections);
