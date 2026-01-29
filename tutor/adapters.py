@@ -39,14 +39,12 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """
         Redirects user to the Frontend success page after successful login.
         Crucial for splitting Backend/Frontend on different domains (e.g., Railway).
-
         Uses 'date_joined' instead of session to reliably detect new users.
 
         로그인 성공 후 사용자를 프론트엔드 성공 페이지로 리다이렉트합니다.
         백엔드와 프론트엔드가 다른 도메인(예: Railway)에 있을 때 필수적입니다.
         세션 대신 '가입 시간(date_joined)'을 사용하여 신규 유저를 안정적으로 감지합니다.
         """
-        print("🔍 [DEBUG] get_login_redirect_url 호출됨! (AccountAdapter)")
 
         # Get Frontend Base URL from settings
         # 설정에서 프론트엔드 기본 URL 가져오기
@@ -57,24 +55,21 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         # 기본 성공 URL
         url = f"{base_url}/social/success/"
 
-        # Check if the user is authenticated
-        # 사용자가 인증되었는지 확인
+        # Check if the user is authenticated to calculate join delta
+        # 가입 시간 차이 계산을 위해 사용자가 인증되었는지 확인
         if request.user.is_authenticated:
+
             # Calculate time difference between now and join time
             # 현재 시간과 가입 시간의 차이 계산
-            # (timezone.now() uses settings.TIME_ZONE, usually UTC)
             join_delta = timezone.now() - request.user.date_joined
 
-            # Check if user joined within the last 60 seconds
-            # 사용자가 최근 60초 이내에 가입했는지 확인
+            # Append query parameter if user joined within the last 60 seconds
+            # 사용자가 최근 60초 이내에 가입했다면 쿼리 파라미터 추가
             if join_delta < timedelta(seconds=60):
                 url += "?new_user=true"
-                print(
-                    f"🚀 [DEBUG] 신규 가입 유저 감지! (가입 후 {join_delta.seconds}초 경과)"
-                )
-            else:
-                print(f"👀 [DEBUG] 기존 유저 로그인 (가입 후 {join_delta.days}일 경과)")
 
+        # Return the final redirect URL
+        # 최종 리다이렉트 URL 반환
         return url
 
 
@@ -89,7 +84,6 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         소셜 회원가입 과정에 개입하여 기본적으로 처리되지 않는 커스텀 사용자 필드
         (provider, name)를 자동으로 채워 넣습니다.
         """
-        print("🔍 [DEBUG] save_user 호출됨! (신규 가입 시도)")
 
         # Run the default save logic (creates the user instance)
         # 기본 저장 로직 실행 (유저 인스턴스 생성)
@@ -104,23 +98,27 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         if not user.name:
             user.name = user.email.split("@")[0]
 
-        # Save the updated user instance
-        # 업데이트된 유저 인스턴스 저장
+        # Save the updated user instance with custom fields
+        # 커스텀 필드가 포함된 업데이트된 유저 인스턴스 저장
         user.save()
 
         # Automatically verify email for trusted social providers
-        # 신뢰할 수 있는 소셜 제공자에 대해 이메일 자동 인증
+        # 신뢰할 수 있는 소셜 제공자에 대해 이메일 자동 인증 수행
         if sociallogin.account.provider in ["google", "kakao"]:
+            # Get or create the EmailAddress instance as verified
+            # 이메일 주소 인스턴스를 인증된 상태로 가져오거나 생성
             email_address, created = EmailAddress.objects.get_or_create(
                 user=user,
                 email=user.email,
                 defaults={"primary": True, "verified": True},
             )
 
+            # Ensure the verified flag is set to True
+            # 인증 플래그가 True로 설정되어 있는지 확인
             if not email_address.verified:
                 email_address.verified = True
                 email_address.save()
 
-        print("✅ [DEBUG] 유저 저장 완료 (세션 저장 로직 제거됨)")
-
+        # Return the saved user instance
+        # 저장된 유저 인스턴스 반환
         return user

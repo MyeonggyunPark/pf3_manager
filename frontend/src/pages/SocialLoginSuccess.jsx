@@ -58,22 +58,16 @@ export default function SocialLoginSuccess() {
   useEffect(() => {
     const verifyLogin = async () => {
       try {
-        console.log("🔄 Verifying social login status...");
-
         // Check URL for 'new_user' flag sent from Backend
         // 백엔드에서 보낸 URL의 'new_user' 플래그 확인
         const params = new URLSearchParams(location.search);
         const isNewUser = params.get("new_user") === "true";
-
-        console.log(`🧐 New User Flag Check: ${isNewUser}`);
 
         // Fetch user data to confirm valid session
         // 사용자 데이터를 조회하여 유효한 세션인지 확인
         const response = await api.get("/api/auth/user/");
 
         if (response.status === 200) {
-          console.log("✅ Login verified successfully!", response.data);
-
           const name = response.data.name || response.data.email.split("@")[0];
           setUserName(name);
 
@@ -92,13 +86,11 @@ export default function SocialLoginSuccess() {
           // Branching Logic: New User vs Existing User
           // 분기 처리: 신규 유저 vs 기존 유저
           if (isNewUser) {
-            console.log("🎉 New user detected! Showing welcome modal.");
             // Stop loading and show modal (Do not redirect yet)
             // 로딩을 멈추고 모달 표시 (아직 리다이렉트 안 함)
             setIsProcessing(false);
             setShowModal(true);
           } else {
-            console.log("👋 Existing user. Redirecting to home.");
             // Existing user: Redirect immediately
             // 기존 유저: 즉시 리다이렉트
             navigate("/", { replace: true });
@@ -107,7 +99,7 @@ export default function SocialLoginSuccess() {
       } catch (err) {
         // Handle verification failure (Redirect to login)
         // 검증 실패 시 에러 처리 (로그인 페이지로 이동)
-        console.error("❌ Verification failed:", err);
+        console.error("Verification failed:", err);
         navigate("/login", { replace: true });
       }
     };

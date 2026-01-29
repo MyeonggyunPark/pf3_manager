@@ -716,9 +716,6 @@ def social_login_callback(request):
         join_delta = timezone.now() - user.date_joined
         if join_delta < timedelta(seconds=60):
             target_url += "?new_user=true"
-            print(f"🚀 [DEBUG] 신규 유저 감지! (가입 후 {join_delta.seconds}초 경과)")
-        else:
-            print(f"👀 [DEBUG] 기존 유저 (가입 후 {join_delta.days}일 경과)")
 
     # Secure redirection
     # 보안 리다이렉션

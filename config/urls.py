@@ -1,24 +1,12 @@
-"""
-URL configuration for config project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-"""
-
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
-
 from tutor.views import social_login_callback
 
 # Placeholder view for password reset confirmation
-# This view is required by dj-rest-auth to generate the email link,
-# but the actual reset page will be handled by the Frontend (React/Vue).
 # 비밀번호 재설정 확인을 위한 플레이스홀더 뷰
-# dj-rest-auth가 이메일 링크를 생성하기 위해 이 URL 패턴을 필요로 하지만,
-# 실제 비밀번호 재설정 화면은 프론트엔드에서 처리합니다.
 def password_reset_confirm_placeholder(request, uidb64, token):
     return JsonResponse(
         {
@@ -27,7 +15,6 @@ def password_reset_confirm_placeholder(request, uidb64, token):
             "token": token,
         }
     )
-
 
 urlpatterns = [
     # Django Admin Interface
@@ -67,33 +54,3 @@ urlpatterns = [
 # 개발 중 미디어 파일 제공
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-
-from django.urls import path
-from django.http import HttpResponse
-from django.core.mail import send_mail
-from django.conf import settings
-
-
-def debug_email_view(request):
-    try:
-        send_mail(
-            "[테스트] MS Planer 이메일 설정 확인",
-            "이 메일이 도착했다면 SMTP 설정(SSL/465)이 완벽한 것입니다.",
-            settings.EMAIL_HOST_USER,
-            ["audrbs92@gmail.com"], 
-            fail_silently=False,
-        )
-        return HttpResponse(
-            "<h1>✅ 이메일 발송 성공!</h1><p>설정이 완벽합니다. 메일함을 확인하세요.</p>"
-        )
-    except Exception as e:
-        return HttpResponse(
-            f"<h1>❌ 이메일 발송 실패</h1><p>에러 로그:</p><pre>{e}</pre>"
-        )
-
-
-# 기존 urlpatterns에 테스트 경로 추가
-urlpatterns += [
-    path("debug-email/", debug_email_view),
-]
