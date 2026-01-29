@@ -6,6 +6,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, Count, Avg, Q
 from django.db.models.functions import TruncMonth
+from django.contrib.auth import login
 
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
@@ -682,7 +683,7 @@ class ExamScoreInputViewSet(viewsets.ModelViewSet):
 
 
 @api_view(["GET"])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([])
 @permission_classes([permissions.AllowAny])
 def social_login_callback(request):
     """
@@ -694,11 +695,18 @@ def social_login_callback(request):
     """
     user = request.user
 
-    # If user is not authenticated, redirect to frontend login with error
-    # 사용자가 인증되지 않은 경우, 프론트엔드 로그인 페이지로 에러와 함께 리다이렉트
+    # If session cookie is missing, request.user may be anonymous.
+    # Manual login is performed to ensure the user is recognized.
+    # 세션 쿠키가 유실된 경우를 대비하여 수동 로그인을 시도하고 유저를 식별합니다.
     if not user.is_authenticated:
-        frontend_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+        frontend_url = getattr(
+            settings, "FRONTEND_BASE_URL", "https://ms-planer.up.railway.app"
+        )
         return redirect(f"{frontend_url.rstrip('/')}/login?error=auth_failed")
+
+    # Manually call login to stabilize session across different devices
+    # 타 기기에서의 세션 안정을 위해 장고 로그인 함수를 수동으로 호출합니다
+    login(request, user, backend="allauth.account.auth_backends.AuthenticationBackend")
 
     # Generate JWT tokens for the authenticated user
     # 인증된 사용자를 위한 JWT 토큰(Access/Refresh) 생성
@@ -708,7 +716,9 @@ def social_login_callback(request):
 
     # Get the frontend base URL from settings
     # 설정 파일에서 프론트엔드 베이스 URL을 가져옴
-    frontend_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+    frontend_url = getattr(
+        settings, "FRONTEND_BASE_URL", "https://ms-planer.up.railway.app"
+    )
     frontend_url = frontend_url.rstrip("/")
 
     # Default Target URL
