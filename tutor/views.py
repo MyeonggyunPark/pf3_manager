@@ -6,7 +6,6 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, Count, Avg, Q
 from django.db.models.functions import TruncMonth
-from django.contrib.auth import login
 
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
@@ -703,12 +702,6 @@ def social_login_callback(request):
             settings, "FRONTEND_BASE_URL", "https://ms-planer.up.railway.app"
         )
         return redirect(f"{frontend_url.rstrip('/')}/login?error=auth_failed")
-
-    # Manually call login to stabilize session across different devices.
-    # This ensures that the session is correctly established even when redirected between domains.
-    # 타 기기에서의 세션 안정을 위해 장고 로그인 함수를 수동으로 호출합니다.
-    # 이는 도메인 간 리다이렉트 시에도 세션이 올바르게 수립되도록 보장합니다.
-    login(request, user, backend="allauth.account.auth_backends.AuthenticationBackend")
 
     # Generate JWT tokens for the authenticated user
     # 인증된 사용자를 위한 JWT 토큰(Access/Refresh) 생성
