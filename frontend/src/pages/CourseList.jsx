@@ -648,17 +648,27 @@ export default function CourseList() {
                 </div>
 
                 <div ref={tableBodyRef} className="flex-1 overflow-y-auto custom-scrollbar">
-                    <table className="w-full text-md table-fixed">
-                        <tbody className="divide-y divide-border/50">
+                    <table 
+                        className={cn(
+                            "w-full text-md table-fixed",
+                            filteredCourses.length === 0 ? "h-full" : ""
+                        )}
+                    >
+                        <tbody 
+                            className={cn(
+                                "divide-y divide-border/50",
+                                filteredCourses.length === 0 ? "h-full" : ""
+                            )}
+                        >
                             {filteredCourses.length === 0 ? (
-                                <tr>
+                                <tr className="h-full">
                                 <td
                                     colSpan="7"
-                                    className="px-6 py-12 text-center text-muted-foreground text-md"
+                                    className="px-6 text-center align-middle text-muted-foreground/70"
                                 >
-                                    <div className="flex flex-col items-center gap-2 mt-5">
-                                    <LucideIcons.SearchX className="w-8 h-8 text-muted-foreground/50" />
-                                    <p>해당 기간에 등록된 데이터가 없습니다.</p>
+                                    <div className="flex flex-col justify-center items-center gap-2">
+                                    <LucideIcons.SearchX className="w-8 h-8" />
+                                    <p className="font-semibold text-sm">해당 기간에 등록된 데이터가 없습니다.</p>
                                     </div>
                                 </td>
                                 </tr>

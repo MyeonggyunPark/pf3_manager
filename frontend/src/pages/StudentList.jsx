@@ -319,12 +319,10 @@ export default function StudentList() {
       {/* 필터 및 검색 바 섹션 */}
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 shrink-0">
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-          
           {/* Filters */}
           {/* 필터들 */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="relative">
-
               {/* Status Filter Dropdown */}
               {/* 상태 필터 드롭다운 */}
               <select
@@ -397,9 +395,9 @@ export default function StudentList() {
         <Card className="w-1/3 min-w-[320px] h-full bg-card border-none shadow-sm rounded-2xl overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
             {students.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm gap-2">
-                <LucideIcons.SearchX className="w-8 h-8 text-muted-foreground/50" />
-                <p>검색 결과가 없습니다.</p>
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground/70 gap-2">
+                <LucideIcons.SearchX className="w-8 h-8" />
+                <p className="font-semibold text-sm">검색된 학생이 없습니다.</p>
               </div>
             ) : (
               students.map((s) => (

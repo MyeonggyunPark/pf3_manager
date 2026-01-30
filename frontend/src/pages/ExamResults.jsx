@@ -1072,8 +1072,10 @@ export default function ExamResults() {
                           className="px-6 text-center align-middle text-muted-foreground/70"
                         >
                           <div className="flex flex-col items-center justify-center gap-2">
-                            <LucideIcons.SearchX className="w-6 h-6" />
-                            <p className="font-semibold">데이터가 없습니다.</p>
+                            <LucideIcons.SearchX className="w-8 h-8" />
+                            <p className="font-semibold text-sm">
+                              등록된 모의고사 데이터가 없습니다.
+                            </p>
                           </div>
                         </td>
                       </tr>
@@ -1190,8 +1192,8 @@ export default function ExamResults() {
                   hasScroll ? "pr-2.75" : "",
                 )}
               >
-                <table className="w-full text-sm table-fixed">
-                  <thead className="text-xs text-muted-foreground uppercase">
+                <table className="w-full text-md table-fixed">
+                  <thead className="text-md text-muted-foreground uppercase">
                     <tr>
                       <th className="px-4 py-3 font-semibold text-center w-[15%]">
                         학생
@@ -1241,8 +1243,10 @@ export default function ExamResults() {
                           className="px-6 text-center align-middle text-muted-foreground/70"
                         >
                           <div className="flex flex-col items-center justify-center gap-2">
-                            <LucideIcons.SearchX className="w-6 h-6" />
-                            <p className="font-semibold">데이터가 없습니다.</p>
+                            <LucideIcons.SearchX className="w-8 h-8" />
+                            <p className="font-semibold text-sm">
+                              등록된 정규시험 데이터가 없습니다.
+                            </p>
                           </div>
                         </td>
                       </tr>
