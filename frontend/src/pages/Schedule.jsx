@@ -150,6 +150,7 @@ export default function Schedule() {
         if (viewMode === "weekly") {
             newDate.setDate(newDate.getDate() + direction * 7);
         } else {
+            newDate.setDate(1);
             newDate.setMonth(newDate.getMonth() + direction);
         }
         setCurrentDate(newDate);
@@ -468,7 +469,7 @@ export default function Schedule() {
                             "relative rounded-md border border-border p-2 flex flex-col text-sm group cursor-default h-full overflow-hidden transition-colors",
                             isToday
                             ? "bg-accent/5 border-accent ring-1 ring-accent/20"
-                            : "bg-card hover:bg-muted/30",
+                            : "bg-card",
                         )}
                         >
                             <div className="flex justify-between items-start mb-1 shrink-0">
