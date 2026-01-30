@@ -10,6 +10,7 @@ import {
   FileSignature,
   MessageCircle,
   ChevronDown,
+  FileText,
 } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
@@ -168,9 +169,15 @@ export default function AddMockExamModal({
   const [detailInputs, setDetailInputs] = useState({});
   const [scoreInputs, setScoreInputs] = useState({});
 
-  // File Upload State
-  // 파일 업로드 상태
-  const [selectedFile, setSelectedFile] = useState(null);
+  // File Upload State (Multiple)
+  // 파일 업로드 상태 (다중 파일)
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [existingFiles, setExistingFiles] = useState([]);
+
+  // File Deletion State
+  // 파일 삭제 상태
+  const [fileToDelete, setFileToDelete] = useState(null);
+  const [isFileDeleting, setIsFileDeleting] = useState(false);
 
   const isEditMode = !!examData;
 
@@ -260,6 +267,13 @@ export default function AddMockExamModal({
           });
           setScoreInputs(scores);
         }
+
+        // Restore Existing Attachments
+        // 기존 첨부파일 복원
+        if (examData.attachments) {
+          setExistingFiles(examData.attachments);
+        }
+
       } else {
         // Reset for Create Mode
         // 생성 모드 초기화
@@ -267,6 +281,8 @@ export default function AddMockExamModal({
         setDetailInputs({});
         setScoreInputs({});
         setErrors({});
+        setExistingFiles([]);
+        setSelectedFiles([]);
       }
     }
   }, [isOpen, examData]);
@@ -340,7 +356,7 @@ export default function AddMockExamModal({
       selectedStandardData.name &&
       formData.exam_mode
     ) {
-      
+
       // Pass exam_mode to grade calculator
       // 등급 계산기에 응시 유형(exam_mode) 전달
       calculatedGrade = calculateMockGrade(
@@ -367,8 +383,10 @@ export default function AddMockExamModal({
     setScoreInputs({});
     setErrors({});
     setSubmitError(null);
-    setSelectedFile(null);
+    setSelectedFiles([]);
+    setExistingFiles([]);
     setShowDeleteConfirm(false);
+    setFileToDelete(null);
     onClose();
   };
 
@@ -379,9 +397,68 @@ export default function AddMockExamModal({
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
+  // Handle File Input Change (Multiple)
+  // 파일 선택 처리 (다중 파일)
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+
+      // Filter out duplicates based on name and size
+      // 기존 파일 목록에 없는 파일만 필터링 (이름과 크기로 비교)
+      const uniqueFiles = newFiles.filter(
+        (newFile) =>
+          !selectedFiles.some(
+            (existingFile) =>
+              existingFile.name === newFile.name &&
+              existingFile.size === newFile.size,
+          ),
+      );
+
+      if (uniqueFiles.length > 0) {
+        setSelectedFiles((prev) => [...prev, ...uniqueFiles]);
+      } else {
+
+        // Alert user about duplicates
+        // 중복 파일 알림 (여기서는 '아무 일도 안 일어남'으로 처리)
+        console.log("Duplicate files ignored.");
+      }
+    }
+
+    // Reset input value to allow re-selecting the same file after deletion
+    // 동일한 파일을 삭제 후 다시 선택할 수 있도록 input 값 초기화
+    e.target.value = "";
+  };
+
+  // Remove File from Selected List
+  // 선택된 파일 목록에서 파일 제거
+  const removeFile = (indexToRemove) => {
+    setSelectedFiles((prev) =>
+      prev.filter((_, index) => index !== indexToRemove),
+    );
+  };
+
+  // Prepare to Delete Existing File
+  // 기존 파일 삭제 준비
+  const handleDeleteExistingFileClick = (fileId) => {
+    setFileToDelete(fileId);
+  };
+
+
+  // Delete Existing File from Server
+  // 서버에서 기존 파일 삭제
+  const executeFileDelete = async () => {
+    if (!fileToDelete) return;
+    setIsFileDeleting(true);
+    try {
+      await api.delete(`/api/attachments/${fileToDelete}/`);
+      setExistingFiles((prev) => prev.filter((f) => f.id !== fileToDelete));
+      setFileToDelete(null); // 모달 닫기
+    } catch (err) {
+      console.error("Delete file failed:", err);
+      // 에러 메시지는 상단 submitError에 표시하거나, 여기서는 간단히 로그만
+      setSubmitError("파일 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setIsFileDeleting(false);
     }
   };
 
@@ -515,16 +592,30 @@ export default function AddMockExamModal({
         }
       });
 
-      // Upload Attachment if selected
-      // 파일 선택 시 첨부파일 업로드
-      if (selectedFile && recordId) {
-        const fileData = new FormData();
-        fileData.append("exam_record", recordId);
-        fileData.append("file", selectedFile);
-        await api.post("/api/attachments/", fileData, {
-          headers: { "Content-Type": "multipart/form-data" },
+      // Upload Multiple Attachments
+      // 다중 첨부파일 업로드
+      if (selectedFiles.length > 0 && recordId) {
+
+        // Create an array of upload promises
+        // 업로드 프로미스 배열 생성
+        const uploadPromises = selectedFiles.map((file) => {
+          const fileData = new FormData();
+          fileData.append("exam_record", recordId);
+          fileData.append("file", file);
+          fileData.append("original_name", file.name);
+          return api.post("/api/attachments/", fileData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
         });
+
+        // Wait for all uploads to complete
+        // 모든 업로드가 완료될 때까지 대기
+        await Promise.all(uploadPromises);
       }
+
+      // Wait for all detail/score/file saves
+      // 모든 상세/점수/파일 저장이 완료될 때까지 대기
+      await Promise.all(detailPromises);
 
       onSuccess();
       handleClose();
@@ -633,6 +724,46 @@ export default function AddMockExamModal({
                 className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold cursor-pointer shadow-md"
               >
                 {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "삭제"
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* File Delete Confirmation Overlay */}
+        {/* 파일 삭제 확인 오버레이 */}
+        {fileToDelete && (
+          <div className="absolute inset-0 z-30 bg-white dark:bg-card backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="w-8 h-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-foreground mb-2">
+              파일 삭제
+            </h3>
+            <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
+              정말로 삭제하시겠습니까? <br />
+              <span className="text-destructive mt-1 block font-medium">
+                이 작업은 되돌릴 수 없습니다.
+              </span>
+            </p>
+            <div className="flex gap-3 w-full max-w-xs">
+              <Button
+                type="button"
+                onClick={() => setFileToDelete(null)}
+                className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                onClick={executeFileDelete}
+                disabled={isFileDeleting}
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold cursor-pointer shadow-md"
+              >
+                {isFileDeleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   "삭제"
@@ -1015,27 +1146,100 @@ export default function AddMockExamModal({
                 </div>
 
                 <div>
-                  <InputLabel label="시험지 파일 첨부" />
-                  <div className="relative w-full">
-                    <input
-                      type="file"
-                      id="mock-file-upload"
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                    <label
-                      htmlFor="mock-file-upload"
-                      className="flex items-center justify-center w-full h-12 px-4 transition bg-white dark:bg-card border-2 border-dashed rounded-lg appearance-none cursor-pointer hover:border-primary/50 dark:hover:border-primary/50 focus:outline-none border-slate-300 dark:border-border hover:bg-slate-50 dark:hover:bg-muted/20"
-                    >
-                      <span className="flex items-center space-x-2">
-                        <UploadCloud className="w-4 h-4 text-slate-600 dark:text-muted-foreground" />
-                        <span className="text-sm font-medium text-slate-600 dark:text-muted-foreground truncate max-w-62.5">
-                          {selectedFile
-                            ? selectedFile.name
-                            : "파일을 선택하거나 드래그하세요."}
+                  <InputLabel label="시험지 파일" />
+                  <div className="space-y-3">
+                    <div className="relative w-full">
+                      <input
+                        type="file"
+                        id="mock-file-upload"
+                        className="hidden"
+                        onChange={handleFileChange}
+                        multiple
+                      />
+                      <label
+                        htmlFor="mock-file-upload"
+                        className="flex items-center justify-center w-full h-12 px-4 transition bg-white dark:bg-card border-2 border-dashed rounded-lg appearance-none cursor-pointer hover:border-primary/50 dark:hover:border-primary/50 focus:outline-none border-slate-300 dark:border-border hover:bg-slate-50 dark:hover:bg-muted/20 group"
+                      >
+                        <span className="flex items-center space-x-2">
+                          <UploadCloud className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+                          <span className="text-sm font-medium text-slate-400 dark:text-muted-foreground group-hover:text-primary transition-colors">
+                            파일 업로드
+                          </span>
                         </span>
-                      </span>
-                    </label>
+                      </label>
+                    </div>
+
+                    {existingFiles.length > 0 && (
+                      <div className="space-y-2">
+                        <InputLabel label="기존 파일" />
+                        {existingFiles.map((file) => (
+                          <div
+                            key={file.id}
+                            className="flex items-center justify-between p-2.5 bg-slate-100 dark:bg-muted border border-slate-200 dark:border-border rounded-md group"
+                          >
+                            <a
+                              href={file.file}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-3 overflow-hidden hover:underline cursor-pointer"
+                            >
+                              <div className="bg-white dark:bg-card p-1.5 rounded border border-slate-300 dark:border-border">
+                                <FileText className="w-4 h-4 text-primary" />
+                              </div>
+                              <span className="text-sm text-slate-700 dark:text-foreground truncate font-medium max-w-45 md:max-w-50">
+                                {file.original_name ||
+                                  decodeURIComponent(
+                                    file.file.split("/").pop().split("?")[0],
+                                  )}
+                              </span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDeleteExistingFileClick(file.id)
+                              }
+                              className="p-1.5 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors cursor-pointer"
+                              title="파일 삭제"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 새로 추가할 파일 목록 */}
+                    {selectedFiles.length > 0 && (
+                      <div className="space-y-2">
+                        <InputLabel label="추가 파일" />
+                        {selectedFiles.map((file, index) => (
+                          <div
+                            key={`new-${index}`}
+                            className="flex items-center justify-between p-2.5 bg-slate-100 dark:bg-muted border border-slate-200 dark:border-border rounded-md group"
+                          >
+                            <div className="flex items-center space-x-3 overflow-hidden">
+                              <div className="bg-white dark:bg-card p-1.5 rounded border border-slate-200 dark:border-border">
+                                <FileText className="w-4 h-4 text-primary" />
+                              </div>
+                              <span className="text-sm text-slate-700 dark:text-foreground truncate font-medium max-w-45 md:max-w-50">
+                                {file.name}
+                              </span>
+                              <span className="text-xs text-slate-400 dark:text-muted-foreground whitespace-nowrap">
+                                {(file.size / 1024).toFixed(1)} KB
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(index)}
+                              className="p-1.5 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors cursor-pointer"
+                              title="파일 삭제"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

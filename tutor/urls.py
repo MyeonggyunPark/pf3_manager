@@ -43,6 +43,10 @@ router.register(r"exam-records", ExamRecordViewSet, basename="exam-record")
 # /api/exam-detail-results/ -> 시험 상세 결과(O/X) CRUD 작업
 router.register(r"exam-detail-results", ExamDetailResultViewSet, basename="exam-detail-result")
 
+# /api/attachments/ -> Exam Attachments CRUD operations
+# /api/attachments/ -> 시험 첨부파일 CRUD 작업
+router.register(r"attachments", ExamAttachmentViewSet, basename="attachment")
+
 # /api/exam-score-inputs/ -> Exam Score Inputs CRUD operations
 # /api/exam-score-inputs/ -> 시험 점수 입력(주관식) CRUD 작업
 router.register(r"exam-score-inputs", ExamScoreInputViewSet, basename="exam-score-input")

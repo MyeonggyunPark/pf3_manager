@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
 import {
@@ -61,6 +62,114 @@ const EXAM_MODE_LABELS = {
 };
 
 const LEVEL_OPTIONS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+// FilePopover Component
+// 파일 팝오버 컴포넌트
+const FilePopover = ({ attachments }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef(null);
+
+  const togglePopover = (e) => {
+    e.stopPropagation();
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.top + window.scrollY - 8,
+        left: rect.left + window.scrollX + rect.width / 2,
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
+  useLayoutEffect(() => {
+    const handleClose = () => setIsOpen(false);
+    if (isOpen) {
+      window.addEventListener("click", handleClose);
+      window.addEventListener("resize", handleClose);
+      const scrollContainer = document.querySelector('.custom-scrollbar'); 
+      if(scrollContainer) scrollContainer.addEventListener('scroll', handleClose);
+    }
+    return () => {
+      window.removeEventListener("click", handleClose);
+      window.removeEventListener("resize", handleClose);
+      const scrollContainer = document.querySelector('.custom-scrollbar');
+      if(scrollContainer) scrollContainer.removeEventListener('scroll', handleClose);
+    };
+  }, [isOpen]);
+
+  if (!attachments || attachments.length === 0) {
+    return <span className="text-slate-300 text-xs">-</span>;
+  }
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={togglePopover}
+        className={cn(
+          "flex items-center gap-1.5 px-2 py-1 rounded-full transition-all border cursor-pointer relative",
+          isOpen
+            ? "bg-primary text-white border-primary shadow-md"
+            : "bg-slate-100 dark:bg-muted/50 text-slate-500 dark:text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
+        )}
+      >
+        <LucideIcons.Paperclip className="w-4.5 h-4.5" />
+      </button>
+
+      {isOpen &&
+        createPortal(
+          <div
+            className="fixed z-9999 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200"
+            style={{
+              top: coords.top,
+              left: coords.left,
+              transform: "translate(-50%, -100%)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white dark:bg-slate-800 border-b border-r border-slate-200 dark:border-slate-700 rotate-45"></div>
+
+            <div className="p-1 flex flex-col max-h-60 overflow-y-auto custom-scrollbar">
+              <div className="px-3 py-2 text-xs font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-700 mb-1">
+                첨부파일 목록 ({attachments.length})
+              </div>
+              {attachments.map((file, index) => {
+                let fileName = "파일";
+                if (file.original_name) fileName = file.original_name;
+                else if (file.file) {
+                  try {
+                    fileName = decodeURIComponent(file.file.split("/").pop().split("?")[0]);
+                  } catch {
+                    fileName = "Unknown File";
+                  }
+                }
+
+                return (
+                  <a
+                    key={file.id || index}
+                    href={file.file}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-md transition-colors group"
+                    title={fileName}
+                  >
+                    <LucideIcons.FileText className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary shrink-0" />
+                    <span className="truncate flex-1 text-left text-xs">
+                      {fileName}
+                    </span>
+                    <LucideIcons.ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all shrink-0" />
+                  </a>
+                );
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};
 
 // Helper to format date string
 // 날짜 문자열 포맷팅 헬퍼 함수
@@ -1163,24 +1272,7 @@ export default function ExamResults() {
                           </td>
                           <td className="px-4 py-4 text-center w-[10%]">
                             <div className="flex justify-center items-center w-full">
-                              {exam.attachments?.length > 0 ? (
-                                exam.attachments.map((file) => (
-                                  <a
-                                    key={file.id}
-                                    href={file.file}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-1.5 rounded-full hover:bg-primary/10 text-slate-400 hover:text-primary transition-colors"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <LucideIcons.Paperclip className="w-4 h-4" />
-                                  </a>
-                                ))
-                              ) : (
-                                <span className="text-slate-300 text-xs">
-                                  -
-                                </span>
-                              )}
+                              <FilePopover attachments={exam.attachments} />
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center w-[12%]">

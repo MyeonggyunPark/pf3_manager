@@ -1,8 +1,10 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
 from django.http import JsonResponse
+
 from tutor.views import social_login_callback
 
 # Placeholder view for password reset confirmation
@@ -48,6 +50,12 @@ urlpatterns = [
     # Explicitly map the callback URL to our view function
     # 콜백 URL을 우리의 뷰 함수(JWT발급 + 신규유저체크)로 명시적 연결
     path("api/social/callback/", social_login_callback, name="social_callback"),
+]
+
+# Serve media files
+# 미디어 파일 제공
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
 ]
 
 # Serve media files during development
