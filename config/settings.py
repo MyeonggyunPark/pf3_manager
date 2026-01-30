@@ -229,6 +229,9 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # WhiteNoise static files storage for efficient serving in production
 # 배포 환경에서 효율적인 서빙을 위한 WhiteNoise 정적 파일 스토리지
