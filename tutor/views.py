@@ -683,7 +683,7 @@ class ExamScoreInputViewSet(viewsets.ModelViewSet):
 
 
 @api_view(["GET"])
-@authentication_classes([])
+@authentication_classes([SessionAuthentication])
 @permission_classes([permissions.AllowAny])
 def social_login_callback(request):
     """
