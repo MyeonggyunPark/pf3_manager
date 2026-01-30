@@ -704,8 +704,10 @@ def social_login_callback(request):
         )
         return redirect(f"{frontend_url.rstrip('/')}/login?error=auth_failed")
 
-    # Manually call login to stabilize session across different devices
-    # 타 기기에서의 세션 안정을 위해 장고 로그인 함수를 수동으로 호출합니다
+    # Manually call login to stabilize session across different devices.
+    # This ensures that the session is correctly established even when redirected between domains.
+    # 타 기기에서의 세션 안정을 위해 장고 로그인 함수를 수동으로 호출합니다.
+    # 이는 도메인 간 리다이렉트 시에도 세션이 올바르게 수립되도록 보장합니다.
     login(request, user, backend="allauth.account.auth_backends.AuthenticationBackend")
 
     # Generate JWT tokens for the authenticated user
