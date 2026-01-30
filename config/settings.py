@@ -417,14 +417,18 @@ ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        # Prioritize JWT Cookie Authentication for stateless API requests
+        # 상태가 없는 API 요청을 위해 JWT 쿠키 인증을 최우선으로 설정합니다
         "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
+        
+        # Add SessionAuthentication to support initial social login sync
+        # 초기 소셜 로그인 동기화를 지원하기 위해 세션 인증을 추가합니다
+        "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     
     # Global default filter backend setup
-    # Enables filtering across all ViewSets using filterset_fields
     # 전역 기본 필터 백엔드 설정
-    # 모든 ViewSet에서 filterset_fields를 통한 필터링 활성화
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 }
 

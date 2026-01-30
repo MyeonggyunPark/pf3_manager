@@ -738,14 +738,15 @@ def social_login_callback(request):
     # 보안 리다이렉션
     response = redirect(target_url)
 
-    # Define common cookie settings without an explicit domain to prevent blocking on other devices.
-    # This forces the browser to treat the cookie as host-only for the backend domain.
-    # 타 기기에서의 차단을 방지하기 위해 명시적 도메인 없이 공통 쿠키 설정을 정의합니다.
-    # 이는 브라우저가 쿠키를 백엔드 도메인 전용(host-only)으로 처리하도록 강제합니다.
+    # Define common cookie settings with an explicit path to ensure Safari compatibility.
+    # We omit the domain to let the browser treat it as a host-only cookie for better acceptance.
+    # Safari 호환성을 보장하기 위해 명시적인 경로와 함께 공통 쿠키 설정을 정의합니다.
+    # 브라우저가 호스트 전용 쿠키로 취급하여 수락 가능성을 높이도록 도메인 설정은 생략합니다.
     cookie_kwargs = {
         "httponly": settings.REST_AUTH["JWT_AUTH_HTTPONLY"],
         "secure": settings.REST_AUTH["JWT_AUTH_SECURE"],
         "samesite": settings.REST_AUTH["JWT_AUTH_SAMESITE"],
+        "path": "/",
     }
 
     # Set access token in HttpOnly cookie
@@ -754,7 +755,7 @@ def social_login_callback(request):
         key=settings.REST_AUTH["JWT_AUTH_COOKIE"],
         value=access_token,
         max_age=24 * 60 * 60,
-        **cookie_kwargs
+        **cookie_kwargs,
     )
 
     # Set refresh token in HttpOnly cookie
@@ -763,7 +764,7 @@ def social_login_callback(request):
         key=settings.REST_AUTH["JWT_AUTH_REFRESH_COOKIE"],
         value=refresh_token,
         max_age=7 * 24 * 60 * 60,
-        **cookie_kwargs
+        **cookie_kwargs,
     )
 
     return response
