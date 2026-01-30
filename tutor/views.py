@@ -738,15 +738,23 @@ def social_login_callback(request):
     # 보안 리다이렉션
     response = redirect(target_url)
 
+    # Define common cookie settings without an explicit domain to prevent blocking on other devices.
+    # This forces the browser to treat the cookie as host-only for the backend domain.
+    # 타 기기에서의 차단을 방지하기 위해 명시적 도메인 없이 공통 쿠키 설정을 정의합니다.
+    # 이는 브라우저가 쿠키를 백엔드 도메인 전용(host-only)으로 처리하도록 강제합니다.
+    cookie_kwargs = {
+        "httponly": settings.REST_AUTH["JWT_AUTH_HTTPONLY"],
+        "secure": settings.REST_AUTH["JWT_AUTH_SECURE"],
+        "samesite": settings.REST_AUTH["JWT_AUTH_SAMESITE"],
+    }
+
     # Set access token in HttpOnly cookie
     # HttpOnly 쿠키에 액세스 토큰 설정
     response.set_cookie(
         key=settings.REST_AUTH["JWT_AUTH_COOKIE"],
         value=access_token,
-        httponly=settings.REST_AUTH["JWT_AUTH_HTTPONLY"],
-        secure=settings.REST_AUTH["JWT_AUTH_SECURE"],
-        samesite=settings.REST_AUTH["JWT_AUTH_SAMESITE"],
         max_age=24 * 60 * 60,
+        **cookie_kwargs
     )
 
     # Set refresh token in HttpOnly cookie
@@ -754,10 +762,8 @@ def social_login_callback(request):
     response.set_cookie(
         key=settings.REST_AUTH["JWT_AUTH_REFRESH_COOKIE"],
         value=refresh_token,
-        httponly=settings.REST_AUTH["JWT_AUTH_HTTPONLY"],
-        secure=settings.REST_AUTH["JWT_AUTH_SECURE"],
-        samesite=settings.REST_AUTH["JWT_AUTH_SAMESITE"],
         max_age=7 * 24 * 60 * 60,
+        **cookie_kwargs
     )
 
     return response
