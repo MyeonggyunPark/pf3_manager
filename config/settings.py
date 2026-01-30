@@ -423,6 +423,10 @@ REST_FRAMEWORK = {
         # Prioritize JWT Cookie Authentication for stateless API requests
         # 상태가 없는 API 요청을 위해 JWT 쿠키 인증을 최우선으로 설정합니다
         "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
+        
+        # Use Custom Session Authentication that skips CSRF checks
+        # CSRF 검사를 건너뛰는 커스텀 세션 인증 사용
+        "tutor.authentication.CsrfExemptSessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     
