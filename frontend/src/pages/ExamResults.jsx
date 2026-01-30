@@ -17,6 +17,7 @@ import {
   PolarAngleAxis,
   Radar,
   LabelList,
+  Cell,
 } from "recharts";
 import api from "../api";
 import { cn } from "../lib/utils";
@@ -46,7 +47,8 @@ const CHART_COLORS = {
 // Styles mapping for exam result badges
 // 시험 결과 배지를 위한 스타일 매핑
 const examResultStyles = {
-  PASSED: "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20",
+  PASSED:
+    "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
   FAILED:
     "bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10",
   WAITING: "bg-muted/50 text-muted-foreground border-border hover:bg-muted/50",
@@ -436,8 +438,10 @@ export default function ExamResults() {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-card border border-border p-3 rounded-lg shadow-lg text-sm">
-          <p className="font-bold mb-2 text-foreground">{label}</p>
+        <div className="bg-white dark:bg-card border border-slate-200 dark:border-border p-3 rounded-lg shadow-lg text-sm">
+          <p className="font-bold mb-2 text-slate-800 dark:text-foreground">
+            {label}
+          </p>
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between gap-4">
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -447,7 +451,7 @@ export default function ExamResults() {
                 />
                 합격
               </span>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-slate-700 dark:text-foreground">
                 {data.passed}명
               </span>
             </div>
@@ -459,11 +463,11 @@ export default function ExamResults() {
                 />
                 불합격
               </span>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-slate-700 dark:text-foreground">
                 {data.failed}명
               </span>
             </div>
-            <div className="border-t border-border mt-1 pt-1 flex items-center justify-between gap-4">
+            <div className="border-t border-slate-100 dark:border-border mt-1 pt-1 flex items-center justify-between gap-4">
               <span className="text-xs font-bold text-primary">합격률</span>
               <span className="font-bold text-primary">{data.rate}%</span>
             </div>
@@ -484,14 +488,18 @@ export default function ExamResults() {
             className="w-2.5 h-2.5 rounded-xs"
             style={{ backgroundColor: CHART_COLORS.accent }}
           />
-          <span className="font-medium text-foreground">합격</span>
+          <span className="font-medium text-slate-600 dark:text-foreground">
+            합격
+          </span>
         </li>
         <li className="flex items-center gap-1.5">
           <span
             className="w-2.5 h-2.5 rounded-xs"
             style={{ backgroundColor: CHART_COLORS.destructive }}
           />
-          <span className="font-medium text-foreground">불합격</span>
+          <span className="font-medium text-slate-600 dark:text-foreground">
+            불합격
+          </span>
         </li>
       </ul>
     );
@@ -520,7 +528,7 @@ export default function ExamResults() {
         <div className="flex flex-col sm:flex-row items-center gap-7 w-full xl:w-auto justify-end">
           {/* Tab Selector */}
           {/* 탭 선택기 */}
-          <TabsList className="w-full sm:w-auto h-10">
+          <TabsList className="w-full sm:w-auto h-10 bg-slate-100 dark:bg-muted/50">
             <TabsTrigger
               value="mock"
               activeValue={activeTab}
@@ -561,7 +569,7 @@ export default function ExamResults() {
                   );
                   setFocusedStudent(null);
                 }}
-                className="h-10 w-full sm:w-32 rounded-xl border border-border bg-card px-4 text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none pr-8"
+                className="h-10 w-full sm:w-32 rounded-xl border border-border bg-white dark:bg-card px-4 text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none pr-8"
               >
                 <option value="all">전체(년도)</option>
                 {availableYears.map((y) => (
@@ -583,7 +591,7 @@ export default function ExamResults() {
                     setLevelFilter(e.target.value);
                     setFocusedStudent(null);
                   }}
-                  className="h-10  w-full sm:w-29 rounded-xl border border-border bg-card px-3 text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none"
+                  className="h-10  w-full sm:w-29 rounded-xl border border-border bg-white dark:bg-card px-3 text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none"
                 >
                   <option value="">전체(레벨)</option>
                   {LEVEL_OPTIONS.map((opt) => (
@@ -602,7 +610,7 @@ export default function ExamResults() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="h-10 w-full sm:w-29 rounded-xl border border-border bg-card px-3 text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none"
+                    className="h-10 w-full sm:w-29 rounded-xl border border-border bg-white dark:bg-card px-3 text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none"
                   >
                     <option value="all">전체(결과)</option>
                     <option value="WAITING">대기</option>
@@ -617,12 +625,12 @@ export default function ExamResults() {
               {/* 검색 입력 */}
               <div className="flex items-center w-full sm:w-auto gap-2 group">
                 <div className="relative flex-1 sm:w-48">
-                  <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                  <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors dark:text-muted-foreground" />
                   <input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-md"
+                    className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-md"
                     placeholder="학생 이름 입력"
                   />
                 </div>
@@ -667,16 +675,16 @@ export default function ExamResults() {
           (!focusedStudent ? (
             // Mock Exam Empty Selection State
             // 모의고사 학생 미선택 상태
-            <Card className="col-span-12 bg-card border-muted-foreground/10 flex flex-col items-center justify-center h-52 transition-all animate-in fade-in duration-500">
+            <Card className="col-span-12 bg-white dark:bg-card border-slate-100 dark:border-border flex flex-col items-center justify-center h-52 transition-all animate-in fade-in duration-500">
               <div className="text-center text-muted-foreground/70">
-                <div className="bg-muted/20 p-3.5 rounded-full inline-block mt-2 mb-2 ring-1 ring-border/50">
-                  <LucideIcons.FileBarChart className="w-8 h-8 text-muted-foreground/40" />
+                <div className="bg-slate-50 dark:bg-muted/20 p-3.5 rounded-full inline-block mt-2 mb-2 ring-1 ring-slate-100 dark:ring-border/50">
+                  <LucideIcons.FileBarChart className="w-8 h-8 text-slate-300 dark:text-muted-foreground/40" />
                 </div>
                 <div className="text-center space-y-1">
                   <h3 className="font-semibold text-lg text-primary">
                     학생별 상세 분석
                   </h3>
-                  <p className="text-sm max-w-sm mx-auto text-muted-foreground">
+                  <p className="text-sm max-w-sm mx-auto text-slate-500 dark:text-muted-foreground">
                     아래 목록에서 학생을 선택하면
                     <br />
                     선택된 학생의 {""}{" "}
@@ -691,11 +699,10 @@ export default function ExamResults() {
             // 모의고사 선택된 학생 분석
             <>
               <div className="lg:col-span-3 flex flex-col gap-4 animate-in slide-in-from-top-4 duration-500">
-                <Card className="flex-1 shadow-sm bg-card relative overflow-hidden border-2 border-primary">
+                <Card className="flex-1 shadow-sm bg-white dark:bg-card relative overflow-hidden border-2 border-primary">
                   <button
-                    variant="default"
                     onClick={handleResetAnalysis}
-                    className="absolute top-2 right-2 p-1 hover:bg-muted rounded-full text-muted-foreground transition-colors cursor-pointer"
+                    className="absolute top-2 right-2 p-1 hover:bg-slate-100 dark:hover:bg-muted rounded-full text-slate-400 dark:text-muted-foreground transition-colors cursor-pointer z-10"
                     title="분석 닫기"
                   >
                     <LucideIcons.X className="w-4 h-4" />
@@ -720,7 +727,7 @@ export default function ExamResults() {
                   </CardContent>
                 </Card>
 
-                <Card className="flex-1 shadow-sm bg-card border-2 border-destructive">
+                <Card className="flex-1 shadow-sm bg-white dark:bg-card border-2 border-destructive">
                   <CardHeader>
                     <CardTitle className="text-md font-bold text-destructive uppercase tracking-wider">
                       취약 영역
@@ -741,10 +748,9 @@ export default function ExamResults() {
 
               <div className="lg:col-span-9 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-4 duration-700">
                 {/* Trend Line Chart */}
-                {/* 점수 추이 라인 차트 */}
-                <Card className="shadow-sm border-none bg-card h-full">
+                <Card className="shadow-sm border-none bg-white dark:bg-card h-full">
                   <CardHeader>
-                    <CardTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800 dark:text-foreground">
                       <LucideIcons.TrendingUp className="w-4 h-4 text-primary" />{" "}
                       점수 변화 추이
                     </CardTitle>
@@ -758,26 +764,35 @@ export default function ExamResults() {
                         <CartesianGrid
                           strokeDasharray="3 3"
                           vertical={false}
-                          stroke={CHART_COLORS.muted}
+                          stroke="var(--color-border)"
+                          opacity={0.5}
                         />
                         <XAxis
                           dataKey="shortDate"
-                          tick={{ fontSize: 11, fill: CHART_COLORS.text }}
+                          tick={{
+                            fontSize: 11,
+                            fill: "var(--color-muted-foreground)",
+                          }}
                           axisLine={false}
                           tickLine={false}
                           dy={10}
                         />
                         <YAxis
-                          tick={{ fontSize: 11, fill: CHART_COLORS.text }}
+                          tick={{
+                            fontSize: 11,
+                            fill: "var(--color-muted-foreground)",
+                          }}
                           axisLine={false}
                           tickLine={false}
                           domain={[0, "auto"]}
                         />
                         <Tooltip
                           contentStyle={{
-                            borderRadius: "8px",
+                            borderRadius: "12px",
+                            border: "1px solid var(--color-border)",
+                            backgroundColor: "var(--color-card)",
+                            color: "var(--color-card-foreground)",
                             fontSize: "12px",
-                            border: `1px solid ${CHART_COLORS.muted}`,
                           }}
                           formatter={(val, name, props) => [
                             `${val} / ${props.payload.max}`,
@@ -792,7 +807,12 @@ export default function ExamResults() {
                           dataKey="score"
                           stroke={CHART_COLORS.primary}
                           strokeWidth={3}
-                          dot={{ r: 4, fill: CHART_COLORS.primary }}
+                          dot={{
+                            r: 4,
+                            fill: CHART_COLORS.primary,
+                            strokeWidth: 2,
+                            stroke: "#fff",
+                          }}
                           activeDot={{ r: 6 }}
                         />
                       </LineChart>
@@ -801,10 +821,9 @@ export default function ExamResults() {
                 </Card>
 
                 {/* Weakness Radar Chart */}
-                {/* 취약 영역 레이더 차트 */}
-                <Card className="shadow-sm border-none bg-card h-full">
+                <Card className="shadow-sm border-none bg-white dark:bg-card h-full">
                   <CardHeader>
-                    <CardTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800 dark:text-foreground">
                       <LucideIcons.Target className="w-4 h-4 text-primary" />{" "}
                       영역별 분석
                     </CardTitle>
@@ -819,10 +838,13 @@ export default function ExamResults() {
                           outerRadius="80%"
                           data={personalStats.weaknessChart}
                         >
-                          <PolarGrid stroke={CHART_COLORS.muted} />
+                          <PolarGrid stroke="var(--color-border)" />
                           <PolarAngleAxis
                             dataKey="category"
-                            tick={{ fill: CHART_COLORS.text, fontSize: 11 }}
+                            tick={{
+                              fill: "var(--color-muted-foreground)",
+                              fontSize: 11,
+                            }}
                           />
                           <Radar
                             name="정답률(%)"
@@ -833,7 +855,10 @@ export default function ExamResults() {
                           />
                           <Tooltip
                             contentStyle={{
-                              borderRadius: "8px",
+                              borderRadius: "12px",
+                              border: "1px solid var(--color-border)",
+                              backgroundColor: "var(--color-card)",
+                              color: "var(--color-card-foreground)",
                               fontSize: "12px",
                             }}
                           />
@@ -856,11 +881,10 @@ export default function ExamResults() {
         {activeTab === "official" && (
           <>
             {/* Official Exam KPI Cards */}
-            {/* 정규 시험 KPI 카드 */}
             <div className="lg:col-span-3 flex flex-col gap-4">
-              <Card className="flex-1 shadow-sm bg-card border-2 border-accent">
+              <Card className="flex-1 shadow-sm bg-white dark:bg-card border-2 border-accent">
                 <CardHeader>
-                  <CardTitle className="text-md font-bold text-[#4a7a78] uppercase tracking-wider">
+                  <CardTitle className="text-md font-bold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider">
                     {selectedYear === "all" ? "전체" : selectedYear + "년"}{" "}
                     합격률
                   </CardTitle>
@@ -870,35 +894,36 @@ export default function ExamResults() {
                     총 {officialStats.total}회 / {officialStats.passed}회 합격
                   </span>
                   <div className="flex items-end justify-end">
-                    <span className="text-3xl font-extrabold text-[#4a7a78] mt-3">
+                    <span className="text-3xl font-extrabold text-[#4a7a78] dark:text-accent-foreground mt-3">
                       {officialStats.passRate}%
                     </span>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="flex-1 shadow-sm bg-card border-2 border-muted">
+              <Card className="flex-1 shadow-sm bg-white dark:bg-card border-2 border-slate-100 dark:border-border">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-md font-bold text-muted-foreground/70 uppercase tracking-wider">
+                  <CardTitle className="text-md font-bold text-slate-400 dark:text-muted-foreground uppercase tracking-wider">
                     결과 대기
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-end items-center gap-2">
-                    <span className="text-3xl font-bold text-muted-foreground/70 pb-2">
+                    <span className="text-3xl font-bold text-slate-400 dark:text-muted-foreground pb-2">
                       {officialStats.waiting}
                     </span>
-                    <span className="text-sm text-muted-foreground/70">건</span>
+                    <span className="text-sm text-slate-400 dark:text-muted-foreground">
+                      건
+                    </span>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Official Exam Pass Rate Chart */}
-            {/* 정규 시험 합격률 차트 */}
             <div className="lg:col-span-9">
-              <Card className="shadow-sm border-none bg-card h-full">
+              <Card className="shadow-sm border-none bg-white dark:bg-card h-full">
                 <CardHeader>
-                  <CardTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800 dark:text-foreground">
                     <LucideIcons.BarChart2 className="w-4 h-4 text-primary" />{" "}
                     레벨별 합격 현황
                   </CardTitle>
@@ -913,7 +938,8 @@ export default function ExamResults() {
                       <CartesianGrid
                         strokeDasharray="3 3"
                         horizontal={false}
-                        stroke={CHART_COLORS.muted}
+                        stroke="var(--color-border)"
+                        opacity={0.5}
                       />
                       <XAxis type="number" hide />
                       <YAxis
@@ -922,7 +948,7 @@ export default function ExamResults() {
                         tick={{
                           fontSize: 13,
                           fontWeight: 600,
-                          fill: CHART_COLORS.text,
+                          fill: "var(--color-muted-foreground)",
                         }}
                         width={30}
                         axisLine={false}
@@ -977,11 +1003,11 @@ export default function ExamResults() {
           <div className="flex items-center gap-2">
             {activeTab === "mock" && focusedStudent ? (
               <>
-                <TabsList>
+                <TabsList className="bg-slate-100 dark:bg-muted/50">
                   <TabsTrigger className="py-0.5 cursor-default flex items-center gap-2">
                     <Badge
                       variant="outline"
-                      className="bg-card text-primary border-2 border-primary text-sm flex items-center gap-1"
+                      className="bg-white dark:bg-card text-primary border-2 border-primary text-sm flex items-center gap-1"
                     >
                       <LucideIcons.User className="w-4 h-4" />
                       {focusedStudent}
@@ -991,14 +1017,14 @@ export default function ExamResults() {
                 </TabsList>
               </>
             ) : (
-              <TabsList>
+              <TabsList className="bg-slate-100 dark:bg-muted/50">
                 <TabsTrigger className="cursor-default">전체 목록</TabsTrigger>
               </TabsList>
             )}
           </div>
           <Badge
             variant="secondary"
-            className="bg-white border-border text-muted-foreground shadow-sm"
+            className="bg-white dark:bg-card border-border text-slate-500 dark:text-muted-foreground shadow-sm"
           >
             Total{" "}
             {activeTab === "official"
@@ -1007,19 +1033,18 @@ export default function ExamResults() {
           </Badge>
         </div>
 
-        <div className="flex-1 bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 bg-white dark:bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col min-h-0">
           {/* Mock Exam Table */}
-          {/* 모의고사 테이블 */}
           {activeTab === "mock" && (
             <>
               <div
                 className={cn(
-                  "bg-primary/10 border-b border-border",
+                  "bg-slate-50 dark:bg-muted/30 border-b border-slate-100 dark:border-border",
                   hasScroll ? "pr-2.75" : "",
                 )}
               >
                 <table className="w-full text-md table-fixed">
-                  <thead className="text-md text-muted-foreground uppercase">
+                  <thead className="text-md text-slate-500 dark:text-muted-foreground uppercase">
                     <tr>
                       <th className="px-4 py-3 font-semibold text-center w-[12%]">
                         학생
@@ -1061,7 +1086,7 @@ export default function ExamResults() {
                 >
                   <tbody
                     className={cn(
-                      "divide-y divide-border/50",
+                      "divide-y divide-slate-50 dark:divide-border/50",
                       filteredMockList.length === 0 ? "h-full" : "",
                     )}
                   >
@@ -1069,7 +1094,7 @@ export default function ExamResults() {
                       <tr className="h-full">
                         <td
                           colSpan="8"
-                          className="px-6 text-center align-middle text-muted-foreground/70"
+                          className="px-6 text-center align-middle text-slate-400 dark:text-muted-foreground/70"
                         >
                           <div className="flex flex-col items-center justify-center gap-2">
                             <LucideIcons.SearchX className="w-8 h-8" />
@@ -1083,23 +1108,23 @@ export default function ExamResults() {
                       filteredMockList.map((exam) => (
                         <tr
                           key={exam.id}
-                          className="transition-colors cursor-pointer hover:bg-muted/20"
+                          className="transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/50 group"
                           onClick={() => handleRowClick(exam.student_name)}
                         >
                           <td
                             className={cn(
                               "px-4 py-4 text-center font-bold truncate w-[12%]",
                               focusedStudent === exam.student_name
-                                ? "text-primary"
-                                : "text-foreground",
+                                ? "text-primary dark:text-foreground group-hover:text-primary"
+                                : "text-slate-800 dark:text-foreground group-hover:text-primary",
                             )}
                           >
                             {exam.student_name}
                           </td>
-                          <td className="px-4 py-4 text-center text-muted-foreground w-[12%]">
+                          <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%]">
                             {formatDate(exam.exam_date)}
                           </td>
-                          <td className="px-2 py-4 text-center font-bold text-foreground truncate w-[20%]">
+                          <td className="px-2 py-4 text-center font-bold text-slate-800 dark:text-foreground truncate w-[20%]">
                             {exam.exam_name}
                           </td>
                           <td className="px-4 py-4 text-center w-[12%]">
@@ -1113,8 +1138,8 @@ export default function ExamResults() {
                               </Badge>
                             </div>
                           </td>
-                          <td className="px-4 py-4 text-center text-muted-foreground w-[12%]">
-                            <span className="font-bold text-foreground">
+                          <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%]">
+                            <span className="font-bold text-slate-800 dark:text-foreground">
                               {formatScore(exam.total_score)}
                             </span>
                             <span className="mx-1">/</span>
@@ -1125,12 +1150,12 @@ export default function ExamResults() {
                               {exam.grade ? (
                                 <Badge
                                   variant="default"
-                                  className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
+                                  className="text-[11px] text-slate-800 dark:text-foreground border border-slate-200 dark:border-border bg-white dark:bg-card rounded-md hover:bg-white dark:hover:bg-card px-2 py-0.5 justify-center"
                                 >
                                   {exam.grade}
                                 </Badge>
                               ) : (
-                                <span className="font-bold text-muted-foreground">
+                                <span className="font-bold text-slate-400">
                                   -
                                 </span>
                               )}
@@ -1145,14 +1170,14 @@ export default function ExamResults() {
                                     href={file.file}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-1.5 rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                                    className="p-1.5 rounded-full hover:bg-primary/10 text-slate-400 hover:text-primary transition-colors"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <LucideIcons.Paperclip className="w-4 h-4" />
                                   </a>
                                 ))
                               ) : (
-                                <span className="text-muted-foreground/30">
+                                <span className="text-slate-300 text-xs">
                                   -
                                 </span>
                               )}
@@ -1183,17 +1208,16 @@ export default function ExamResults() {
           )}
 
           {/* Official Exam Table */}
-          {/* 정규 시험 테이블 */}
           {activeTab === "official" && (
             <>
               <div
                 className={cn(
-                  "bg-primary/10 border-b border-border",
+                  "bg-slate-50 dark:bg-muted/30 border-b border-slate-100 dark:border-border",
                   hasScroll ? "pr-2.75" : "",
                 )}
               >
                 <table className="w-full text-md table-fixed">
-                  <thead className="text-md text-muted-foreground uppercase">
+                  <thead className="text-md text-slate-500 dark:text-muted-foreground uppercase">
                     <tr>
                       <th className="px-4 py-3 font-semibold text-center w-[15%]">
                         학생
@@ -1232,7 +1256,7 @@ export default function ExamResults() {
                 >
                   <tbody
                     className={cn(
-                      "divide-y divide-border/50",
+                      "divide-y divide-slate-50 dark:divide-border/50",
                       filteredOfficialList.length === 0 ? "h-full" : "",
                     )}
                   >
@@ -1240,7 +1264,7 @@ export default function ExamResults() {
                       <tr className="h-full">
                         <td
                           colSpan="7"
-                          className="px-6 text-center align-middle text-muted-foreground/70"
+                          className="px-6 text-center align-middle text-slate-400 dark:text-muted-foreground/70"
                         >
                           <div className="flex flex-col items-center justify-center gap-2">
                             <LucideIcons.SearchX className="w-8 h-8" />
@@ -1254,16 +1278,16 @@ export default function ExamResults() {
                       filteredOfficialList.map((exam) => (
                         <tr
                           key={exam.id}
-                          className="hover:bg-muted/20 transition-colors cursor-pointer"
+                          className="hover:bg-slate-50 dark:hover:bg-muted/50 transition-colors cursor-pointer group"
                           onClick={(e) => handleEditClick(e, exam, "official")}
                         >
-                          <td className="px-4 py-4 text-center font-bold text-foreground truncate w-[15%]">
+                          <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-foreground truncate w-[15%] group-hover:text-primary">
                             {exam.student_name}
                           </td>
-                          <td className="px-4 py-4 text-center text-muted-foreground w-[15%]">
+                          <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%]">
                             {formatDate(exam.exam_date)}
                           </td>
-                          <td className="px-2 py-4 text-center font-bold text-foreground truncate w-[25%]">
+                          <td className="px-2 py-4 text-center font-bold text-slate-800 dark:text-foreground truncate w-[25%]">
                             {exam.exam_standard_name || exam.exam_name_manual}
                           </td>
                           <td className="px-4 py-4 text-center w-[10%]">
@@ -1276,8 +1300,8 @@ export default function ExamResults() {
                               </Badge>
                             </div>
                           </td>
-                          <td className="px-4 py-4 text-center text-muted-foreground w-[10%]">
-                            <span className="font-bold text-foreground">
+                          <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[10%]">
+                            <span className="font-bold text-slate-800 dark:text-foreground">
                               {formatScore(exam.total_score)}
                             </span>
                             {exam.max_score && (
@@ -1292,12 +1316,12 @@ export default function ExamResults() {
                               {exam.grade ? (
                                 <Badge
                                   variant="default"
-                                  className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
+                                  className="text-[11px] text-slate-800 dark:text-foreground border border-slate-200 dark:border-border bg-white dark:bg-card rounded-md hover:bg-white dark:hover:bg-card px-2 py-0.5 justify-center"
                                 >
                                   {exam.grade}
                                 </Badge>
                               ) : (
-                                <span className="font-bold text-muted-foreground">
+                                <span className="font-bold text-slate-400">
                                   -
                                 </span>
                               )}

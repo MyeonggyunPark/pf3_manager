@@ -9,6 +9,7 @@ import {
   Check,
   FileSignature,
   MessageCircle,
+  ChevronDown,
 } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
@@ -483,7 +484,9 @@ export default function AddMockExamModal({
   const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 mb-1.5 block ${
-        hasError ? "text-destructive" : "text-slate-500"
+        hasError
+          ? "text-destructive"
+          : "text-slate-500 dark:text-muted-foreground"
       }`}
     >
       {label} {required && <span className="text-destructive">*</span>}
@@ -505,7 +508,7 @@ export default function AddMockExamModal({
         className={`flex-1 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-out whitespace-nowrap ${
           isSelected
             ? "bg-primary text-white shadow-md shadow-primary/30 ring-1 ring-primary transform scale-[1.02]"
-            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-transparent"
+            : "bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-muted/80 hover:text-slate-700 dark:hover:text-foreground border border-transparent"
         } ${className}`}
       >
         {label}
@@ -528,19 +531,21 @@ export default function AddMockExamModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden m-4 relative flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-2xl bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden m-4 relative flex flex-col max-h-[90vh]">
         {/* Delete Confirmation Overlay */}
         {/* 삭제 확인 오버레이 */}
         {showDeleteConfirm && (
-          <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in">
+          <div className="absolute inset-0 z-20 bg-white dark:bg-card backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in">
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">삭제 확인</h3>
-            <p className="text-slate-500 text-center mb-8 max-w-xs text-sm">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
+              삭제 확인
+            </h3>
+            <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
               정말로 삭제하시겠습니까? <br />
-              <span className="text-destructive mt-1 block">
+              <span className="text-destructive mt-1 block font-medium">
                 이 작업은 되돌릴 수 없습니다.
               </span>
             </p>
@@ -548,7 +553,7 @@ export default function AddMockExamModal({
               <Button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 h-11 text-sm font-semibold cursor-pointer"
+                className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               >
                 취소
               </Button>
@@ -556,7 +561,7 @@ export default function AddMockExamModal({
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold cursor-pointer"
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold cursor-pointer shadow-md"
               >
                 {isDeleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -570,12 +575,12 @@ export default function AddMockExamModal({
 
         {/* Modal Header */}
         {/* 모달 헤더 */}
-        <div className="flex justify-between px-6 py-4 border-b border-slate-100 shrink-0 bg-white z-10">
+        <div className="flex justify-between px-6 py-4 border-b border-slate-100 dark:border-border shrink-0 bg-white dark:bg-card z-10">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
               {isEditMode ? "모의고사 결과 수정" : "모의고사 결과 입력"}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
                 ? "수정이 필요한 모의고사 결과를 변경해주세요."
                 : "등록할 새로운 모의고사 결과를 입력하세요."}
@@ -583,7 +588,7 @@ export default function AddMockExamModal({
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-muted text-slate-400 dark:text-muted-foreground hover:text-slate-600 dark:hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -591,7 +596,7 @@ export default function AddMockExamModal({
 
         {/* Form Inputs Section */}
         {/* 폼 입력 섹션 */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-white dark:bg-card">
           <form
             id="mock-exam-form"
             onSubmit={handleSubmit}
@@ -599,7 +604,7 @@ export default function AddMockExamModal({
             noValidate
           >
             {submitError && (
-              <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2">
+              <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2 text-center">
                 {submitError}
               </div>
             )}
@@ -617,10 +622,10 @@ export default function AddMockExamModal({
                       name="student"
                       value={formData.student}
                       onChange={handleChange}
-                      className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer ${
+                      className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer ${
                         formData.student === ""
-                          ? "text-slate-400"
-                          : "text-slate-800"
+                          ? "text-slate-400 dark:text-muted-foreground/60"
+                          : "text-slate-800 dark:text-foreground"
                       }`}
                     >
                       <option value="" disabled hidden>
@@ -630,33 +635,16 @@ export default function AddMockExamModal({
                         <option
                           key={student.id}
                           value={student.id}
-                          className="text-slate-800"
+                          className="text-slate-800 dark:text-foreground dark:bg-card"
                         >
                           {student.name}
                         </option>
                       ))}
                     </select>
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <svg
-                        className="w-4 h-4 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
+                      <ChevronDown className="w-5 h-5 text-slate-400 dark:text-muted-foreground/60" />
                     </div>
                   </div>
-                  {students.length === 0 && (
-                    <p className="text-xs text-destructive mt-1 ml-1">
-                      * 등록된 수강중 학생이 없습니다.
-                    </p>
-                  )}
                   <ErrorMessage message={errors.student} />
                 </div>
 
@@ -672,10 +660,10 @@ export default function AddMockExamModal({
                     value={formData.exam_date}
                     onChange={handleChange}
                     onClick={(e) => e.target.showPicker()}
-                    className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
+                    className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
                       formData.exam_date === ""
-                        ? "text-slate-400 [&::-webkit-calendar-picker-indicator]:opacity-40"
-                        : "text-slate-800 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                        ? "text-slate-400 dark:text-muted-foreground/60 [&::-webkit-calendar-picker-indicator]:opacity-40"
+                        : "text-slate-800 dark:text-foreground [&::-webkit-calendar-picker-indicator]:opacity-100"
                     }`}
                   />
                   <ErrorMessage message={errors.exam_date} />
@@ -694,10 +682,10 @@ export default function AddMockExamModal({
                       name="exam_standard"
                       value={formData.exam_standard}
                       onChange={handleChange}
-                      className={`w-full h-10 px-2 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer ${
+                      className={`w-full h-10 px-2 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer ${
                         formData.exam_standard === ""
-                          ? "text-slate-400"
-                          : "text-slate-800"
+                          ? "text-slate-400 dark:text-muted-foreground/60"
+                          : "text-slate-800 dark:text-foreground"
                       }`}
                     >
                       <option value="" disabled hidden>
@@ -707,26 +695,14 @@ export default function AddMockExamModal({
                         <option
                           key={standard.id}
                           value={standard.id}
-                          className="text-slate-800"
+                          className="text-slate-800 dark:text-foreground dark:bg-card"
                         >
                           {standard.name}
                         </option>
                       ))}
                     </select>
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <svg
-                        className="w-4 h-4 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
+                      <ChevronDown className="w-5 h-5 text-slate-400 dark:text-muted-foreground/60" />
                     </div>
                   </div>
                   <ErrorMessage message={errors.exam_standard} />
@@ -773,8 +749,8 @@ export default function AddMockExamModal({
             selectedStandardData.modules &&
             selectedStandardData.modules.length > 0 ? (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                <div className="h-px bg-slate-100 w-full" />
-                <h3 className="text-sm font-bold text-slate-500 flex items-center gap-2">
+                <div className="h-px bg-slate-100 dark:bg-border w-full" />
+                <h3 className="text-sm font-bold text-slate-500 dark:text-muted-foreground flex items-center gap-2">
                   상세 결과 입력
                 </h3>
 
@@ -795,10 +771,10 @@ export default function AddMockExamModal({
                       return (
                         <div
                           key={mod.id}
-                          className="bg-slate-50/50 rounded-xl border border-slate-200 p-5 transition-all"
+                          className="bg-slate-50/50 dark:bg-muted/40 rounded-xl border border-slate-200 dark:border-border p-5 transition-all"
                         >
-                          <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200/60">
-                            <h4 className="font-bold text-primary flex items-center gap-2">
+                          <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200/60 dark:border-border">
+                            <h4 className="font-bold text-primary dark:text-foreground flex items-center gap-2">
                               {mod.module_type === "WRITTEN" ? (
                                 <FileSignature className="w-5 h-5" />
                               ) : (
@@ -808,7 +784,7 @@ export default function AddMockExamModal({
                                 ? "Schriftlich"
                                 : "Mündlich"}
                             </h4>
-                            <span className="text-xs font-medium text-muted-foreground bg-white px-2 py-1 rounded border border-slate-300">
+                            <span className="text-xs font-medium text-muted-foreground bg-white dark:bg-card px-2 py-1 rounded border border-slate-300 dark:border-border">
                               Max. {mod.max_score}점
                             </span>
                           </div>
@@ -817,7 +793,7 @@ export default function AddMockExamModal({
                             {Object.entries(groupedSections).map(
                               ([category, sections]) => (
                                 <div key={category} className="space-y-2">
-                                  <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wide px-1">
+                                  <h5 className="text-xs font-bold text-slate-500 dark:text-muted-foreground uppercase tracking-wide px-1">
                                     {category}
                                   </h5>
 
@@ -825,13 +801,13 @@ export default function AddMockExamModal({
                                     {sections.map((sec) => (
                                       <div
                                         key={sec.id}
-                                        className="bg-white rounded-lg border border-slate-100 p-4 shadow-sm flex flex-col gap-3"
+                                        className="bg-white dark:bg-card rounded-lg border border-slate-100 dark:border-border p-4 shadow-sm flex flex-col gap-3"
                                       >
                                         <div className="flex justify-between items-center">
-                                          <span className="text-sm font-semibold text-slate-500">
+                                          <span className="text-sm font-semibold text-slate-500 dark:text-foreground">
                                             {sec.name}
                                           </span>
-                                          <span className="text-xs text-slate-400">
+                                          <span className="text-xs text-slate-400 dark:text-muted-foreground">
                                             {sec.is_question_based
                                               ? `${sec.points_per_question}점 x ${
                                                   sec.question_end_num -
@@ -869,13 +845,13 @@ export default function AddMockExamModal({
                                                     )
                                                   }
                                                   className={`
-                                                                  w-9 h-9 rounded-lg text-xs font-bold flex items-center justify-center transition-all border cursor-pointer
-                                                                  ${
-                                                                    isCorrect
-                                                                      ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
-                                                                      : "bg-slate-100 text-slate-300 border-slate-200 hover:border-slate-400 hover:text-slate-400"
-                                                                  }
-                                                                `}
+                                                  w-9 h-9 rounded-lg text-xs font-bold flex items-center justify-center transition-all border cursor-pointer
+                                                  ${
+                                                    isCorrect
+                                                      ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
+                                                      : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border hover:border-slate-400 dark:hover:border-muted-foreground"
+                                                  }
+                                                `}
                                                 >
                                                   {isCorrect ? (
                                                     <Check className="w-4 h-4" />
@@ -898,11 +874,11 @@ export default function AddMockExamModal({
                                                   sec.section_max_score,
                                                 )
                                               }
-                                              className="w-20 h-9 px-3 rounded-md border border-slate-200 text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all text-center font-medium text-slate-700 bg-slate-50 focus:bg-white placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                              className="w-20 h-9 px-3 rounded-md border border-slate-200 dark:border-border text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all text-center font-medium text-slate-700 dark:text-foreground bg-slate-50 dark:bg-muted focus:bg-white dark:focus:bg-card placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                               placeholder="0"
                                               max={sec.section_max_score}
                                             />
-                                            <span className="text-sm text-slate-500">
+                                            <span className="text-sm text-slate-500 dark:text-muted-foreground">
                                               / {sec.section_max_score} 점
                                             </span>
                                           </div>
@@ -914,7 +890,7 @@ export default function AddMockExamModal({
                               ),
                             )}
                             {Object.keys(groupedSections).length === 0 && (
-                              <div className="text-xs text-slate-400 text-center py-2">
+                              <div className="text-xs text-slate-400 dark:text-muted-foreground text-center py-2 font-medium">
                                 등록된 섹션이 없습니다.
                               </div>
                             )}
@@ -925,15 +901,15 @@ export default function AddMockExamModal({
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-50 rounded-xl border border-dashed border-slate-200 p-12 text-center text-slate-400 text-sm flex flex-col items-center gap-2">
-                <AlertTriangle className="w-8 h-8 text-slate-300" />
-                <p>
+              <div className="bg-slate-50 dark:bg-muted/30 rounded-xl border border-dashed border-slate-200 dark:border-border p-12 text-center text-slate-400 dark:text-muted-foreground text-sm flex flex-col items-center gap-2">
+                <AlertTriangle className="w-8 h-8 text-slate-300 dark:text-muted-foreground/40" />
+                <p className="font-medium">
                   상세 결과 입력 양식
                   <br />( <strong>시험 종류</strong>와 {""}
                   <strong>응시 유형</strong>을 선택해주세요. )
                 </p>
                 {formData.exam_standard && !selectedStandardData && (
-                  <p className="text-xs text-destructive">
+                  <p className="text-xs text-destructive font-medium">
                     선택한 시험의 상세 데이터를 불러오는 중이거나 데이터가
                     없습니다.
                   </p>
@@ -941,20 +917,20 @@ export default function AddMockExamModal({
               </div>
             )}
 
-            <div className="h-px bg-slate-100 w-full" />
+            <div className="h-px bg-slate-100 dark:bg-border w-full" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 items-end">
                   <div>
                     <InputLabel label="점수" />
-                    <div className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 flex items-center overflow-hidden cursor-not-allowed">
+                    <div className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 flex items-center overflow-hidden cursor-not-allowed">
                       <span
-                        className={`text-sm font-bold truncate w-full text-end ${formData.total_score > 0 ? "text-primary" : "text-slate-400"}`}
+                        className={`text-sm font-bold truncate w-full text-end ${formData.total_score > 0 ? "text-primary dark:text-primary" : "text-slate-400 dark:text-muted-foreground/40"}`}
                       >
                         {formData.total_score}
                       </span>
-                      <span className="text-xs text-slate-400 font-medium w-full text-end">
+                      <span className="text-xs text-slate-400 dark:text-muted-foreground/40 font-medium w-full text-end pl-1">
                         점
                       </span>
                     </div>
@@ -965,7 +941,7 @@ export default function AddMockExamModal({
                       name="grade"
                       value={formData.grade}
                       readOnly
-                      className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 font-bold focus:outline-none text-sm pointer-events-none text-center text-primary placeholder:text-slate-400"
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 font-bold focus:outline-none text-sm pointer-events-none text-center text-primary dark:text-primary placeholder:text-slate-400"
                       placeholder="자동 입력"
                     />
                   </div>
@@ -982,11 +958,11 @@ export default function AddMockExamModal({
                     />
                     <label
                       htmlFor="mock-file-upload"
-                      className="flex items-center justify-center w-full h-12 px-4 transition bg-white border-2 border-dashed rounded-lg appearance-none cursor-pointer hover:border-primary/50 focus:outline-none border-slate-300 hover:bg-slate-50"
+                      className="flex items-center justify-center w-full h-12 px-4 transition bg-white dark:bg-card border-2 border-dashed rounded-lg appearance-none cursor-pointer hover:border-primary/50 dark:hover:border-primary/50 focus:outline-none border-slate-300 dark:border-border hover:bg-slate-50 dark:hover:bg-muted/20"
                     >
                       <span className="flex items-center space-x-2">
-                        <UploadCloud className="w-4 h-4 text-slate-600" />
-                        <span className="text-sm font-medium text-slate-600 truncate max-w-62.5">
+                        <UploadCloud className="w-4 h-4 text-slate-600 dark:text-muted-foreground" />
+                        <span className="text-sm font-medium text-slate-600 dark:text-muted-foreground truncate max-w-62.5">
                           {selectedFile
                             ? selectedFile.name
                             : "파일을 선택하거나 드래그하세요."}
@@ -1004,8 +980,9 @@ export default function AddMockExamModal({
                   value={formData.memo}
                   onChange={handleChange}
                   rows={5}
-                  className="w-full p-3 rounded-lg border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400 h-33"
+                  className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400 h-33"
                   placeholder="추가사항 / 특이사항"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -1014,7 +991,7 @@ export default function AddMockExamModal({
 
         {/* Action Buttons Footer */}
         {/* 액션 버튼 푸터 */}
-        <div className="flex gap-3 p-4">
+        <div className="flex gap-3 p-4 shrink-0 bg-white dark:bg-card border-t border-slate-100 dark:border-border">
           {isEditMode && (
             <Button
               type="button"
@@ -1027,7 +1004,7 @@ export default function AddMockExamModal({
           <Button
             type="button"
             onClick={handleClose}
-            className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+            className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
           >
             취소
           </Button>

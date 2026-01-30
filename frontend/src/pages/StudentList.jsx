@@ -48,11 +48,11 @@ const FemaleIcon = ({ className }) => (
 // UI Styles and Label Mappings
 // UI 스타일 및 라벨 매핑 상수
 const statusStyles = {
-  ACTIVE: "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20",
+  ACTIVE: "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
   PAUSED:
     "bg-secondary/50 text-muted-foreground border-secondary hover:bg-secondary/50",
   FINISHED:
-    "bg-success/20 text-[#5f6e63] border-success/50 hover:bg-success/20",
+    "bg-success/20 text-[#5f6e63] border-success/50 hover:bg-success/20 dark:text-success-foreground",
 };
 const STATUS_LABELS = {
   ACTIVE: "수강중",
@@ -61,7 +61,7 @@ const STATUS_LABELS = {
 };
 
 const examResultStyles = {
-  PASSED: "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20",
+  PASSED: "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
   FAILED:
     "bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10",
   WAITING: "bg-muted/50 text-muted-foreground border-border hover:bg-muted/50",
@@ -328,7 +328,7 @@ export default function StudentList() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
               >
                 <option value="">전체(상태)</option>
                 <option value="ACTIVE">수강중</option>
@@ -344,7 +344,7 @@ export default function StudentList() {
               <select
                 value={levelFilter}
                 onChange={(e) => setLevelFilter(e.target.value)}
-                className="h-10 w-full sm:w-29 appearance-none rounded-xl border border-border bg-card px-3 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                className="h-10 w-full sm:w-29 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
               >
                 <option value="">전체(레벨)</option>
                 {LEVEL_OPTIONS.map((level) => (
@@ -360,12 +360,12 @@ export default function StudentList() {
             {/* 검색 입력 */}
             <div className="flex items-center w-full sm:w-auto gap-2 group">
               <div className="relative flex-1 sm:w-48">
-                <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors dark:text-muted-foreground" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-md"
+                  className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-md"
                   placeholder="학생 이름 입력"
                 />
               </div>
@@ -392,7 +392,7 @@ export default function StudentList() {
       <div className="flex gap-4 flex-1 min-h-0">
         {/* Left Panel: Student List */}
         {/* 좌측 패널: 학생 목록 */}
-        <Card className="w-1/3 min-w-[320px] h-full bg-card border-none shadow-sm rounded-2xl overflow-hidden flex flex-col">
+        <Card className="w-1/3 min-w-[320px] h-full bg-white dark:bg-card border-none shadow-sm rounded-2xl overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
             {students.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground/70 gap-2">
@@ -408,7 +408,7 @@ export default function StudentList() {
                     "px-5 py-4 rounded-xl cursor-pointer transition-all border border-transparent flex items-center gap-3",
                     activeStudentId === s.id
                       ? "bg-primary/10 border-primary/20 shadow-sm"
-                      : "hover:bg-muted/20",
+                      : "hover:bg-slate-50 dark:hover:bg-muted/50 group",
                   )}
                 >
                   <div
@@ -428,10 +428,10 @@ export default function StudentList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-lg font-semibold text-foreground">
+                        <span className="text-lg font-semibold text-slate-800 group-hover:text-primary dark:text-foreground">
                           {s.name}
                         </span>
-                        <span className="text-[10px] h-5 px-1.5 rounded-md border border-primary/30 text-primary bg-card font-semibold flex items-center">
+                        <span className="text-[10px] h-5 px-1.5 rounded-md border border-primary/30 text-primary bg-white dark:bg-card font-semibold flex items-center">
                           {s.target_level}
                         </span>
                       </div>
@@ -453,16 +453,16 @@ export default function StudentList() {
 
         {/* Right Panel: Student Details */}
         {/* 우측 패널: 학생 상세 정보 */}
-        <Card className="flex-1 h-full bg-card border-none shadow-sm rounded-2xl overflow-hidden flex flex-col relative">
+        <Card className="flex-1 h-full bg-white dark:bg-card border-none shadow-sm rounded-2xl overflow-hidden flex flex-col relative">
           {activeStudent ? (
             <div className="flex-1 flex flex-col h-full">
               {/* Student Header Info */}
-              <div className="p-8 pb-6 border-b border-border bg-linear-to-b from-card to-muted/20">
+              <div className="p-8 pb-6 border-b border-slate-100 dark:border-border bg-linear-to-b from-white to-slate-50/50 dark:from-card dark:to-muted/10">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-6">
                     <div
                       className={cn(
-                        "h-15 w-15 rounded-full flex items-center justify-center border shadow-sm shrink-0 bg-card",
+                        "h-15 w-15 rounded-full flex items-center justify-center border shadow-sm shrink-0 bg-white dark:bg-card",
                         activeStudent.gender === "M"
                           ? "border-primary/20 bg-primary/10"
                           : "border-destructive/20 bg-destructive/10",
@@ -476,7 +476,7 @@ export default function StudentList() {
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-5">
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                        <h1 className="text-3xl font-bold text-slate-800 dark:text-foreground tracking-tight">
                           {activeStudent.name}
                         </h1>
                         <Badge
@@ -490,7 +490,7 @@ export default function StudentList() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium pl-1">
                         <span>{activeStudent.age}세</span>
-                        <span className="w-1 h-1 rounded-full bg-border" />
+                        <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-border" />
                         <span>
                           등록일 - {formatDate(activeStudent.created_at)}
                         </span>
@@ -508,12 +508,12 @@ export default function StudentList() {
 
                 {/* Stat Cards */}
                 <div className="flex gap-6 mt-8">
-                  <div className="flex-1 bg-card border border-border rounded-xl p-4 shadow-sm">
+                  <div className="flex-1 bg-white dark:bg-card border border-slate-200 dark:border-border rounded-xl p-4 shadow-sm">
                     <div className="w-full">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         현재 레벨
                       </p>
-                      <p className="text-[22px] font-bold text-foreground text-right pr-12">
+                      <p className="text-[22px] font-bold text-slate-800 dark:text-foreground text-right pr-12">
                         {activeStudent.current_level}
                       </p>
                     </div>
@@ -544,13 +544,13 @@ export default function StudentList() {
                 </div>
 
                 {/* Memo Section */}
-                <div className="mt-5 flex gap-3 items-start bg-secondary/30 p-3 rounded-lg border border-secondary/50">
+                <div className="mt-5 flex gap-3 items-start bg-secondary/30 dark:bg-secondary/20 p-3 rounded-lg border border-secondary/50">
                   <LucideIcons.StickyNote className="w-4 h-4 text-secondary-foreground mt-0.5 shrink-0" />
                   <p
                     className={cn(
                       "text-sm leading-relaxed whitespace-pre-wrap",
                       activeStudent.memo
-                        ? "text-foreground"
+                        ? "text-slate-800 dark:text-card-foreground"
                         : "text-muted-foreground",
                     )}
                   >
@@ -561,22 +561,21 @@ export default function StudentList() {
               </div>
 
               {/* Tab Navigation and Content Area */}
-              {/* 탭 네비게이션 및 콘텐츠 영역 */}
-              <div className="flex-1 flex flex-col min-h-0 bg-muted/10">
-                <div className="flex items-center px-8 pt-4 border-b border-border bg-card sticky top-0 z-10 gap-8">
+              <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-muted/5">
+                <div className="flex items-center px-8 pt-4 border-b border-slate-100 dark:border-border bg-white dark:bg-card sticky top-0 z-10 gap-8">
                   <button
                     onClick={() => setActiveTab("courses")}
                     className={cn(
                       "pb-3 text-sm font-bold flex items-center gap-2 transition-all border-b-2 cursor-pointer",
                       activeTab === "courses"
                         ? "text-primary border-primary"
-                        : "text-primary/60 border-transparent hover:text-primary",
+                        : "text-slate-400 dark:text-muted-foreground border-transparent hover:text-primary",
                     )}
                   >
                     <LucideIcons.CreditCard className="w-4 h-4" /> 수강 이력
                     <Badge
                       variant="secondary"
-                      className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-secondary/50 text-muted-foreground"
+                      className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-slate-100 dark:bg-secondary/50 text-slate-500 dark:text-muted-foreground"
                     >
                       {studentCourses.length}
                     </Badge>
@@ -588,13 +587,13 @@ export default function StudentList() {
                       "pb-3 text-sm font-bold flex items-center gap-2 transition-all border-b-2 cursor-pointer",
                       activeTab === "mock-exams"
                         ? "text-primary border-primary"
-                        : "text-primary/60 border-transparent hover:text-primary",
+                        : "text-slate-400 dark:text-muted-foreground border-transparent hover:text-primary",
                     )}
                   >
                     <LucideIcons.FileEdit className="w-4 h-4" /> 모의고사
                     <Badge
                       variant="secondary"
-                      className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-secondary/50 text-muted-foreground"
+                      className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-slate-100 dark:bg-secondary/50 text-slate-500 dark:text-muted-foreground"
                     >
                       {studentMockExams.length}
                     </Badge>
@@ -606,13 +605,13 @@ export default function StudentList() {
                       "pb-3 text-sm font-bold flex items-center gap-2 transition-all border-b-2 cursor-pointer",
                       activeTab === "exams"
                         ? "text-primary border-primary"
-                        : "text-primary/60 border-transparent hover:text-primary",
+                        : "text-slate-400 dark:text-muted-foreground border-transparent hover:text-primary",
                     )}
                   >
                     <LucideIcons.GraduationCap className="w-4 h-4" /> 정규 시험
                     <Badge
                       variant="secondary"
-                      className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-secondary/50 text-muted-foreground"
+                      className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-slate-100 dark:bg-secondary/50 text-slate-500 dark:text-muted-foreground"
                     >
                       {studentExams.length}
                     </Badge>
@@ -626,20 +625,17 @@ export default function StudentList() {
                     </div>
                   ) : (
                     <>
-                      {/* -- Tab Contents -- */}
-
                       {/* 수강 이력 */}
                       {activeTab === "courses" && (
-                        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
-                          {/* Header */}
+                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
                           <div
                             className={cn(
-                              "bg-primary/10 border-b border-border",
+                              "bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border",
                               hasScroll ? "pr-2.75" : "",
                             )}
                           >
                             <table className="w-full text-sm table-fixed">
-                              <thead className="text-xs text-muted-foreground uppercase">
+                              <thead className="text-xs text-slate-500 dark:text-muted-foreground uppercase">
                                 <tr>
                                   <th className="px-4 py-3 font-semibold text-center w-[29%]">
                                     기간
@@ -664,13 +660,12 @@ export default function StudentList() {
                             </table>
                           </div>
 
-                          {/* Body */}
                           <div
                             ref={tableBodyRef}
                             className="flex-1 overflow-y-auto custom-scrollbar"
                           >
                             <table className="w-full text-sm table-fixed">
-                              <tbody className="divide-y divide-border/50">
+                              <tbody className="divide-y divide-slate-50 dark:divide-border/50">
                                 {studentCourses.length > 0 ? (
                                   studentCourses.map((course) => (
                                     <tr
@@ -678,19 +673,19 @@ export default function StudentList() {
                                       onClick={() =>
                                         openEditCourseModal(course)
                                       }
-                                      className="hover:bg-muted/20 transition-colors cursor-pointer"
+                                      className="hover:bg-slate-50 dark:hover:bg-muted/10 transition-colors cursor-pointer"
                                     >
-                                      <td className="px-4 py-4 text-center text-foreground truncate w-[29%]">
+                                      <td className="px-4 py-4 text-center text-slate-700 dark:text-card-foreground truncate w-[29%]">
                                         {formatDate(course.start_date)} ~{" "}
                                         {formatDate(course.end_date)}
                                       </td>
-                                      <td className="px-4 py-4 text-center text-muted-foreground w-[14%]">
+                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[14%]">
                                         {Number(course.total_hours)}h
                                       </td>
-                                      <td className="px-4 py-4 text-center text-muted-foreground w-[15%]">
+                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%]">
                                         {formatCurrency(course.hourly_rate)}
                                       </td>
-                                      <td className="px-4 py-4 text-center font-bold text-foreground w-[15%]">
+                                      <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-card-foreground w-[15%]">
                                         {formatCurrency(course.total_fee)}
                                       </td>
                                       <td className="px-1 py-4 text-center w-[12%]">
@@ -698,8 +693,7 @@ export default function StudentList() {
                                           <Badge
                                             className={cn(
                                               "text-[11px] px-2 py-0.5 border font-medium shadow-none justify-center min-w-12.5",
-                                              statusStyles[course.status] ||
-                                                "bg-muted/50 text-muted-foreground",
+                                              statusStyles[course.status],
                                             )}
                                           >
                                             {STATUS_LABELS[course.status]}
@@ -709,7 +703,7 @@ export default function StudentList() {
                                       <td className="px-4 py-4 text-center w-[15%]">
                                         <div className="flex justify-center items-center w-full">
                                           {course.is_paid ? (
-                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-xl border bg-accent/20 text-[#4a7a78] border-accent/50">
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-xl border bg-accent/20 text-[#4a7a78] dark:text-accent-foreground border-accent/50">
                                               <LucideIcons.CheckCircle2 className="w-3 h-3" />{" "}
                                               완납
                                             </span>
@@ -727,12 +721,9 @@ export default function StudentList() {
                                   <tr>
                                     <td
                                       colSpan="6"
-                                      className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
+                                      className="px-6 py-12 text-center text-slate-400 text-sm"
                                     >
-                                      <div className="flex flex-col items-center justify-center gap-2">
-                                        <LucideIcons.SearchX className="w-6 h-6" />
-                                        <p>등록된 수강 이력이 없습니다.</p>
-                                      </div>
+                                      등록된 수강 이력이 없습니다.
                                     </td>
                                   </tr>
                                 )}
@@ -742,18 +733,17 @@ export default function StudentList() {
                         </div>
                       )}
 
-                      {/*-- Tab Contents -- */}
                       {/* 모의고사 */}
                       {activeTab === "mock-exams" && (
-                        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
                           <div
                             className={cn(
-                              "bg-primary/10 border-b border-border",
+                              "bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border",
                               hasScroll ? "pr-2.75" : "",
                             )}
                           >
                             <table className="w-full text-sm table-fixed">
-                              <thead className="text-xs text-muted-foreground uppercase">
+                              <thead className="text-xs text-slate-500 dark:text-muted-foreground uppercase">
                                 <tr>
                                   <th className="px-4 py-3 font-semibold text-center w-[15%]">
                                     응시일
@@ -782,7 +772,7 @@ export default function StudentList() {
                             className="flex-1 overflow-y-auto custom-scrollbar"
                           >
                             <table className="w-full text-sm table-fixed">
-                              <tbody className="divide-y divide-border/50">
+                              <tbody className="divide-y divide-slate-50 dark:divide-border/50">
                                 {studentMockExams.length > 0 ? (
                                   studentMockExams.map((exam) => (
                                     <tr
@@ -790,32 +780,32 @@ export default function StudentList() {
                                       onClick={() =>
                                         openEditMockExamModal(exam)
                                       }
-                                      className="hover:bg-muted/20 transition-colors cursor-pointer"
+                                      className="hover:bg-slate-50 dark:hover:bg-muted/10 transition-colors cursor-pointer"
                                     >
-                                      <td className="px-4 py-4 text-center text-muted-foreground w-[15%]">
+                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%]">
                                         {formatDate(exam.exam_date)}
                                       </td>
-                                      <td className="px-2 py-4 text-center font-bold text-foreground truncate w-[30%]">
+                                      <td className="px-2 py-4 text-center font-bold text-slate-800 dark:text-card-foreground truncate w-[30%]">
                                         {exam.exam_name}
                                       </td>
                                       <td className="px-4 py-4 text-center w-[15%]">
                                         <div className="flex justify-center items-center w-full">
                                           <Badge
                                             variant="default"
-                                            className="text-[11px] border border-primary/10 rounded-md hover:bg-primary/10 px-2 py-0.5 justify-center"
+                                            className="text-[11px] border border-primary/10 rounded-md px-2 py-0.5 justify-center"
                                           >
                                             {EXAM_MODE_LABELS[exam.exam_mode] ||
                                               exam.exam_mode}
                                           </Badge>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4 text-center text-muted-foreground w-[15%]">
+                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%]">
                                         <span
                                           className={cn(
                                             "font-bold",
                                             Number(exam.total_score) === 0
-                                              ? "text-muted-foreground"
-                                              : "text-foreground",
+                                              ? "text-slate-400"
+                                              : "text-slate-800 dark:text-card-foreground",
                                           )}
                                         >
                                           {Number(exam.total_score) === 0
@@ -830,12 +820,12 @@ export default function StudentList() {
                                           {exam.grade ? (
                                             <Badge
                                               variant="default"
-                                              className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
+                                              className="text-[11px] text-slate-800 dark:text-card-foreground border border-slate-200 dark:border-border bg-white dark:bg-card px-2 py-0.5 justify-center"
                                             >
                                               {exam.grade}
                                             </Badge>
                                           ) : (
-                                            <span className="font-bold text-muted-foreground">
+                                            <span className="font-bold text-slate-400">
                                               -
                                             </span>
                                           )}
@@ -850,8 +840,7 @@ export default function StudentList() {
                                                 href={file.file}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="p-1.5 rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                                                title="첨부파일 열기"
+                                                className="p-1.5 rounded-full hover:bg-primary/10 text-slate-400 hover:text-primary transition-colors"
                                                 onClick={(e) =>
                                                   e.stopPropagation()
                                                 }
@@ -860,7 +849,7 @@ export default function StudentList() {
                                               </a>
                                             ))
                                           ) : (
-                                            <span className="text-muted-foreground/30 text-xs">
+                                            <span className="text-slate-300 text-xs">
                                               -
                                             </span>
                                           )}
@@ -872,12 +861,9 @@ export default function StudentList() {
                                   <tr>
                                     <td
                                       colSpan="6"
-                                      className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
+                                      className="px-6 py-12 text-center text-slate-400 text-sm"
                                     >
-                                      <div className="flex flex-col items-center justify-center gap-2">
-                                        <LucideIcons.SearchX className="w-6 h-6" />
-                                        <p>등록된 모의고사 기록이 없습니다.</p>
-                                      </div>
+                                      등록된 모의고사 기록이 없습니다.
                                     </td>
                                   </tr>
                                 )}
@@ -887,17 +873,17 @@ export default function StudentList() {
                         </div>
                       )}
 
-                      {/* === 정규 시험 === */}
+                      {/* 정규 시험 */}
                       {activeTab === "exams" && (
-                        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
                           <div
                             className={cn(
-                              "bg-primary/10 border-b border-border",
+                              "bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border",
                               hasScroll ? "pr-2.75" : "",
                             )}
                           >
                             <table className="w-full text-sm table-fixed">
-                              <thead className="text-xs text-muted-foreground uppercase">
+                              <thead className="text-xs text-slate-500 dark:text-muted-foreground uppercase">
                                 <tr>
                                   <th className="px-4 py-3 font-semibold text-center w-[15%]">
                                     응시일
@@ -926,18 +912,18 @@ export default function StudentList() {
                             className="flex-1 overflow-y-auto custom-scrollbar"
                           >
                             <table className="w-full text-sm table-fixed">
-                              <tbody className="divide-y divide-border/50">
+                              <tbody className="divide-y divide-slate-50 dark:divide-border/50">
                                 {studentExams.length > 0 ? (
                                   studentExams.map((exam) => (
                                     <tr
                                       key={exam.id}
                                       onClick={() => openEditExamModal(exam)}
-                                      className="hover:bg-muted/20 transition-colors cursor-pointer"
+                                      className="hover:bg-slate-50 dark:hover:bg-muted/10 transition-colors cursor-pointer"
                                     >
-                                      <td className="px-4 py-4 text-center text-muted-foreground w-[15%]">
+                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%]">
                                         {formatDate(exam.exam_date)}
                                       </td>
-                                      <td className="px-2 py-4 text-center font-bold text-foreground truncate w-[30%]">
+                                      <td className="px-2 py-4 text-center font-bold text-slate-800 dark:text-card-foreground truncate w-[30%]">
                                         {exam.exam_standard_name ||
                                           exam.exam_name_manual}
                                       </td>
@@ -945,20 +931,20 @@ export default function StudentList() {
                                         <div className="flex justify-center items-center w-full">
                                           <Badge
                                             variant="default"
-                                            className="text-[11px] border border-primary/10 rounded-md hover:bg-primary/10 px-2 py-0.5 justify-center"
+                                            className="text-[11px] border border-primary/10 rounded-md px-2 py-0.5 justify-center"
                                           >
                                             {EXAM_MODE_LABELS[exam.exam_mode] ||
                                               "Gesamt"}
                                           </Badge>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4 text-center text-muted-foreground w-[14%]">
+                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[14%]">
                                         <span
                                           className={cn(
                                             "font-bold",
                                             exam.total_score === ""
-                                              ? "text-foreground"
-                                              : "text-muted-foreground",
+                                              ? "text-slate-800 dark:text-card-foreground"
+                                              : "text-slate-500 dark:text-muted-foreground",
                                           )}
                                         >
                                           {exam.total_score || "-"}
@@ -975,12 +961,12 @@ export default function StudentList() {
                                           {exam.grade ? (
                                             <Badge
                                               variant="default"
-                                              className="text-[11px] text-foreground border border-border bg-card rounded-md hover:bg-card px-2 py-0.5 justify-center"
+                                              className="text-[11px] text-slate-800 dark:text-card-foreground border border-slate-200 dark:border-border bg-white dark:bg-card px-2 py-0.5 justify-center"
                                             >
                                               {exam.grade}
                                             </Badge>
                                           ) : (
-                                            <span className="font-bold text-muted-foreground">
+                                            <span className="font-bold text-slate-400">
                                               -
                                             </span>
                                           )}
@@ -1008,12 +994,9 @@ export default function StudentList() {
                                   <tr>
                                     <td
                                       colSpan="6"
-                                      className="px-6 py-12 text-center text-muted-foreground/70 text-sm"
+                                      className="px-6 py-12 text-center text-slate-400 text-sm"
                                     >
-                                      <div className="flex flex-col items-center justify-center gap-2">
-                                        <LucideIcons.SearchX className="w-6 h-6" />
-                                        <p>등록된 시험 결과가 없습니다.</p>
-                                      </div>
+                                      등록된 시험 결과가 없습니다.
                                     </td>
                                   </tr>
                                 )}
@@ -1028,18 +1011,16 @@ export default function StudentList() {
               </div>
             </div>
           ) : (
-            // Render Empty State if no student is selected
-            // 학생이 선택되지 않았을 경우 빈 상태 UI 렌더링
-            <div className="h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/5 animate-in fade-in duration-500">
-              <div className="w-20 h-20 bg-muted/20 rounded-full flex items-center justify-center mb-6 ring-1 ring-border/50">
-                <LucideIcons.UserRoundSearch className="w-10 h-10 text-muted-foreground/40" />
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/30 dark:bg-muted/5 animate-in fade-in duration-500">
+              <div className="w-20 h-20 bg-slate-100 dark:bg-muted/20 rounded-full flex items-center justify-center mb-6 ring-1 ring-slate-200 dark:ring-border/50">
+                <LucideIcons.UserRoundSearch className="w-10 h-10 text-slate-300 dark:text-muted-foreground/40" />
               </div>
 
               <div className="text-center space-y-2">
                 <h3 className="text-xl font-semibold text-primary">
                   선택된 학생이 없습니다.
                 </h3>
-                <p className="text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                <p className="text-slate-500 dark:text-muted-foreground max-w-xs mx-auto leading-relaxed">
                   좌측 목록에서 학생을 선택하면
                   <br />
                   선택된 학생의 <strong>상세 정보</strong>를 확인할 수 있습니다.

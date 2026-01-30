@@ -15,7 +15,7 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
             "flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all select-none group mx-2",
             active
                 ? "bg-primary-foreground/10 text-white font-bold border-l-4 border-accent"
-                : "text-secondary hover:bg-primary-foreground/5 hover:text-white",
+                : "text-white/70 hover:bg-primary-foreground/5 hover:text-white dark:text-secondary-foreground/70 dark:hover:text-white",
         )}
     >
         {getIcon(icon, {
@@ -46,6 +46,19 @@ export default function Layout() {
     // Reference for the notification area to detect outside clicks
     // 외부 클릭 감지를 위한 알림 영역 참조(Ref)
     const notificationRef = useRef(null);
+
+    // Theme persistence logic added to Layout to prevent theme flickering on refresh
+    // 새로고침 시 테마 풀림 현상을 방지하기 위해 Layout에 테마 유지 로직 추가
+    useEffect(() => {
+        const savedTheme = localStorage.getItem("theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        
+        if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
+        }
+    }, []);
 
     
      // Check if a specific path is currently active for styling
@@ -149,22 +162,22 @@ export default function Layout() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans">
+        <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans transition-colors duration-300">
 
             {/* Sidebar Section */}
             {/* 사이드바 섹션 */}
-            <aside className="w-64 bg-primary text-primary-foreground flex flex-col shadow-2xl z-20">
+            <aside className="w-64 bg-primary dark:bg-card text-white dark:text-card-foreground flex flex-col shadow-2xl z-20 border-r border-transparent dark:border-border transition-colors duration-300">
                 <div className="p-6">
                     <div className="flex items-center gap-3">
                         
                         {/* Application Logo Container */}
                         {/* 애플리케이션 로고 컨테이너 */}
-                        <div className="w-9 h-9 rounded-lg border-2 border-accent flex items-center justify-center bg-white shadow-md overflow-hidden">
+                        <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-200 flex items-center justify-center shadow-inner overflow-hidden shrink-0 border-3 border-muted dark:border-accent">
                             <img src="/logo.svg" alt="MS Planer Logo" className="w-7 h-7" />
                         </div>
-                        <h1 className="text-xl font-black tracking-tighter">MS Planer</h1>
+                        <h1 className="text-xl font-black tracking-tighter text-white dark:text-primary">MS Planer</h1>
                     </div>
-                    <p className="text-[10px] text-secondary mt-2 uppercase tracking-widest font-semibold opacity-80">
+                    <p className="text-[10px] text-white/60 mt-2 uppercase tracking-widest font-semibold opacity-80 dark:text-muted-foreground">
                         v1.0.0 (Beta)
                     </p>
                 </div>
@@ -178,23 +191,23 @@ export default function Layout() {
                     <SidebarItem icon="CreditCard" label="수강 관리" active={isActive("/courses")} onClick={() => navigate("/courses")} />
                     <SidebarItem icon="graduation-cap" label="시험 관리" active={isActive("/exams")} onClick={() => navigate("/exams")} />
                     <div className="pt-4 pb-1 px-3">
-                        <p className="text-[10px] uppercase text-secondary font-bold tracking-wider opacity-70">System</p>
+                        <p className="text-[10px] uppercase text-white/50 font-bold tracking-wider opacity-70 dark:text-muted-foreground">System</p>
                     </div>
                     <SidebarItem icon="settings" label="설정" active={isActive("/settings")} onClick={() => navigate("/settings")} />
                 </nav>
 
                 {/* User Profile and Logout Footer Section */}
                 {/* 유저 프로필 및 로그아웃 하단 섹션 */}
-                <div className="p-4 border-t border-secondary/20 bg-primary-foreground/5">
+                <div className="p-4 border-t border-white/10 dark:border-border bg-white/5 dark:bg-primary-foreground/5">
                     <div className="flex items-center gap-3 p-2 rounded-lg transition-colors group">
 
                         {/* User Profile Image Wrapper */}
                         {/* 유저 프로필 이미지 래퍼 */}
-                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-inner overflow-hidden shrink-0 border-2 border-accent">
+                        <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-200 flex items-center justify-center shadow-inner overflow-hidden shrink-0 border-2 border-accent">
                             <img src="/icons/tutor-icon.png" alt="Tutor" className="w-7 h-7 object-contain" />
                         </div>
                         <div className="flex-1 overflow-hidden">
-                            <p className="text-sm font-bold text-white truncate leading-none">
+                            <p className="text-sm font-bold text-white dark:text-foreground truncate leading-none">
                                 {user.name}
                             </p>
                         </div>
@@ -205,7 +218,7 @@ export default function Layout() {
                             onClick={handleLogout}
                             className={cn(
                                 "p-1.5 rounded-md transition-all duration-200 cursor-pointer outline-none",
-                                "text-secondary/60 hover:bg-white/10 hover:text-white hover:scale-110",
+                                "text-white/60 hover:bg-white/10 hover:text-white hover:scale-110 dark:text-muted-foreground dark:hover:bg-primary/10",
                                 "active:scale-90 active:bg-white/20 active:duration-75"
                             )}
                             title="로그아웃"
@@ -218,7 +231,7 @@ export default function Layout() {
 
             {/* Content Area and Header */}
             {/* 콘텐츠 영역 및 헤더 */}
-            <main className="flex-1 overflow-y-auto relative bg-background">
+            <main className="flex-1 overflow-y-auto relative bg-background transition-colors duration-300">
                 <header className="bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-10 px-8 py-4 flex justify-between items-center">
                     <div>
                         <h2 className="text-2xl font-bold tracking-tight text-primary">{title}</h2>
@@ -243,7 +256,7 @@ export default function Layout() {
                         {/* Notification Dropdown Content */}
                         {/* 알림 드롭다운 내용 */}
                         {showNotifications && (
-                            <div className="absolute top-12 right-0 w-80 bg-white border border-border rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute top-12 right-0 w-80 bg-card text-card-foreground border border-border rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-4 border-b border-border">
                                     <h4 className="font-bold text-sm">알림</h4>
                                 </div>

@@ -21,12 +21,12 @@ import AddTodoModal from "../components/modals/AddTodoModal";
 
 const statusStyles = {
     SCHEDULED:
-        "border-warning/60 bg-warning/20 hover:shadow-md",
+        "border-warning/60 bg-warning/20 hover:shadow-md dark:border-warning/40 dark:bg-warning/10",
         COMPLETED:
-        "border-accent/60 bg-accent/30 hover:shadow-md",
-        CANCELLED: "border-slate-300 bg-slate-200 hover:shadow-md",
+        "border-accent/60 bg-accent/30 hover:shadow-md dark:border-accent/40 dark:bg-accent/10",
+        CANCELLED: "border-slate-300 bg-slate-200 hover:shadow-md dark:border-border dark:bg-muted",
         NOSHOW:
-        "border-destructive/60 bg-destructive/30 hover:shadow-md",
+        "border-destructive/60 bg-destructive/30 hover:shadow-md dark:border-destructive/40 dark:bg-destructive/10",
 };
 
 const TODO_CATEGORIES = [
@@ -176,7 +176,7 @@ export default function Schedule() {
             });
             setRefreshTrigger((prev) => prev + 1);
             } catch (e) {
-            console.error("Toggle Todo Error:", e);
+                console.error("Toggle Todo Error:", e);
         }
     };
 
@@ -233,18 +233,18 @@ export default function Schedule() {
         if (diffDays > 0 && diffDays <= 7)
         return {
             text: `D-${diffDays}`,
-            color: "bg-warning/30 text-yellow-500 border-warning/30",
+            color: "bg-warning/30 text-yellow-500 border-warning/30 dark:text-warning",
         };
 
         if (diffDays > 0)
         return {
             text: `D-${diffDays}`,
-            color: "bg-slate-50 text-slate-400 border-slate-100",
+            color: "bg-slate-50 text-slate-400 border-slate-100 dark:bg-muted dark:text-muted-foreground dark:border-border",
         };
 
         return {
             text: `마감`,
-            color: "bg-slate-600 text-white border-slate-700 font-medium",
+            color: "bg-slate-600 text-white border-slate-700 font-medium dark:bg-slate-800",
         };
     };
 
@@ -260,13 +260,13 @@ export default function Schedule() {
     const priorityBadgeColors = {
         1: "bg-destructive text-white border-destructive", 
         2: "bg-warning text-white border-warning", 
-        3: "bg-slate-100 text-slate-500 border-slate-200", 
+        3: "bg-slate-100 text-slate-500 border-slate-200 dark:bg-muted dark:text-muted-foreground dark:border-border", 
     };
 
     const priorityBorderColors = {
         1: "border-l-4 border-l-destructive",
         2: "border-l-4 border-l-warning",
-        3: "border-l-4 border-l-slate-300",
+        3: "border-l-4 border-l-slate-300 dark:border-l-border",
     };
 
     const priorityLabels = {
@@ -292,7 +292,7 @@ export default function Schedule() {
             />
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <TabsList className="grid w-full sm:w-55 grid-cols-2">
+                <TabsList className="grid w-full sm:w-55 grid-cols-2 bg-muted dark:bg-muted/50">
                     <TabsTrigger
                         value="weekly"
                         activeValue={viewMode}
@@ -316,22 +316,22 @@ export default function Schedule() {
                 </TabsList>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="flex items-center gap-2 text-primary font-bold bg-white px-3 py-1.5 rounded-lg border border-border shadow-sm flex-1 sm:flex-none justify-between sm:justify-start">
+                    <div className="flex items-center gap-2 text-primary font-bold bg-card px-3 py-1.5 rounded-lg border border-border shadow-sm flex-1 sm:flex-none justify-between sm:justify-start">
                         <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 cursor-pointer"
+                        className="h-6 w-6 cursor-pointer hover:bg-muted"
                         onClick={() => moveDate(-1)}
                         >
                             <LucideIcons.ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <span className="text-sm mx-2 min-w-32 text-center">
+                        <span className="text-sm mx-2 min-w-32 text-center text-foreground">
                             {getDateRangeText()}
                         </span>
                         <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 cursor-pointer"
+                        className="h-6 w-6 cursor-pointer hover:bg-muted"
                         onClick={() => moveDate(1)}
                         >
                             <LucideIcons.ArrowRight className="h-4 w-4" />
@@ -363,17 +363,17 @@ export default function Schedule() {
                         <Card
                             key={idx}
                             className={cn(
-                            "h-86 border-t-4 shadow-sm flex flex-col",
+                            "h-86 border-t-4 shadow-sm flex flex-col bg-card",
                             isToday
-                                ? "border-t-accent ring-1 ring-accent/20 bg-white"
-                                : "border-t-transparent bg-slate-50/50",
+                                ? "border-t-accent ring-1 ring-accent/20"
+                                : "border-t-transparent dark:bg-card/50 bg-slate-50/50",
                             )}
                         >
                             <div className="p-3 border-b border-border text-center shrink-0 relative">
                                 {dayLessons.length > 0 && (
                                     <Badge
                                         variant="secondary"
-                                        className="absolute right-2 top-2 text-[10px] h-4 px-1"
+                                        className="absolute right-2 top-2 text-[10px] h-4 px-1 bg-primary/10 text-primary"
                                     >
                                         {dayLessons.length}
                                     </Badge>
@@ -392,7 +392,7 @@ export default function Schedule() {
                                     "text-lg font-bold",
                                     isSunday
                                     ? "text-destructive"
-                                    : "text-foreground",
+                                    : "text-card-foreground",
                                 )}>
                                     {dayNum}
                                 </p>
@@ -412,20 +412,20 @@ export default function Schedule() {
                                             {l.start_time.slice(0, 5)}
                                         </div>
                                         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                                            <span className="font-bold text-[15px] text-slate-600 group-hover:text-primary transition-colors truncate ml-1">
+                                            <span className="font-bold text-[15px] text-card-foreground group-hover:text-primary transition-colors truncate ml-1">
                                                 {l.student_name}
                                             </span>
                                             {l.student_level && (
                                                 <Badge 
                                                     variant="outline" 
-                                                    className="text-[9px] h-4 px-1 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+                                                    className="text-[9px] h-4 px-1 rounded-md border-primary/30 text-primary bg-card font-semibold shrink-0"
                                                 >
                                                     {l.student_level}
                                                 </Badge>
                                             )}
                                         </div>
                                         {l.topic && (
-                                            <div className="text-[10px] text-muted-foreground bg-black/5 px-1.5 py-0.5 rounded w-fit truncate max-w-full">
+                                            <div className="text-[10px] text-muted-foreground bg-muted dark:bg-muted/50 px-1.5 py-0.5 rounded w-fit truncate max-w-full">
                                             {l.topic}
                                             </div>
                                         )}
@@ -437,8 +437,8 @@ export default function Schedule() {
                 })}
             </div>
         ) : (
-            <Card className="p-6">
-                <div className="grid grid-cols-7 text-center mb-4 border-b pb-2">
+            <Card className="p-6 bg-card text-card-foreground">
+                <div className="grid grid-cols-7 text-center mb-4 border-b border-border pb-2">
                     {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
                     <div
                         key={d}
@@ -465,10 +465,10 @@ export default function Schedule() {
                         <div
                         key={i}
                         className={cn(
-                            "relative rounded-md border border-border p-2 flex flex-col text-sm group cursor-default h-full overflow-hidden",
+                            "relative rounded-md border border-border p-2 flex flex-col text-sm group cursor-default h-full overflow-hidden transition-colors",
                             isToday
                             ? "bg-accent/5 border-accent ring-1 ring-accent/20"
-                            : "bg-white",
+                            : "bg-card hover:bg-muted/30",
                         )}
                         >
                             <div className="flex justify-between items-start mb-1 shrink-0">
@@ -487,7 +487,7 @@ export default function Schedule() {
                                 {dayLessons.length > 0 && (
                                     <Badge
                                         variant="secondary"
-                                        className="text-[10px] h-4 px-1"
+                                        className="text-[10px] h-4 px-1 bg-primary/10 text-primary"
                                     >
                                         {dayLessons.length}
                                     </Badge>
@@ -502,14 +502,14 @@ export default function Schedule() {
                                         openEditModal(l);
                                         }}
                                         className={cn(
-                                        "text-[10px] truncate rounded px-3 py-1 cursor-pointer shadow-sm flex items-center gap-3 hover:text-primary ",
+                                        "text-[10px] truncate rounded px-3 py-1 cursor-pointer shadow-sm flex items-center gap-3 transition-all hover:ring-1 hover:ring-primary/30",
                                         statusStyles[l.status]
                                         )}
                                     >
-                                        <span>
+                                        <span className="font-bold">
                                             {l.start_time.slice(0, 5)}
                                         </span>
-                                        <span>
+                                        <span className="truncate">
                                             {l.student_name}
                                         </span>
                                     </div>
@@ -523,9 +523,9 @@ export default function Schedule() {
         )}
 
         <div className="mt-8">
-            <Card className="shadow-lg border-none bg-white">
-                <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-                    <TabsList className="">
+            <Card className="shadow-lg border-none bg-card text-card-foreground">
+                <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
+                    <TabsList className="bg-muted dark:bg-muted/50">
                         <TabsTrigger className="cursor-default text-md py-1">
                             할 일
                         </TabsTrigger>
@@ -554,19 +554,19 @@ export default function Schedule() {
                                     key={category.id}
                                     className="flex flex-col gap-4 min-w-0"
                                 >
-                                    <div className="flex items-center gap-2 pb-2 border-b-2 border-slate-100">
+                                    <div className="flex items-center gap-2 pb-2 border-b-2 border-border">
                                         <div className={cn("p-1.5 rounded-md", category.color)}>
                                             <Icon className="w-4 h-4" />
                                         </div>
-                                        <span className="font-bold text-slate-700 text-sm">
+                                        <span className="font-bold text-card-foreground text-sm">
                                             {category.label}
                                         </span>
                                     </div>
 
                                     <div className="flex flex-col gap-3 h-80 custom-scrollbar p-1 pr-2">
                                         {categoryTodos.length === 0 ? (
-                                            <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50">
-                                                <p className="text-xs text-slate-400">비어 있음</p>
+                                            <div className="text-center py-8 border-2 border-dashed border-border rounded-xl bg-muted/30">
+                                                <p className="text-xs text-muted-foreground">비어 있음</p>
                                             </div>
                                         ) : (
                                             categoryTodos.map((todo) => {
@@ -578,13 +578,13 @@ export default function Schedule() {
                                                     key={todo.id}
                                                     onClick={() => openEditTodoModal(todo)}
                                                     className={cn(
-                                                        "group relative flex flex-col p-3 rounded-xl border bg-white transition-all hover:shadow-md cursor-pointer",
-                                                        isOverdue ? "border-destructive border-dashed bg-destructive/10" : (priorityBorderColors[todo.priority] || "border-l-slate-200"),
+                                                        "group relative flex flex-col p-3 rounded-xl border bg-card transition-all hover:shadow-md cursor-pointer",
+                                                        isOverdue ? "border-destructive border-dashed bg-destructive/10" : (priorityBorderColors[todo.priority] || "border-l-border"),
                                                         todo.is_completed
                                                         ? "border-accent bg-accent/20 opacity-80"
                                                         : isOverdue
                                                         ? ""
-                                                        : "border-slate-100",
+                                                        : "border-border",
                                                     )}
                                                     >
                                                         <div className="flex items-center justify-between mb-2">
@@ -631,7 +631,7 @@ export default function Schedule() {
                                                                 "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
                                                                 todo.is_completed
                                                                 ? "bg-accent border-accent text-white"
-                                                                : "border-slate-300 bg-white hover:border-accent hover:bg-accent/10",
+                                                                : "border-border bg-card hover:border-accent hover:bg-accent/10",
                                                             )}
                                                             >
                                                                 {todo.is_completed && (
@@ -642,10 +642,10 @@ export default function Schedule() {
                                                             <div className="flex-1 min-w-0">
                                                                 <p
                                                                     className={cn(
-                                                                    "text-[15px] font-medium wrap-break-word leading-tight",
-                                                                    todo.is_completed
-                                                                        ? "text-slate-400 line-through"
-                                                                        : "text-slate-700",
+                                                                        "text-[15px] font-medium wrap-break-word leading-tight",
+                                                                        todo.is_completed
+                                                                        ? "text-muted-foreground line-through"
+                                                                        : "text-card-foreground group-hover:text-primary transition-colors",
                                                                     )}
                                                                 >
                                                                     {todo.content}

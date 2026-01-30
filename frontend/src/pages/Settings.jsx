@@ -86,7 +86,8 @@ export default function Settings() {
       case "kakao":
         return {
           label: "KAKAO",
-          className: "bg-warning/20 text-yellow-700 border-warning/50",
+          className:
+            "bg-warning/20 text-yellow-700 border-warning/50 dark:text-warning",
         };
       default: // 'email'
         return {
@@ -136,9 +137,9 @@ export default function Settings() {
 
       {/* Profile Overview */}
       {/* 프로필 개요 */}
-      <Card className="overflow-hidden border-none shadow-md">
+      <Card className="overflow-hidden border-none shadow-md bg-white dark:bg-card">
         <CardHeader className="flex-row items-center gap-6 space-y-0 relative z-10 py-7">
-          <div className="h-20 w-20 rounded-2xl bg-white flex items-center justify-center text-primary shadow-lg border-4 border-muted overflow-hidden">
+          <div className="h-20 w-20 rounded-2xl bg-white flex items-center justify-center text-primary shadow-lg border-4 border-muted dark:border-accent overflow-hidden dark:bg-slate-200">
             <img
               src="/icons/tutor-icon.png"
               alt="선생님 프로필 아이콘"
@@ -148,7 +149,9 @@ export default function Settings() {
 
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-2xl font-bold">{user.name}</CardTitle>
+              <CardTitle className="text-2xl font-bold text-slate-800 dark:text-foreground">
+                {user.name}
+              </CardTitle>
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${badgeInfo.className}`}
               >
@@ -172,19 +175,19 @@ export default function Settings() {
 
       {/* System Settings */}
       {/* 시스템 설정 */}
-      <Card className="overflow-hidden border-none shadow-md">
+      <Card className="overflow-hidden border-none shadow-md bg-white dark:bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-8 h-8 border-3 border-muted rounded-lg flex items-center justify-center shadow-md">
+          <CardTitle className="flex items-center gap-2 text-muted-foreground dark:text-muted-foreground">
+            <div className="w-8 h-8 border-3 border-muted dark:border-border rounded-lg flex items-center justify-center shadow-md">
               <LucideIcons.Wrench className="w-5 h-5" />
             </div>
             시스템 설정
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 rounded-xl">
+          <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="text-sm font-bold text-foreground/80">
+              <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
                 화면 모드
               </div>
               <div className="text-xs text-muted-foreground">
@@ -226,10 +229,10 @@ export default function Settings() {
 
       {/* Account & Security */}
       {/* 계정 및 보안 */}
-      <Card className="overflow-hidden border-none shadow-md">
+      <Card className="overflow-hidden border-none shadow-md bg-white dark:bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-8 h-8 border-3 border-muted rounded-lg flex items-center justify-center shadow-md">
+          <CardTitle className="flex items-center gap-2 text-muted-foreground dark:text-muted-foreground">
+            <div className="w-8 h-8 border-3 border-muted dark:border-border rounded-lg flex items-center justify-center shadow-md">
               <LucideIcons.ShieldAlert className="w-5 h-5" />
             </div>
             보안 및 계정
@@ -239,9 +242,9 @@ export default function Settings() {
           {/* password change for non-social login users */}
           {/* 비소셜 로그인 사용자의 비밀번호 변경 */}
           {isEmailUser && (
-            <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 rounded-xl">
+            <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
               <div className="flex items-center gap-3">
-                <div className="text-sm font-bold text-foreground/80">
+                <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
                   비밀번호 변경
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -250,7 +253,7 @@ export default function Settings() {
               </div>
               <button
                 onClick={() => setIsPasswordModalOpen(true)}
-                className="p-2 rounded-full bg-muted-foreground/20 text-muted-foreground/80 hover:bg-muted-foreground/80 hover:text-card transition-colors active:scale-95 shadow-md cursor-pointer"
+                className="p-2 rounded-full bg-muted-foreground/20 text-muted-foreground/80 hover:bg-muted-foreground/80 hover:text-card transition-colors active:scale-95 shadow-md cursor-pointer dark:bg-muted dark:text-muted-foreground"
               >
                 <LucideIcons.Lock className="w-5.5 h-5.5" />
               </button>
@@ -259,19 +262,19 @@ export default function Settings() {
 
           {/* account deletion */}
           {/* 계정 삭제 */}
-          <div
-            className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 rounded-xl"
-            onClick={() => setShowDeleteConfirm(true)}
-          >
+          <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="text-sm font-bold text-foreground/80">
+              <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
                 계정 삭제
               </div>
               <div className="text-xs text-muted-foreground">
                 (모든 데이터가 영구적으로 삭제됩니다.)
               </div>
             </div>
-            <div className="p-2 rounded-full bg-destructive/20 text-destructive/80 hover:bg-destructive/80 hover:text-card transition-colors active:scale-95 shadow-md cursor-pointer">
+            <div
+              className="p-2 rounded-full bg-destructive/20 text-destructive/80 hover:bg-destructive/80 hover:text-card transition-colors active:scale-95 shadow-md cursor-pointer"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
               <LucideIcons.Trash2 className="w-5.5 h-5.5" />
             </div>
           </div>

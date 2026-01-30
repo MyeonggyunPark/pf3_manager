@@ -51,7 +51,12 @@ const CURRENT_LEVEL_OPTIONS = ["A0", "A1", "A2", "B1", "B2", "C1"];
 // 목표 레벨: A1부터 C2(원어민 수준)까지
 const TARGET_LEVEL_OPTIONS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
-export default function AddStudentModal({ isOpen, onClose, onSuccess, studentData = null }) {
+export default function AddStudentModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  studentData = null,
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -218,7 +223,6 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
       ) {
         const fieldErrors = {};
         Object.keys(responseData).forEach((key) => {
-
           // DRF returns errors as arrays
           // DRF는 에러를 배열로 반환하므로 첫 번째 메시지를 추출
           fieldErrors[key] = Array.isArray(responseData[key])
@@ -227,7 +231,6 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
         });
         setErrors(fieldErrors);
       } else {
-
         // Fallback for general errors
         // 일반 에러 처리
         setSubmitError(
@@ -260,7 +263,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             ${
               isSelected
                 ? "bg-primary text-white shadow-md shadow-primary/30 ring-1 ring-primary transform scale-[1.02]"
-                : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-transparent"
+                : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-transparent dark:bg-muted dark:text-muted-foreground dark:hover:bg-muted/80"
             }
             ${className}
           `}
@@ -272,7 +275,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             className={`w-4 h-4 mr-1.5 ${
               isSelected
                 ? "text-white"
-                : "text-slate-400 group-hover:text-slate-600"
+                : "text-slate-400 group-hover:text-slate-600 dark:text-muted-foreground/70"
             }`}
           />
         )}
@@ -297,7 +300,9 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
   const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center ${
-        hasError ? "text-destructive" : "text-slate-500"
+        hasError
+          ? "text-destructive"
+          : "text-slate-500 dark:text-muted-foreground"
       }`}
     >
       {label} {required && <span className="text-destructive">*</span>}
@@ -305,26 +310,28 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
   );
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-2xl bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden transform transition-all m-4 relative">
         {/* Delete Confirmation Overlay */}
         {showDeleteConfirm && (
-          <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+          <div className="absolute inset-0 z-10 bg-white dark:bg-card backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">삭제 확인</h3>
-            <p className="text-slate-500 text-center mb-8 max-w-xs text-sm">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
+              삭제 확인
+            </h3>
+            <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
               정말로 삭제하시겠습니까?
               <br />
-              <span className="text-destructive mt-1 block">
+              <span className="text-destructive mt-1 block font-medium">
                 이 작업은 되돌릴 수 없습니다.
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
               <Button
                 type="button"
-                className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 h-11 text-sm font-semibold cursor-pointer transition-all"
+                className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
@@ -347,12 +354,12 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
 
         {/* Header */}
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
               {isEditMode ? "학생 정보 수정" : "학생 등록"}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
                 ? "수정이 필요한 학생 정보를 변경해주세요."
                 : "등록할 새로운 학생의 정보를 입력하세요."}
@@ -360,7 +367,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-muted text-slate-400 dark:text-muted-foreground hover:text-slate-600 dark:hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -391,8 +398,9 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                 placeholder="학생 이름"
+                autoComplete="off"
               />
               <ErrorMessage message={errors.name} />
             </div>
@@ -407,7 +415,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
                 name="age"
                 value={formData.age}
                 onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder="학생 나이"
               />
               <ErrorMessage message={errors.age} />
@@ -424,7 +432,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
                   icon={MaleIcon}
                   selectedValue={formData.gender}
                   onClick={(val) => handleValueChange("gender", val)}
-                  className="h-full cursor-pointer"
+                  className="h-full cursor-pointer dark:hover:text-foreground"
                 />
                 <SelectionChip
                   label="여성"
@@ -432,7 +440,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
                   icon={FemaleIcon}
                   selectedValue={formData.gender}
                   onClick={(val) => handleValueChange("gender", val)}
-                  className="h-full cursor-pointer"
+                  className="h-full cursor-pointer dark:hover:text-foreground"
                 />
               </div>
               <ErrorMessage message={errors.gender} />
@@ -445,7 +453,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Current Level */}
             {/* 현재 레벨 */}
             <div className="space-y-2">
-              <InputLabel label="현재 레벨" hasError={!!errors.current_level} required />
+              <InputLabel
+                label="현재 레벨"
+                hasError={!!errors.current_level}
+                required
+              />
               <div className="grid grid-cols-3 gap-1.5">
                 {CURRENT_LEVEL_OPTIONS.map((lv) => (
                   <SelectionChip
@@ -454,7 +466,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
                     value={lv}
                     selectedValue={formData.current_level}
                     onClick={(val) => handleValueChange("current_level", val)}
-                    className="cursor-pointer"
+                    className="cursor-pointer dark:hover:text-foreground"
                   />
                 ))}
               </div>
@@ -464,7 +476,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Target Level */}
             {/* 목표 레벨 */}
             <div className="space-y-2">
-              <InputLabel label="목표 레벨" hasError={!!errors.target_level} required />
+              <InputLabel
+                label="목표 레벨"
+                hasError={!!errors.target_level}
+                required
+              />
               <div className="grid grid-cols-3 gap-1.5">
                 {TARGET_LEVEL_OPTIONS.map((lv) => (
                   <SelectionChip
@@ -473,7 +489,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
                     value={lv}
                     selectedValue={formData.target_level}
                     onClick={(val) => handleValueChange("target_level", val)}
-                    className="cursor-pointer"
+                    className="cursor-pointer dark:hover:text-foreground"
                   />
                 ))}
               </div>
@@ -487,28 +503,32 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Target Exam Mode */}
             {/* 목표 시험 유형 */}
             <div className="col-span-12 sm:col-span-7 space-y-2">
-              <InputLabel label="목표 응시 유형" hasError={!!errors.target_exam_mode} required />
+              <InputLabel
+                label="목표 응시 유형"
+                hasError={!!errors.target_exam_mode}
+                required
+              />
               <div className="grid grid-cols-3 gap-1.5">
                 <SelectionChip
                   label="Gesamt"
                   value="FULL"
                   selectedValue={formData.target_exam_mode}
                   onClick={(val) => handleValueChange("target_exam_mode", val)}
-                  className="cursor-pointer"
+                  className="cursor-pointer dark:hover:text-foreground"
                 />
                 <SelectionChip
                   label="Schriftlich"
                   value="WRITTEN"
                   selectedValue={formData.target_exam_mode}
                   onClick={(val) => handleValueChange("target_exam_mode", val)}
-                  className="cursor-pointer"
+                  className="cursor-pointer dark:hover:text-foreground"
                 />
                 <SelectionChip
                   label="Mündlich"
                   value="ORAL"
                   selectedValue={formData.target_exam_mode}
                   onClick={(val) => handleValueChange("target_exam_mode", val)}
-                  className="cursor-pointer"
+                  className="cursor-pointer dark:hover:text-foreground"
                 />
               </div>
               <ErrorMessage message={errors.target_exam_mode} />
@@ -517,28 +537,32 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
             {/* Status */}
             {/* 수강 상태 */}
             <div className="col-span-12 sm:col-span-5 space-y-2">
-              <InputLabel label="수강 상태" hasError={!!errors.status} required />
+              <InputLabel
+                label="수강 상태"
+                hasError={!!errors.status}
+                required
+              />
               <div className="grid grid-cols-3 gap-1.5">
                 <SelectionChip
                   label="수강중"
                   value="ACTIVE"
                   selectedValue={formData.status}
                   onClick={(val) => handleValueChange("status", val)}
-                  className="cursor-pointer"
+                  className="cursor-pointer dark:hover:text-foreground"
                 />
                 <SelectionChip
                   label="일시중지"
                   value="PAUSED"
                   selectedValue={formData.status}
                   onClick={(val) => handleValueChange("status", val)}
-                  className="cursor-pointer"
+                  className="cursor-pointer dark:hover:text-foreground"
                 />
                 <SelectionChip
                   label="종료"
                   value="FINISHED"
                   selectedValue={formData.status}
                   onClick={(val) => handleValueChange("status", val)}
-                  className="cursor-pointer"
+                  className="cursor-pointer dark:hover:text-foreground"
                 />
               </div>
               <ErrorMessage message={errors.status} />
@@ -554,8 +578,9 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
               value={formData.memo}
               onChange={handleChange}
               rows={4}
-              className="w-full p-3 rounded-lg border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400"
+              className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
               placeholder="추가사항 / 특이사항"
+              autoComplete="off"
             />
           </div>
 
@@ -579,7 +604,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, studentDat
 
             <Button
               type="button"
-              className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+              className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               onClick={handleClose}
               disabled={isLoading}
             >

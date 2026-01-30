@@ -38,6 +38,7 @@ const FloatingInput = ({
         className={`
           peer w-full h-12 px-3 pt-3 pb-1 rounded-md border bg-white outline-none transition-all
           disabled:opacity-50 disabled:bg-slate-50 placeholder-transparent
+          dark:bg-card dark:border-border dark:text-foreground
           ${
             error
               ? "border-destructive focus:ring-2 focus:ring-destructive/20"
@@ -54,6 +55,7 @@ const FloatingInput = ({
           peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:top-3.5
           peer-focus:-top-2 peer-focus:translate-y-0 peer-focus:scale-75 peer-focus:font-semibold
           peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:scale-75
+          dark:bg-card dark:text-muted-foreground
           ${
             error
               ? "text-destructive peer-focus:text-destructive"
@@ -126,20 +128,20 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
   // 부모 DOM 계층 구조 외부에서 렌더링
   return createPortal(
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl relative animate-in zoom-in-95">
+      <div className="bg-white dark:bg-card rounded-2xl p-8 max-w-sm w-full shadow-2xl relative animate-in zoom-in-95">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer p-2 rounded-full"
+          className="absolute top-4 right-4 hover:bg-slate-100 dark:hover:bg-muted text-slate-400 hover:text-slate-600 dark:hover:text-foreground transition-colors cursor-pointer p-2 rounded-full"
         >
           <LucideIcons.X className="w-5 h-5" />
         </button>
 
         {!isSent ? (
           <>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
               비밀번호 찾기
             </h3>
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-slate-400 dark:text-muted-foreground text-sm mb-6">
               가입하신 이메일 주소를 입력하시면
               <br />
               비밀번호 재설정 링크를 보내드립니다.
@@ -166,13 +168,13 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
           </>
         ) : (
           <div className="flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-accent/20 text-[#4a7a78] rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-accent/20 text-[#4a7a78] dark:text-accent-foreground rounded-full flex items-center justify-center mb-4">
               <LucideIcons.MailCheck className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold text-[#4a7a78] mb-2">
+            <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent-foreground mb-2">
               메일 전송 완료
             </h3>
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-slate-400 dark:text-muted-foreground text-sm mb-6">
               <strong>{email}</strong>으로
               <br />
               비밀번호 재설정 메일을 보냈습니다.
@@ -209,7 +211,7 @@ const SocialLoginButtons = () => {
       <button
         type="button"
         onClick={() => handleSocialLogin("google")}
-        className="flex-1 flex items-center justify-center gap-2 h-10 border-2 border-muted-foreground/30 rounded-lg transition-all bg-white shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-105 cursor-pointer"
+        className="flex-1 flex items-center justify-center gap-2 h-10 border-2 border-muted-foreground/30 rounded-lg transition-all bg-white dark:bg-card shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-105 cursor-pointer"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path
@@ -229,7 +231,9 @@ const SocialLoginButtons = () => {
             fill="#EA4335"
           />
         </svg>
-        <span className="text-sm font-medium text-slate-800">Google</span>
+        <span className="text-sm font-medium text-slate-800 dark:text-foreground">
+          Google
+        </span>
       </button>
       <button
         type="button"
@@ -275,6 +279,20 @@ const AuthPage = ({ onLogin }) => {
   // Remember Email State
   // 이메일 기억하기 상태
   const [rememberEmail, setRememberEmail] = useState(false);
+
+  // Theme synchronization logic for pre-login pages
+  // 로그인 전 페이지를 위한 테마 동기화 로직
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
 
   // Check Local Storage for Saved Email
   // 로컬 스토리지에서 저장된 이메일 확인
@@ -451,7 +469,7 @@ const AuthPage = ({ onLogin }) => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden font-sans">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden font-sans transition-colors duration-300">
       <ForgotPasswordModal
         isOpen={showForgotModal}
         onClose={() => setShowForgotModal(false)}
@@ -461,14 +479,14 @@ const AuthPage = ({ onLogin }) => {
       {/* 회원가입 성공 모달 */}
       {signupSuccess && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center animate-in zoom-in-95">
+          <div className="bg-white dark:bg-card rounded-2xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center animate-in zoom-in-95">
             <div className="w-16 h-16 bg-accent/20 text-accent rounded-full flex items-center justify-center mb-4">
               <LucideIcons.MailCheck className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold text-[#4a7a78] mb-2">
+            <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent-foreground mb-2">
               인증 메일 발송
             </h3>
-            <p className="text-slate-400 text-center mb-6 text-sm">
+            <p className="text-slate-400 dark:text-muted-foreground text-center mb-6 text-sm font-medium">
               가입하신 이메일로 인증 메일이 전송되었습니다.
               <br />
               링크를 클릭하여 계정을 활성화해주세요.
@@ -486,14 +504,14 @@ const AuthPage = ({ onLogin }) => {
       {/* 3D Flip Card Container */}
       {/* 3D 플립 카드 컨테이너 */}
       <div
-        className="relative w-full max-w-210 h-155 flex bg-white rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-210 h-155 flex bg-white dark:bg-card rounded-2xl shadow-2xl overflow-hidden"
         style={{ perspective: "2000px" }}
       >
         {/* [Front Side] Login Form Section */}
         {/* [앞면] 로그인 폼 섹션 */}
         <div className="flex-1 p-10 pt-16 flex flex-col items-center relative z-0">
           <div className="absolute top-6 left-8 flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg flex justify-center items-center border-3 border-muted-foreground/10">
+            <div className="w-9 h-9 rounded-lg flex justify-center items-center border-3 border-muted-foreground/10 dark:bg-slate-200">
               <img src="/logo.svg" alt="Logo" className="w-11 h-11" />
             </div>
             <h1 className="text-xl font-bold text-primary">MS Planer</h1>
@@ -580,10 +598,10 @@ const AuthPage = ({ onLogin }) => {
 
             <div className="relative mt-6">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200"></span>
+                <span className="w-full border-t border-slate-200 dark:border-border"></span>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground">
+                <span className="bg-white dark:bg-card px-2 text-muted-foreground">
                   Or continue with
                 </span>
               </div>
@@ -594,10 +612,10 @@ const AuthPage = ({ onLogin }) => {
 
         {/* [Back Side] Signup Form Section */}
         {/* [뒷면] 회원가입 폼 섹션 */}
-        <div className="flex-1 p-10 pt-16 flex flex-col items-center relative z-0 bg-[#f9fafb]">
+        <div className="flex-1 p-10 pt-16 flex flex-col items-center relative z-0 bg-[#f9fafb] dark:bg-card/50">
           <div className="absolute top-6 right-8 flex items-center gap-2">
             <h1 className="text-xl font-bold text-accent">MS Planer</h1>
-            <div className="w-9 h-9 rounded-lg flex justify-center items-center border-3 border-muted-foreground/10">
+            <div className="w-9 h-9 rounded-lg flex justify-center items-center border-3 border-muted-foreground/10 dark:bg-slate-200">
               <img
                 src="/logo.svg"
                 alt="Logo"
@@ -607,7 +625,7 @@ const AuthPage = ({ onLogin }) => {
                   e.target.nextSibling.style.display = "block";
                 }}
               />
-              <LucideIcons.UserPlus className="w-6 h-6 hidden" />
+              <LucideIcons.UserPlus className="w-6 h-6 hidden text-accent" />
             </div>
           </div>
 
@@ -672,10 +690,10 @@ const AuthPage = ({ onLogin }) => {
 
             <div className="relative mt-4">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200"></span>
+                <span className="w-full border-t border-slate-200 dark:border-border"></span>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#f9fafb] px-2 text-muted-foreground">
+                <span className="bg-[#f9fafb] dark:bg-[#1a202c] px-2 text-muted-foreground">
                   Or join with
                 </span>
               </div>
@@ -695,12 +713,12 @@ const AuthPage = ({ onLogin }) => {
           }}
         >
           {/* Overlay: Signup Promo (Shows when Login form is active) */}
-          {/* 오버레이: 회원가입 홍보 (로그인 폼 활성 시 표시) */}
+          {/* 로그인 폼이 활성화될 때 표시되는 오버레이: 회원가입 프로모션 */}
           <div
-            className="absolute inset-0 bg-accent flex flex-col items-center justify-center p-12 text-white backface-hidden shadow-[-10px_0_30px_rgba(0,0,0,0.2)]"
+            className="absolute inset-0 bg-accent dark:bg-secondary flex flex-col items-center justify-center p-12 text-white backface-hidden shadow-[-10px_0_30px_rgba(0,0,0,0.2)]"
             style={{ backfaceVisibility: "hidden" }}
           >
-            <LucideIcons.UserPlus className="w-20 h-20 mb-6 opacity-80" />
+            <LucideIcons.UserPlus className="w-20 h-20 mb-6 opacity-80 dark:text-accent" />
             <h2 className="text-4xl font-black mb-4 tracking-tighter uppercase">
               new here?
             </h2>
@@ -711,22 +729,22 @@ const AuthPage = ({ onLogin }) => {
             </p>
             <Button
               onClick={handleSwitchToSignup}
-              className="bg-card text-accent border-3 hover:text-card hover:scale-105 w-48 h-14 text-lg rounded-full shadow-2xl uppercase cursor-pointer"
+              className="bg-card dark:bg-card text-accent border-3 hover:text-card hover:scale-105 w-48 h-14 text-lg rounded-full shadow-2xl uppercase cursor-pointer"
             >
               sign up
             </Button>
           </div>
 
           {/* Overlay: Login Promo (Shows when Signup form is active) */}
-          {/* 오버레이: 로그인 홍보 (회원가입 폼 활성 시 표시) */}
+          {/* 회원가입 폼이 활성화될 때 표시되는 오버레이: 로그인 프로모션 */}
           <div
-            className="absolute inset-0 bg-primary flex flex-col items-center justify-center p-12 text-white shadow-[10px_0_30px_rgba(0,0,0,0.2)]"
+            className="absolute inset-0 bg-primary dark:bg-muted flex flex-col items-center justify-center p-12 text-white shadow-[10px_0_30px_rgba(0,0,0,0.2)]"
             style={{
               backfaceVisibility: "hidden",
               transform: "rotateY(180deg)",
             }}
           >
-            <LucideIcons.LogIn className="w-20 h-20 mb-6 opacity-80" />
+            <LucideIcons.LogIn className="w-20 h-20 mb-6 opacity-80 dark:text-primary" />
             <h2 className="text-4xl font-black mb-4 tracking-tighter uppercase">
               welcome back!
             </h2>
@@ -737,7 +755,7 @@ const AuthPage = ({ onLogin }) => {
             </p>
             <Button
               onClick={handleSwitchToLogin}
-              className="bg-card text-primary border-3 hover:bg-primary hover:text-card hover:scale-105 w-48 h-14 font-bold text-lg rounded-full shadow-2xl transition-all uppercase cursor-pointer"
+              className="bg-card dark:bg-card text-primary border-3 hover:bg-primary hover:text-card hover:scale-105 w-48 h-14 font-bold text-lg rounded-full shadow-2xl transition-all uppercase cursor-pointer"
             >
               log in
             </Button>

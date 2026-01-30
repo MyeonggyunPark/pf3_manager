@@ -29,9 +29,9 @@ const CHART_LINE_COLOR = "#4C72A9";
 // Styles mapping for course status badges
 // 수강권 상태 배지를 위한 스타일 매핑
 const statusStyles = {
-    ACTIVE: "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20",
+    ACTIVE: "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
     PAUSED: "bg-secondary/50 text-muted-foreground border-secondary hover:bg-secondary/50",
-    FINISHED: "bg-success/20 text-[#5f6e63] border-success/50 hover:bg-success/20",
+    FINISHED: "bg-success/20 text-[#5f6e63] border-success/50 hover:bg-success/20 dark:text-success-foreground",
 };
 
 const STATUS_LABELS = {
@@ -294,14 +294,6 @@ export default function CourseList() {
 
     const handleSuccess = () => setRefreshTrigger((prev) => prev + 1);
 
-    if (isLoading) {
-        return (
-        <div className="h-[calc(100vh-200px)] flex items-center justify-center">
-            <LucideIcons.Loader2 className="w-8 h-8 text-primary animate-spin" />
-        </div>
-        );
-    }
-
     const handleYearChange = (e) => {
         setSelectedYear(Number(e.target.value));
         setIsAllUnpaidMode(false);
@@ -343,7 +335,7 @@ export default function CourseList() {
                             <select
                                 value={selectedYear}
                                 onChange={handleYearChange}
-                                className="h-10 w-full sm:w-28 appearance-none rounded-xl border border-border bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                                className="h-10 w-full sm:w-28 appearance-none rounded-xl border border-border bg-white dark:bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
                             >
                                 {availableYears.map((year) => (
                                 <option key={year} value={year}>
@@ -360,7 +352,7 @@ export default function CourseList() {
                             <select
                                 value={selectedMonth}
                                 onChange={handleMonthChange}
-                                className="h-10 w-full sm:w-26 appearance-none rounded-xl border border-border bg-card px-3 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                                className="h-10 w-full sm:w-26 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
                             >
                                 <option value={0}>
                                     전체(월)
@@ -380,7 +372,7 @@ export default function CourseList() {
                             <select
                                 value={paymentFilter}
                                 onChange={(e) => setPaymentFilter(e.target.value)}
-                                className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                                className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
                             >
                                 <option value="ALL">전체(결제)</option>
                                 <option value="PAID">완납</option>
@@ -394,12 +386,12 @@ export default function CourseList() {
                     {/* 검색 입력 */ }
                     <div className="flex items-center w-full sm:w-auto gap-2 group">
                         <div className="relative flex-1 sm:w-48">
-                            <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400  group-focus-within:text-primary transition-colors" />
+                            <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors dark:text-muted-foreground" />
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-md"
+                                className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-md"
                                 placeholder="학생 이름 검색"
                             />
                         </div>
@@ -431,7 +423,7 @@ export default function CourseList() {
                 <div className="lg:col-span-4 flex flex-col gap-2.5">
                     
                     {/* 1. 총 수익 (Revenue) */}
-                    <div className="flex-1 bg-card border-2 border-primary px-5 py-3 rounded-xl shadow-sm">
+                    <div className="flex-1 bg-white dark:bg-card border-2 border-primary px-5 py-3 rounded-xl shadow-sm">
                         <p className="text-md font-semibold text-primary uppercase tracking-wider mb-1">
                             {selectedMonth === 0 ? `${selectedYear}년 총 수익` : `${selectedMonth}월 수익`}
                         </p>
@@ -447,32 +439,32 @@ export default function CourseList() {
                     </div>
 
                     {/* 총 수업 시간 (Total Hours) */}
-                    <div className="flex-1 bg-card border-2 border-accent px-5 py-3 rounded-xl shadow-sm">
-                        <p className="text-md font-semibold text-[#4a7a78] uppercase tracking-wider mb-1">
+                    <div className="flex-1 bg-white dark:bg-card border-2 border-accent px-5 py-3 rounded-xl shadow-sm">
+                        <p className="text-md font-semibold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider mb-1">
                             {selectedMonth === 0 ? `${selectedYear}년 총 수업 시간` : `${selectedMonth}월 수업 시간`}
                         </p>
                         <div className="flex justify-around mt-3">
-                            <div className="flex gap-1 items-center bg-accent/20 text-[#4a7a78] px-3 py-1 rounded-full text-sm font-medium">
-                                <LucideIcons.BarChart className="w-4 h-4 text-[#4a7a78]" />
+                            <div className="flex gap-1 items-center bg-accent/20 text-[#4a7a78] dark:text-accent-foreground px-3 py-1 rounded-full text-sm font-medium">
+                                <LucideIcons.BarChart className="w-4 h-4 text-[#4a7a78] dark:text-accent-foreground" />
                                 <span>건당 평균 {avgHoursPerCourse}시간</span>
                             </div>
-                            <h3 className="text-2xl font-bold text-[#4a7a78] tracking-tight">
+                            <h3 className="text-2xl font-bold text-[#4a7a78] dark:text-accent-foreground tracking-tight">
                                 {Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}시간
                             </h3>
                         </div>
                     </div>
 
                     {/* 평균 시간당 수익 (Hourly Rate) */}
-                    <div className="flex-1 bg-card border-2 border-warning px-5 py-3 rounded-xl shadow-sm">
-                        <p className="text-md font-semibold text-[#b8a05e] uppercase tracking-wider mb-1">
+                    <div className="flex-1 bg-white dark:bg-card border-2 border-warning px-5 py-3 rounded-xl shadow-sm">
+                        <p className="text-md font-semibold text-[#b8a05e] dark:text-warning uppercase tracking-wider mb-1">
                             {selectedMonth === 0 ? `${selectedYear}년 평균 시간당 수익` : `${selectedMonth}월 평균 시간당 수익`}
                         </p>
                         <div className="flex justify-around mt-3">
-                            <div className="flex gap-1 items-center bg-warning/20 text-[#b8a05e] px-3 py-1 rounded-full text-sm font-medium">
-                                <LucideIcons.Coins className="w-4 h-4 text-[#b8a05e]" />
+                            <div className="flex gap-1 items-center bg-warning/20 text-[#b8a05e] dark:text-warning px-3 py-1 rounded-full text-sm font-medium">
+                                <LucideIcons.Coins className="w-4 h-4 text-[#b8a05e] dark:text-warning" />
                                 <span>최고 시급 {formatCurrency(maxHourlyRate)}</span>
                             </div>
-                            <h3 className="text-2xl font-bold text-[#b8a05e] tracking-tight">
+                            <h3 className="text-2xl font-bold text-[#b8a05e] dark:text-warning tracking-tight">
                                 {formatCurrency(avgHourlyRate)}/h
                             </h3>
                         </div>
@@ -482,23 +474,23 @@ export default function CourseList() {
 
                 {/* Chart (Right) */}
                 {/* 차트 영역 (우측) */}
-                <div className="lg:col-span-8 bg-card p-5 rounded-xl border border-border shadow-sm flex flex-col">
+                <div className="lg:col-span-8 bg-white dark:bg-card p-5 rounded-xl border border-border shadow-sm flex flex-col">
                     <div className="flex justify-between items-center mb-4 pl-1">
-                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-foreground flex items-center gap-2">
                             <LucideIcons.BarChart3 className="w-4 h-4 text-primary" />
                             {selectedYear}년 현황
                         </h3>
                             
                         {/* Chart Toggle Buttons */}
                         {/* 차트 모드 전환 버튼 (수익 / 수강생) */}
-                        <div className="flex bg-muted/60 p-1 rounded-lg">
+                        <div className="flex bg-slate-100 dark:bg-muted/60 p-1 rounded-lg">
                             <button
                                 onClick={() => setChartMode("REVENUE")}
                                 className={cn(
                                 "text-[13px] px-3 py-1 rounded-md transition-all cursor-pointer",
                                 chartMode === "REVENUE" 
-                                    ? "bg-white text-primary font-semibold shadow-sm" 
-                                    : "text-muted-foreground hover:font-semibold hover:text-primary hover:bg-card/40"
+                                    ? "bg-white dark:bg-card text-primary font-semibold shadow-sm" 
+                                    : "text-slate-500 dark:text-muted-foreground hover:font-semibold hover:text-primary"
                                 )}
                             >
                                 수익
@@ -508,8 +500,8 @@ export default function CourseList() {
                                 className={cn(
                                 "text-[13px] px-3 py-1 rounded-md transition-all cursor-pointer",
                                 chartMode === "COUNT" 
-                                    ? "bg-white text-primary font-semibold shadow-sm" 
-                                    : "text-muted-foreground hover:font-semibold hover:text-primary hover:bg-card/40"
+                                    ? "bg-white dark:bg-card text-primary font-semibold shadow-sm" 
+                                    : "text-slate-500 dark:text-muted-foreground hover:font-semibold hover:text-primary"
                                 )}
                             >
                                 수강생
@@ -526,26 +518,28 @@ export default function CourseList() {
                             data={chartData}
                             margin={{ top: 5, right: 5, left: -15, bottom: 0 }}
                             >
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.5} />
                             <XAxis 
                                 dataKey="name" 
                                 axisLine={false} 
                                 tickLine={false} 
-                                tick={{ fill: "#64748B", fontSize: 11 }} 
+                                tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} 
                                 dy={5} 
                             />
                             <YAxis 
                                 axisLine={false} 
                                 tickLine={false} 
-                                tick={{ fill: "#64748B", fontSize: 11 }} 
+                                tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} 
                                 tickFormatter={(value) => `€${value.toLocaleString('de-DE')}`} 
                             />
                             <Tooltip
-                                cursor={{ fill: "#F1F5F9" }}
+                                cursor={{ fill: "var(--color-muted)", opacity: 0.15 }}
                                 contentStyle={{
-                                borderRadius: "8px",
-                                border: "1px solid #E2E8F0",
-                                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                                borderRadius: "12px",
+                                border: "1px solid var(--color-border)",
+                                backgroundColor: "var(--color-card)",
+                                color: "var(--color-card-foreground)",
+                                boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
                                 fontSize: "12px",
                                 }}
                                 formatter={(value) => [formatCurrency(value), "수익"]}
@@ -558,7 +552,7 @@ export default function CourseList() {
                                     selectedMonth !== 0
                                         ? entry.monthIndex === selectedMonth
                                         ? CHART_BAR_COLOR
-                                        : CHART_BAR_BG
+                                        : "var(--color-muted)"
                                         : CHART_BAR_COLOR
                                     }
                                 />
@@ -570,26 +564,28 @@ export default function CourseList() {
                             data={chartData}
                             margin={{ top: 5, right: 20, left: -20, bottom: 0 }}
                             >
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.5} />
                             <XAxis 
                                 dataKey="name" 
                                 axisLine={false} 
                                 tickLine={false} 
-                                tick={{ fill: "#64748B", fontSize: 11 }} 
+                                tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} 
                                 dy={5} 
                             />
                             <YAxis 
                                 axisLine={false} 
                                 tickLine={false} 
-                                tick={{ fill: "#64748B", fontSize: 11 }} 
+                                tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} 
                                 allowDecimals={false}
                                 domain={[0, (dataMax) => (dataMax < 5 ? 5 : dataMax)]}
                             />
                             <Tooltip
                                 contentStyle={{
-                                    borderRadius: "8px",
-                                    border: "1px solid #E2E8F0",
-                                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                                    borderRadius: "12px",
+                                    border: "1px solid var(--color-border)",
+                                    backgroundColor: "var(--color-card)",
+                                    color: "var(--color-card-foreground)",
+                                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
                                     fontSize: "12px",
                                 }}
                                 formatter={(value) => [`${value}명`, "수강생"]}
@@ -611,37 +607,23 @@ export default function CourseList() {
 
             {/* --- Detailed List Section --- */}
             {/* 상세 리스트 섹션 (테이블) */}
-            <div className="flex-1 h-full bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col min-h-0 mt-3">
+            <div className="flex-1 h-full bg-white dark:bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col min-h-0 mt-3">
                 <div 
                     className={cn(
-                        "bg-primary/10 border-b border-border",
+                        "bg-slate-50 dark:bg-muted/30 border-b border-border",
                         hasScroll ? "pr-2" : "" 
                     )}
                 >
                     <table className="w-full text-md table-fixed">
-                        <thead className="text-md text-muted-foreground uppercase">
+                        <thead className="text-md text-slate-500 dark:text-muted-foreground uppercase">
                             <tr>
-                                <th className="px-4 py-3 font-semibold text-center select-none w-[18%]">
-                                    학생
-                                </th>
-                                <th className="px-4 py-3 font-semibold text-center select-none w-[22%]">
-                                    수강 기간
-                                </th>
-                                <th className="px-4 py-3 font-semibold text-center select-none w-[8%]">
-                                    총 시간
-                                </th>
-                                <th className="px-4 py-3 font-semibold text-center select-none w-[12%]">
-                                    시간당 금액
-                                </th>
-                                <th className="px-4 py-3 font-semibold text-center select-none w-[14%]">
-                                    금액
-                                </th>
-                                    <th className="px-4 py-3 font-semibold text-center select-none w-[13%]">
-                                    수강 상태
-                                </th>
-                                <th className="px-4 py-3 font-semibold text-center select-none w-[13%]">
-                                    결제 여부
-                                </th>
+                                <th className="px-4 py-3 font-semibold text-center select-none w-[18%]">학생</th>
+                                <th className="px-4 py-3 font-semibold text-center select-none w-[22%]">수강 기간</th>
+                                <th className="px-4 py-3 font-semibold text-center select-none w-[8%]">총 시간</th>
+                                <th className="px-4 py-3 font-semibold text-center select-none w-[12%]">시간당 금액</th>
+                                <th className="px-4 py-3 font-semibold text-center select-none w-[14%]">금액</th>
+                                <th className="px-4 py-3 font-semibold text-center select-none w-[13%]">수강 상태</th>
+                                <th className="px-4 py-3 font-semibold text-center select-none w-[13%]">결제 여부</th>
                             </tr>
                         </thead>
                     </table>
@@ -656,7 +638,7 @@ export default function CourseList() {
                     >
                         <tbody 
                             className={cn(
-                                "divide-y divide-border/50",
+                                "divide-y divide-slate-50 dark:divide-border/50",
                                 filteredCourses.length === 0 ? "h-full" : ""
                             )}
                         >
@@ -664,10 +646,10 @@ export default function CourseList() {
                                 <tr className="h-full">
                                 <td
                                     colSpan="7"
-                                    className="px-6 text-center align-middle text-muted-foreground/70"
+                                    className="px-6 text-center align-middle text-slate-400 dark:text-muted-foreground/70"
                                 >
                                     <div className="flex flex-col justify-center items-center gap-2">
-                                    <LucideIcons.SearchX className="w-8 h-8" />
+                                    <LucideIcons.SearchX className="w-8 h-8 opacity-50" />
                                     <p className="font-semibold text-sm">해당 기간에 등록된 데이터가 없습니다.</p>
                                     </div>
                                 </td>
@@ -676,27 +658,26 @@ export default function CourseList() {
                                 filteredCourses.map((course) => (
                                 <tr
                                     key={course.id}
-                                    className="hover:bg-muted/20 transition-colors cursor-pointer"
+                                    className="hover:bg-slate-50 dark:hover:bg-muted/50 transition-colors cursor-pointer group"
                                     onClick={() => openEditModal(course)}
                                 >
-                                    <td className="px-4 py-4 text-center text-foreground truncate w-[18%]">
+                                    <td className="px-4 py-4 text-center text-slate-800 dark:text-foreground truncate w-[18%] group-hover:text-primary">
                                         <span className="font-bold text-base">
                                             {getStudentName(course.student)}
                                         </span>
                                     </td>
                                     <td className="px-4 py-4 text-center w-[22%]">
-                                        <div className="text-muted-foreground flex items-center justify-center gap-1.5 text-xs sm:text-sm">
-                                            {formatDate(course.start_date)} ~{" "}
-                                            {formatDate(course.end_date)}
+                                        <div className="text-slate-500 dark:text-muted-foreground flex items-center justify-center gap-1.5 text-xs sm:text-sm">
+                                            {formatDate(course.start_date)} ~ {formatDate(course.end_date)}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-4 text-center text-muted-foreground w-[8%]">
+                                    <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[8%]">
                                         {Number(course.total_hours)}h
                                     </td>
-                                    <td className="px-4 py-4 text-center text-muted-foreground w-[12%]">
+                                    <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%]">
                                         {formatCurrency(course.hourly_rate)}
                                     </td>
-                                    <td className="px-4 py-4 text-center font-bold text-foreground w-[14%]">
+                                    <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-card-foreground w-[14%]">
                                         {formatCurrency(course.total_fee)}
                                     </td>
                                     <td className="px-1 py-4 text-center w-[13%]">
@@ -704,8 +685,7 @@ export default function CourseList() {
                                             <Badge
                                             className={cn(
                                                 "text-[12px] px-2 py-0.5 border font-medium shadow-none justify-center min-w-12.5",
-                                                statusStyles[course.status] ||
-                                                "bg-muted/50 text-muted-foreground"
+                                                statusStyles[course.status]
                                             )}
                                             >
                                                 {STATUS_LABELS[course.status]}
@@ -715,9 +695,8 @@ export default function CourseList() {
                                     <td className="px-4 py-4 text-center w-[13%]">
                                         <div className="flex justify-center">
                                             {course.is_paid ? (
-                                            <span className="inline-flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-xl border bg-accent/20 text-[#4a7a78] border-accent/50">
-                                                <LucideIcons.CheckCircle2 className="w-3 h-3" />{" "}
-                                                완납
+                                            <span className="inline-flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-xl border bg-accent/20 text-[#4a7a78] dark:text-accent-foreground border-accent/50">
+                                                <LucideIcons.CheckCircle2 className="w-3 h-3" /> 완납
                                             </span>
                                             ) : (
                                             <span className="inline-flex items-center gap-1 text-[12px] font-bold text-destructive bg-destructive/10 px-2 py-1 rounded-xl border border-destructive/20">

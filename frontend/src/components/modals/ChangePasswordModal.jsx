@@ -148,7 +148,9 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
   const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 mb-1.5 flex items-center gap-1 transition-colors ${
-        hasError ? "text-destructive" : "text-slate-500"
+        hasError
+          ? "text-destructive"
+          : "text-slate-500 dark:text-muted-foreground"
       }`}
     >
       {label} {required && <span className="text-destructive">*</span>}
@@ -156,17 +158,19 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
   );
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-white/20 m-4 relative">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-md bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border m-4 relative overflow-hidden transition-all">
         {/* Success Overlay View */}
         {/* 성공 시 오버레이 화면 */}
         {isSuccess && (
-          <div className="absolute rounded-2xl inset-0 z-20 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
-            <div className="w-16 h-16 bg-accent/20 text-[#4a7a78] rounded-full flex items-center justify-center mb-4">
+          <div className="absolute rounded-2xl inset-0 z-20 bg-white/95 dark:bg-card/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+            <div className="w-16 h-16 bg-accent/20 text-[#4a7a78] dark:text-accent rounded-full flex items-center justify-center mb-4">
               <LucideIcons.CheckCircle className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold text-[#4a7a78] mb-2">변경 완료</h3>
-            <p className="text-muted-foreground text-center mb-8 max-w-xs text-sm">
+            <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent mb-2">
+              변경 완료
+            </h3>
+            <p className="text-muted-foreground dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
               비밀번호가 성공적으로 변경되었습니다.
               <br />
               보안을 위해 <strong>로그인 화면</strong>으로 이동됩니다.
@@ -181,16 +185,18 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
           </div>
         )}
 
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">비밀번호 변경</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-foreground">
+              비밀번호 변경
+            </h2>
+            <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               원하는 새로운 비밀번호로 변경하세요.
             </p>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-muted text-slate-400 dark:text-muted-foreground hover:text-slate-600 dark:hover:text-foreground transition-colors cursor-pointer"
           >
             <LucideIcons.X className="w-5 h-5" />
           </button>
@@ -200,7 +206,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
           {/* Global submission error display */}
           {/* 전체 전송 에러 표시 */}
           {submitError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2">
+            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2 text-center">
               {submitError}
             </div>
           )}
@@ -219,7 +225,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
               required
               value={formData.old_password}
               onChange={handleChange}
-              className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+              className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground"
             />
             <ErrorMessage message={errors.old_password} />
           </div>
@@ -238,7 +244,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
               required
               value={formData.new_password1}
               onChange={handleChange}
-              className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+              className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground"
             />
             <ErrorMessage message={errors.new_password1} />
           </div>
@@ -257,18 +263,18 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
               required
               value={formData.new_password2}
               onChange={handleChange}
-              className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+              className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground"
             />
             <ErrorMessage message={errors.new_password2} />
           </div>
 
-          { /* Action buttons */}
+          {/* Action buttons */}
           {/* 작업 버튼 */}
           <div className="flex gap-3 pt-4">
             <Button
               type="button"
               onClick={handleClose}
-              className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+              className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
             >
               취소
             </Button>

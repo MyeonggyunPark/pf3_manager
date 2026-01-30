@@ -102,7 +102,9 @@ export default function EditProfileModal({
   const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 transition-colors ${
-        hasError ? "text-destructive" : "text-slate-500"
+        hasError
+          ? "text-destructive"
+          : "text-slate-500 dark:text-muted-foreground"
       }`}
     >
       {label} {required && <span className="text-destructive">*</span>}
@@ -110,18 +112,20 @@ export default function EditProfileModal({
   );
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-md bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden transform transition-all m-4 relative">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">프로필 수정</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-foreground">
+              프로필 수정
+            </h2>
+            <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               이름만 수정할 수 있습니다.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-muted text-slate-400 dark:text-muted-foreground hover:text-slate-600 dark:hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -131,7 +135,7 @@ export default function EditProfileModal({
           {/* Global submission error display */}
           {/* 전체 전송 에러 표시 */}
           {submitError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2">
+            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2 text-center">
               {submitError}
             </div>
           )}
@@ -139,10 +143,10 @@ export default function EditProfileModal({
           {/* Read-only account info (Unchangeable) */}
           {/* 읽기 전용 계정 정보 (수정 불가) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase text-slate-500 pl-1 flex items-center">
+            <label className="text-xs font-bold uppercase text-slate-500 dark:text-muted-foreground pl-1 flex items-center">
               계정 유형
             </label>
-            <div className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-slate-100 flex items-center text-sm text-slate-500 font-medium cursor-not-allowed">
+            <div className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted flex items-center text-sm text-slate-500 dark:text-muted-foreground font-medium cursor-not-allowed">
               {getProviderLabel(userData?.provider)}
             </div>
           </div>
@@ -150,10 +154,10 @@ export default function EditProfileModal({
           {/* Read-only account info (Unchangeable) */}
           {/* 읽기 전용 계정 정보 (수정 불가) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase text-slate-500 pl-1 flex items-center">
+            <label className="text-xs font-bold uppercase text-slate-500 dark:text-muted-foreground pl-1 flex items-center">
               이메일
             </label>
-            <div className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-slate-100 flex items-center text-sm text-slate-500 font-medium cursor-not-allowed">
+            <div className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted flex items-center text-sm text-slate-500 dark:text-muted-foreground font-medium cursor-not-allowed">
               {userData?.email}
             </div>
           </div>
@@ -166,7 +170,7 @@ export default function EditProfileModal({
               type="text"
               value={name}
               onChange={handleChangeName}
-              className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-white focus:bg-white  focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-slate-800 font-medium"
+              className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border bg-white dark:bg-card focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-slate-800 dark:text-foreground font-medium"
               placeholder="이름 입력"
             />
             <ErrorMessage message={errors.name} />
@@ -174,18 +178,18 @@ export default function EditProfileModal({
 
           {/* Action buttons */}
           {/* 작업 버튼 */}
-          <div className="flex gap-3 pt-2 border-slate-100">
+          <div className="flex gap-3 pt-2">
             <Button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+              className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
             >
               취소
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 cursor-pointer"
+              className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

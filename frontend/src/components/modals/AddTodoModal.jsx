@@ -166,7 +166,7 @@ export default function AddTodoModal({
         className={`relative flex items-center justify-center px-2 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-out whitespace-nowrap ${
           isSelected
             ? "bg-primary text-white shadow-md shadow-primary/30 ring-1 ring-primary transform scale-[1.02]"
-            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-transparent"
+            : "bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-muted/80 hover:text-slate-700 dark:hover:text-foreground border border-transparent"
         } ${className}`}
       >
         {label}
@@ -190,7 +190,9 @@ export default function AddTodoModal({
   const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 transition-colors ${
-        hasError ? "text-destructive" : "text-slate-500"
+        hasError
+          ? "text-destructive"
+          : "text-slate-500 dark:text-muted-foreground"
       }`}
     >
       {label} {required && <span className="text-destructive">*</span>}
@@ -200,34 +202,36 @@ export default function AddTodoModal({
   // Use portal to render modal outside the parent DOM hierarchy for correct z-index stacking
   // 올바른 z-index 스태킹을 위해 부모 DOM 계층 외부에서 모달을 렌더링하도록 포털 사용
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-md bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden transform transition-all m-4 relative">
         {/* Delete Confirmation Overlay (Conditional Rendering) */}
         {/* 삭제 확인 오버레이 (조건부 렌더링) */}
         {showDeleteConfirm && (
-          <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+          <div className="absolute inset-0 z-10 bg-white dark:bg-card backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">삭제 확인</h3>
-            <p className="text-slate-500 text-center mb-8 max-w-xs text-sm">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
+              삭제 확인
+            </h3>
+            <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
               정말로 삭제하시겠습니까?
               <br />
-              <span className="text-destructive mt-1 block">
+              <span className="text-destructive mt-1 block font-medium">
                 이 작업은 되돌릴 수 없습니다.
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
               <Button
                 type="button"
-                className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 h-11 text-sm font-semibold cursor-pointer"
+                className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
                 취소
               </Button>
               <Button
-                className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold shadow-md cursor-pointer"
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold shadow-md cursor-pointer transition-all"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
               >
@@ -242,12 +246,12 @@ export default function AddTodoModal({
         )}
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
               {isEditMode ? "업무 수정" : "업무 추가"}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
                 ? "수정이 필요한 업무의 내용을 변경해주세요."
                 : "추가할 새로운 업무의 내용을 입력하세요."}
@@ -255,7 +259,7 @@ export default function AddTodoModal({
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-muted text-slate-400 dark:text-muted-foreground hover:text-slate-600 dark:hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -265,7 +269,7 @@ export default function AddTodoModal({
         {/* 커스텀 UI 에러 처리를 사용하기 위해 브라우저 기본 유효성 검사 비활성화 */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5" noValidate>
           {submitError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2">
+            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2 text-center">
               {submitError}
             </div>
           )}
@@ -281,15 +285,20 @@ export default function AddTodoModal({
                 clearError("content");
               }}
               placeholder="업무 내용 입력"
-              className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-sm"
+              className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
               autoFocus={!isEditMode}
+              autoComplete="off"
             />
             <ErrorMessage message={errors.content} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <InputLabel label="우선순위" hasError={!!errors.priority} required />
+              <InputLabel
+                label="우선순위"
+                hasError={!!errors.priority}
+                required
+              />
               <div className="flex gap-2">
                 {PRIORITIES.map((p) => (
                   <SelectionChip
@@ -317,14 +326,13 @@ export default function AddTodoModal({
                   onChange={(e) => {
                     setDueDate(e.target.value);
                   }}
-
                   // Open native date picker on click for better UX
                   // 사용자 경험 개선을 위해 클릭 시 네이티브 날짜 선택창 열기
                   onClick={(e) => e.target.showPicker()}
-                  className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-xs cursor-pointer ${
+                  className={`w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
                     dueDate === ""
-                      ? "text-slate-400 [&::-webkit-calendar-picker-indicator]:opacity-40"
-                      : "text-slate-800 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                      ? "text-slate-400 dark:text-muted-foreground/60 [&::-webkit-calendar-picker-indicator]:opacity-40"
+                      : "text-slate-800 dark:text-foreground [&::-webkit-calendar-picker-indicator]:opacity-100"
                   }`}
                 />
               </div>
@@ -332,7 +340,11 @@ export default function AddTodoModal({
           </div>
 
           <div className="space-y-1.5">
-            <InputLabel label="카테고리" hasError={!!errors.category} required />
+            <InputLabel
+              label="카테고리"
+              hasError={!!errors.category}
+              required
+            />
             <div className="grid grid-cols-2 gap-2">
               {CATEGORIES.map((cat) => (
                 <SelectionChip
@@ -371,7 +383,7 @@ export default function AddTodoModal({
 
             <Button
               type="button"
-              className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+              className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               onClick={handleClose}
               disabled={isLoading || isDeleting}
             >

@@ -12,16 +12,18 @@ const WelcomeModal = ({ isOpen, onClose, userName }) => {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center animate-in zoom-in-95 relative">
+      <div className="bg-white dark:bg-card rounded-2xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center animate-in zoom-in-95 relative border border-transparent dark:border-border">
         {/* Icon Circle */}
         {/* 아이콘 원형 */}
-        <div className="w-16 h-16 bg-accent/20 text-[#4a7a78] rounded-full flex items-center justify-center mb-4">
+        <div className="w-16 h-16 bg-accent/20 dark:bg-accent/10 text-[#4a7a78] dark:text-accent rounded-full flex items-center justify-center mb-4">
           <PartyPopper className="w-8 h-8" />
         </div>
 
-        <h3 className="text-xl font-bold text-[#4a7a78] mb-2">회원가입 완료</h3>
+        <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent mb-2">
+          회원가입 완료
+        </h3>
 
-        <p className="text-slate-400 text-center mb-6 text-sm leading-relaxed">
+        <p className="text-slate-400 dark:text-muted-foreground text-center mb-6 text-sm leading-relaxed">
           환영합니다, <strong>{userName}</strong>님!
           <br />
           소셜 계정으로 회원가입이 완료되었습니다.
@@ -122,7 +124,7 @@ export default function SocialLoginSuccess() {
   // 모달 표시 상태일 때 렌더링
   if (showModal) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-background flex items-center justify-center transition-colors duration-300">
         <WelcomeModal
           isOpen={showModal}
           onClose={handleModalClose}
@@ -136,10 +138,14 @@ export default function SocialLoginSuccess() {
   // 기본 로딩 화면 (처리 중일 때만 렌더링)
   if (isProcessing) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-background transition-colors duration-300">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-slate-700">로그인 확인 중...</h2>
-        <p className="text-slate-500 mt-2 text-sm">잠시만 기다려주세요.</p>
+        <h2 className="text-xl font-bold text-slate-700 dark:text-foreground">
+          로그인 확인 중...
+        </h2>
+        <p className="text-slate-500 dark:text-muted-foreground mt-2 text-sm">
+          잠시만 기다려주세요.
+        </p>
       </div>
     );
   }

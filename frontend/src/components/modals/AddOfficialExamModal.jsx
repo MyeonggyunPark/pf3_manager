@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { X, Loader2, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
 // Grading Scales Configuration
 // 등급 체계 구성
 const OFFICIAL_GRADING_SCALES = {
-  "A2": {
+  A2: {
     ranges: [
       { min: 54, grade: "sehr gut", status: "PASSED" },
       { min: 48, grade: "gut", status: "PASSED" },
@@ -16,7 +16,7 @@ const OFFICIAL_GRADING_SCALES = {
       { min: 0, grade: "teilgenommen", status: "FAILED" },
     ],
   },
-  "B1": {
+  B1: {
     ranges: [
       { min: 270, grade: "sehr gut", status: "PASSED" },
       { min: 240, grade: "gut", status: "PASSED" },
@@ -25,7 +25,7 @@ const OFFICIAL_GRADING_SCALES = {
       { min: 0, grade: "nicht bestanden", status: "FAILED" },
     ],
   },
-  "B2": {
+  B2: {
     ranges: [
       { min: 270, grade: "sehr gut", status: "PASSED" },
       { min: 240, grade: "gut", status: "PASSED" },
@@ -34,7 +34,7 @@ const OFFICIAL_GRADING_SCALES = {
       { min: 0, grade: "nicht bestanden", status: "FAILED" },
     ],
   },
-  "C1": {
+  C1: {
     ranges: [
       { min: 193, grade: "sehr gut", status: "PASSED" },
       { min: 172, grade: "gut", status: "PASSED" },
@@ -49,7 +49,7 @@ const OFFICIAL_GRADING_SCALES = {
 // 등급 및 상태 계산 헬퍼 함수
 const calculateOfficialGrade = (examName, score) => {
   if (!examName) return null;
-  
+
   const upperName = examName.toUpperCase();
   let scale = null;
 
@@ -415,7 +415,9 @@ export default function AddOfficialExamModal({
   const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 ${
-        hasError ? "text-destructive" : "text-slate-500"
+        hasError
+          ? "text-destructive"
+          : "text-slate-500 dark:text-muted-foreground"
       }`}
     >
       {label} {required && <span className="text-destructive">*</span>}
@@ -440,7 +442,7 @@ export default function AddOfficialExamModal({
         className={`relative flex items-center justify-center px-2 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-out whitespace-nowrap ${
           isSelected
             ? "bg-primary text-white shadow-md shadow-primary/30 ring-1 ring-primary transform scale-[1.02]"
-            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-transparent"
+            : "bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-muted/80 hover:text-slate-700 dark:hover:text-foreground border border-transparent"
         } ${className}`}
       >
         {label}
@@ -451,27 +453,29 @@ export default function AddOfficialExamModal({
   // Render modal via portal to ensure correct z-index stacking context
   // 올바른 z-index 스태킹 컨텍스트 보장을 위해 포털을 통해 모달 렌더링
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-lg bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden transform transition-all m-4 relative">
         {/* Delete Confirmation Overlay */}
         {/* 삭제 확인 오버레이 */}
         {showDeleteConfirm && (
-          <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+          <div className="absolute inset-0 z-10 bg-white dark:bg-card backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">삭제 확인</h3>
-            <p className="text-slate-500 text-center mb-8 max-w-xs text-sm">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
+              삭제 확인
+            </h3>
+            <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
               정말로 삭제하시겠습니까?
               <br />
-              <span className="text-destructive mt-1 block">
+              <span className="text-destructive mt-1 block font-medium">
                 이 작업은 되돌릴 수 없습니다.
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
               <Button
                 type="button"
-                className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 h-11 text-sm font-semibold cursor-pointer transition-all"
+                className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
@@ -494,12 +498,12 @@ export default function AddOfficialExamModal({
 
         {/* Header Section */}
         {/* 헤더 섹션 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
               {isEditMode ? "정규 시험 정보 수정" : "정규 시험 등록"}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
                 ? "수정이 필요한 정규 시험 정보를 변경해주세요."
                 : "등록할 정규 시험의 정보를 입력하세요."}
@@ -507,7 +511,7 @@ export default function AddOfficialExamModal({
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-muted text-slate-400 dark:text-muted-foreground hover:text-slate-600 dark:hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -519,7 +523,7 @@ export default function AddOfficialExamModal({
           {/* Global API Error Message */}
           {/* 전역 API 에러 메시지 */}
           {submitError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2">
+            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2 text-center">
               {submitError}
             </div>
           )}
@@ -534,10 +538,10 @@ export default function AddOfficialExamModal({
                   name="student"
                   value={formData.student}
                   onChange={handleChange}
-                  className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer ${
+                  className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer ${
                     formData.student === ""
-                      ? "text-slate-400"
-                      : "text-slate-800"
+                      ? "text-slate-400 dark:text-muted-foreground/60"
+                      : "text-slate-800 dark:text-foreground"
                   }`}
                 >
                   <option value="" disabled hidden>
@@ -547,30 +551,18 @@ export default function AddOfficialExamModal({
                     <option
                       key={student.id}
                       value={student.id}
-                      className="text-slate-800"
+                      className="text-slate-800 dark:text-foreground dark:bg-card"
                     >
                       {student.name}
                     </option>
                   ))}
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-slate-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                  <ChevronDown className="w-5 h-5 text-slate-400 dark:text-muted-foreground/60" />
                 </div>
               </div>
               {students.length === 0 && (
-                <p className="text-xs text-destructive mt-1 ml-1">
+                <p className="text-xs text-destructive mt-1 ml-1 font-medium">
                   * 등록된 수강중인 학생이 없습니다.
                 </p>
               )}
@@ -592,10 +584,10 @@ export default function AddOfficialExamModal({
                 value={formData.exam_date}
                 onChange={handleChange}
                 onClick={(e) => e.target.showPicker()}
-                className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
+                className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
                   formData.exam_date === ""
-                    ? "text-slate-400 [&::-webkit-calendar-picker-indicator]:opacity-40"
-                    : "text-slate-800 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                    ? "text-slate-400 dark:text-muted-foreground/60 [&::-webkit-calendar-picker-indicator]:opacity-40"
+                    : "text-slate-800 dark:text-foreground [&::-webkit-calendar-picker-indicator]:opacity-100"
                 }`}
               />
               <ErrorMessage message={errors.exam_date} />
@@ -620,41 +612,34 @@ export default function AddOfficialExamModal({
                     handleValueChange("exam_name_manual", "");
                   }
                 }}
-                className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer
+                className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer
                 ${
-                  !formData.exam_standard ? "text-slate-400" : "text-slate-800"
+                  !formData.exam_standard
+                    ? "text-slate-400 dark:text-muted-foreground/60"
+                    : "text-slate-800 dark:text-foreground"
                 }`}
               >
                 <option value="" disabled hidden>
                   시험 종류를 선택하세요.
                 </option>
-                <option value="manual" className="text-slate-800">
+                <option
+                  value="manual"
+                  className="text-slate-800 dark:text-foreground dark:bg-card"
+                >
                   (선택지 없을 시) 직접 입력
                 </option>
                 {examStandards.map((std) => (
                   <option
                     key={std.id}
                     value={std.id}
-                    className="text-slate-800"
+                    className="text-slate-800 dark:text-foreground dark:bg-card"
                   >
                     {std.name}
                   </option>
                 ))}
               </select>
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg
-                  className="w-4 h-4 text-slate-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                <ChevronDown className="w-5 h-5 text-slate-400 dark:text-muted-foreground/60" />
               </div>
             </div>
             <ErrorMessage message={errors.exam_standard} />
@@ -673,14 +658,15 @@ export default function AddOfficialExamModal({
                 name="exam_name_manual"
                 value={formData.exam_name_manual}
                 onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                 placeholder="시험 명칭 입력"
+                autoComplete="off"
               />
               <ErrorMessage message={errors.exam_name_manual} />
             </div>
           )}
 
-          <div className="h-px bg-slate-100 w-full my-1" />
+          <div className="h-px bg-slate-100 dark:bg-border w-full my-1" />
 
           {/* Exam Mode Selection */}
           {/* 응시 유형 선택 */}
@@ -757,10 +743,10 @@ export default function AddOfficialExamModal({
                 name="total_score"
                 value={formData.total_score}
                 onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-bold text-primary placeholder:text-slate-400 text-sm text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-bold text-primary dark:text-primary placeholder:text-slate-400 text-sm text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder="0"
               />
-              <p className="text-[11px] text-slate-400 font-medium pl-1">
+              <p className="text-[11px] text-slate-400 dark:text-muted-foreground/60 font-medium pl-1">
                 * 점수를 확인한 경우 입력하세요.
               </p>
             </div>
@@ -770,7 +756,7 @@ export default function AddOfficialExamModal({
                 name="grade"
                 value={formData.grade}
                 readOnly
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 focus:outline-none font-bold text-sm pointer-events-none text-primary placeholder:text-slate-400 text-center"
+                className="w-full h-10 px-3 mt-1.5 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 focus:outline-none font-bold text-sm pointer-events-none text-primary dark:text-primary placeholder:text-slate-400 text-center"
                 placeholder="자동 입력"
               />
             </div>
@@ -785,8 +771,9 @@ export default function AddOfficialExamModal({
               value={formData.memo}
               onChange={handleChange}
               rows={3}
-              className="w-full p-3 rounded-lg border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400"
+              className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
               placeholder="추가사항 / 특이사항"
+              autoComplete="off"
             />
           </div>
 
@@ -812,7 +799,7 @@ export default function AddOfficialExamModal({
 
             <Button
               type="button"
-              className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+              className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               onClick={handleClose}
               disabled={isLoading}
             >

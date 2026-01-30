@@ -15,6 +15,7 @@ const FloatingInput = ({ label, id, error, className, ...props }) => (
       className={`
         peer w-full h-12 px-3 pt-3 pb-1 rounded-md border bg-white outline-none transition-all
         disabled:opacity-50 disabled:bg-slate-50 placeholder-transparent
+        dark:bg-card dark:border-border dark:text-foreground
         ${
           error
             ? "border-destructive focus:ring-2 focus:ring-destructive/20"
@@ -29,6 +30,7 @@ const FloatingInput = ({ label, id, error, className, ...props }) => (
         peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:top-3.5
         peer-focus:-top-2 peer-focus:translate-y-0 peer-focus:scale-75 peer-focus:font-semibold
         peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:scale-75
+        dark:bg-card dark:text-muted-foreground
         ${
           error
             ? "text-destructive peer-focus:text-destructive"
@@ -147,20 +149,19 @@ export default function PasswordResetConfirm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-white/20">
-        
+    <div className="flex min-h-screen items-center justify-center bg-background p-4 transition-colors duration-300">
+      <div className="w-full max-w-md bg-white dark:bg-card rounded-2xl shadow-xl p-8 border border-white/20 dark:border-border transition-all">
         {/* Success View */}
         {/* 성공 화면 */}
         {isSuccess ? (
           <div className="flex flex-col items-center text-center animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+            <div className="w-16 h-16 bg-green-100 dark:bg-success/20 text-green-600 dark:text-success rounded-full flex items-center justify-center mb-6">
               <LucideIcons.CheckCircle2 className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-bold text-[#4a7a78] mb-2">
+            <h2 className="text-2xl font-bold text-[#4a7a78] dark:text-success mb-2">
               비밀번호 변경 완료
             </h2>
-            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+            <p className="text-slate-400 dark:text-muted-foreground text-sm mb-8 leading-relaxed">
               비밀번호가 성공적으로 변경되었습니다.
               <br />
               새로운 비밀번호로 로그인해주세요.
@@ -186,14 +187,19 @@ export default function PasswordResetConfirm() {
           /* Input Form View */
           /* 입력 폼 화면 */
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-foreground mb-2">
               비밀번호 재설정
             </h2>
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-slate-400 dark:text-muted-foreground text-sm mb-6">
               새로운 비밀번호로 비밀번호를 재설정해주세요.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              {globalError && (
+                <p className="text-sm text-destructive font-medium text-center bg-destructive/5 py-2 rounded-lg border border-destructive/10">
+                  {globalError}
+                </p>
+              )}
               <FloatingInput
                 id="new-pw1"
                 type="password"

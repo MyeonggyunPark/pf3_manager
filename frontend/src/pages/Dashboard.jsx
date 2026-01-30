@@ -245,10 +245,10 @@ export default function Dashboard() {
         if (diffDays === 0)
             return { text: "D-Day", color: "bg-destructive/10 text-destructive border-destructive/20" };
         if (diffDays > 0 && diffDays <= 7)
-            return { text: `D-${diffDays}`, color: "bg-warning/30 text-yellow-500 border-warning/30" };
+            return { text: `D-${diffDays}`, color: "bg-warning/30 text-yellow-500 border-warning/30 dark:text-warning" };
         if (diffDays > 0)
-            return { text: `D-${diffDays}`, color: "bg-slate-50 text-slate-400 border-slate-100" };
-        return { text: `마감`, color: "bg-slate-600 text-white border-slate-700 font-medium" };
+            return { text: `D-${diffDays}`, color: "bg-slate-50 text-slate-400 border-slate-100 dark:bg-muted dark:text-muted-foreground dark:border-border" };
+        return { text: `마감`, color: "bg-slate-600 text-white border-slate-700 font-medium dark:bg-slate-800" };
     };
 
     // Format todo date string (YYYY-MM-DD -> DD.MM.YYYY)
@@ -263,12 +263,12 @@ export default function Dashboard() {
     // 수업 상태 배지를 위한 스타일 정의
     const statusStyles = {
         SCHEDULED:
-        "border-warning/60 bg-warning/20 hover:border-warning hover:shadow-md",
+        "border-warning/60 bg-warning/20 hover:border-warning hover:shadow-md dark:border-warning/40 dark:bg-warning/10",
         COMPLETED:
-        "border-accent/60 bg-accent/30 hover:border-accent hover:shadow-md",
-        CANCELLED: "border-slate-300 bg-slate-200 hover:border-slate-700 hover:shadow-md",
+        "border-accent/60 bg-accent/30 hover:border-accent hover:shadow-md dark:border-accent/40 dark:bg-accent/10",
+        CANCELLED: "border-slate-300 bg-slate-200 hover:border-slate-700 hover:shadow-md dark:border-border dark:bg-muted",
         NOSHOW:
-        "border-destructive/60 bg-destructive/30 hover:border-destructive hover:shadow-md",
+        "border-destructive/60 bg-destructive/30 hover:border-destructive hover:shadow-md dark:border-destructive/40 dark:bg-destructive/10",
     };
 
     // Icons mapping for lesson status
@@ -276,7 +276,7 @@ export default function Dashboard() {
     const statusIcons = {
         SCHEDULED: <LucideIcons.Clock className="w-5.5 h-5.5 text-warning" />,
         COMPLETED: <LucideIcons.CheckCircle2 className="w-6 h-6 text-accent" />,
-        CANCELLED: <LucideIcons.XCircle className="w-6 h-6 text-slate-400" />,
+        CANCELLED: <LucideIcons.XCircle className="w-6 h-6 text-slate-400 dark:text-muted-foreground" />,
         NOSHOW: <LucideIcons.AlertCircle className="w-6 h-6 text-destructive" />,
     };
 
@@ -307,7 +307,7 @@ export default function Dashboard() {
     const priorityBadgeColors = {
         1: "bg-destructive text-white border-destructive",
         2: "bg-warning text-white border-warning",
-        3: "bg-slate-100 text-slate-500 border-slate-200",
+        3: "bg-slate-100 text-slate-500 border-slate-200 dark:bg-muted dark:text-muted-foreground dark:border-border",
     };
 
     // Priority border colors for todo items
@@ -315,7 +315,7 @@ export default function Dashboard() {
     const priorityBorderColors = {
         1: "border-l-4 border-l-destructive",
         2: "border-l-4 border-l-warning",
-        3: "border-l-4 border-l-slate-300",
+        3: "border-l-4 border-l-slate-300 dark:border-l-border",
     };
 
     return (
@@ -373,27 +373,27 @@ export default function Dashboard() {
                 {/* 전체 개수가 포함된 헤더 */}
                 <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
-                        <TabsList className="text-sm font-bold flex items-center">
+                        <TabsList className="text-sm font-bold flex items-center bg-slate-100 dark:bg-muted/50">
                             <TabsTrigger className="cursor-default" value="upcoming" activeValue="upcoming">
                                 예정된 정규 시험    
                             </TabsTrigger>
                         </TabsList>
                         <Badge
                             variant="secondary"
-                            className="text-xs px-1.5 h-5 bg-slate-100 text-slate-600"
+                            className="text-xs px-1.5 h-5 bg-slate-100 text-slate-600 dark:bg-muted dark:text-muted-foreground"
                             >
                             Total {totalExamCount}
                         </Badge> 
                     </div>
                     {totalExamCount > 3 && (
-                        <span
-                            className="text-xs text-muted-foreground rounded-full px-2 py-2 cursor-pointer hover:bg-muted hover:font-semibold duration-200"
-                            onClick={() =>
-                            navigate("/exams", { state: { tab: "official" } })
-                            }
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-xs rounded-full px-3 text-muted-foreground/70 cursor-pointer hover:bg-muted"
+                            onClick={() => navigate("/exams", { state: { tab: "official" } })}
                         >
                             전체 보기
-                        </span>
+                        </Button>
                     )}
                 </div>
 
@@ -410,7 +410,7 @@ export default function Dashboard() {
 
                         // Default styles (Gray)
                         // 기본 스타일 (회색)
-                        let boxColorClass = "bg-slate-50 border-slate-200 text-slate-500";
+                        let boxColorClass = "bg-slate-50 border-slate-200 text-slate-500 dark:bg-muted dark:border-border dark:text-muted-foreground";
                         let badgeColorClass = "bg-primary/10 text-primary";
 
                         // Apply color logic based on urgency
@@ -421,7 +421,7 @@ export default function Dashboard() {
                             badgeColorClass = "bg-destructive text-white";
                         } else if (isUrgent) {
                             boxColorClass =
-                            "bg-warning/10 border-warning/20 text-[#C1AA60]";
+                            "bg-warning/10 border-warning/20 text-[#C1AA60] dark:text-warning";
                             badgeColorClass = "bg-warning text-white";
                         }
 
@@ -437,7 +437,7 @@ export default function Dashboard() {
                             <div
                                 key={exam.id}
                                 onClick={() => openExamModal(exam)}
-                                className="relative flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-slate-50 transition-all cursor-pointer group"
+                                className="relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-card border border-slate-100 dark:border-border shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-muted/50 transition-all cursor-pointer group"
                                 >
                                 {/* Left: Date Box */}
                                 {/* 좌측: 날짜 박스 */}
@@ -460,13 +460,13 @@ export default function Dashboard() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-1">
                                         <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
-                                            <p className="text-sm font-bold text-slate-800 truncate">
+                                            <p className="text-sm font-bold text-slate-800 dark:text-foreground truncate group-hover:text-primary transition-colors">
                                                 {exam.student_name}
                                             </p>
                                             {exam.student_level && (
                                             <Badge
                                                 variant="outline"
-                                                className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+                                                className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white dark:bg-card font-semibold shrink-0"
                                             >
                                                 {exam.student_level}
                                             </Badge>
@@ -483,12 +483,12 @@ export default function Dashboard() {
                                         </Badge>
                                     </div>
                                     <div className="flex items-center gap-1.5 mt-0.5">
-                                        <p className="text-[13px] text-muted-foreground">
+                                        <p className="text-[13px] text-muted-foreground truncate max-w-25 lg:max-w-none">
                                             {exam.exam_standard_name || exam.exam_name_manual}
                                         </p>
                                             <Badge 
                                                 variant="outline"
-                                                className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0"
+                                                className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white dark:bg-card font-semibold shrink-0"
                                             >
                                                 {modeLabel}
                                             </Badge>
@@ -502,7 +502,7 @@ export default function Dashboard() {
         ) : (
             // Empty State: No exams scheduled
             // 빈 상태: 예정된 시험 없음
-            <div className="w-full rounded-xl border-none bg-card p-8 flex flex-col items-center justify-center text-center text-muted-foreground/70 gap-2">
+            <div className="w-full rounded-xl border-none bg-white dark:bg-card p-8 flex flex-col items-center justify-center text-center text-muted-foreground/70 gap-2">
                 <LucideIcons.SearchX className="w-8 h-8" />
                 <h3 className="text-sm font-semibold">
                     예정된 정규 시험이 없습니다.
@@ -516,10 +516,10 @@ export default function Dashboard() {
                 
                 {/* Left Content*/}
                 {/* 좌측 콘텐츠: 오늘/내일 수업 탭 */ }
-                <Card className="col-span-12 lg:col-span-6 border-none shadow-sm flex flex-col h-full">
+                <Card className="col-span-12 lg:col-span-6 border-none shadow-sm flex flex-col h-full bg-white dark:bg-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                         <div className="flex items-center">
-                            <TabsList>
+                            <TabsList className="bg-slate-100 dark:bg-muted/50">
                                 <TabsTrigger value="today" activeValue={activeTab} onClick={() => setActiveTab("today")}>
                                     오늘의 수업
                                 </TabsTrigger>
@@ -528,7 +528,7 @@ export default function Dashboard() {
                                 </TabsTrigger>
                             </TabsList>
                         </div>
-                        <Badge variant="secondary" className="text-primary font-bold">
+                        <Badge variant="secondary" className="text-primary font-bold bg-primary/10">
                             {displayDate}
                         </Badge>
                     </CardHeader>
@@ -559,22 +559,22 @@ export default function Dashboard() {
                                     )}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border text-sm font-bold bg-white border-border text-muted-foreground">
+                                        <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border text-sm font-bold bg-white dark:bg-muted/50 border-border text-muted-foreground">
                                             <span>{lesson.start_time.split(":")[0]}</span>
                                             <span className="text-[10px] opacity-70">{lesson.start_time.split(":")[1]}</span>
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <p className="font-bold text-slate-700 group-hover:text-primary transition-colors">
+                                                <p className="font-bold text-slate-700 dark:text-foreground group-hover:text-primary transition-colors">
                                                     {lesson.student_name}
                                                 </p>
                                                 {lesson.student_level && (
-                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white font-semibold shrink-0">
+                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 rounded-md border-primary/30 text-primary bg-white dark:bg-card font-semibold shrink-0">
                                                         {lesson.student_level}
                                                     </Badge>
                                                 )}
                                                 {lesson.topic && (
-                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-white max-w-37.5 truncate">
+                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-white dark:bg-card max-w-37.5 truncate border-slate-200 dark:border-border text-muted-foreground">
                                                         {lesson.topic}
                                                     </Badge>
                                                 )}
@@ -593,9 +593,9 @@ export default function Dashboard() {
                 
                 {/* Middle Content */}
                 { /* 중간 콘텐츠: 중요 할 일 */ }
-                <Card className="col-span-12 lg:col-span-3 border-none shadow-sm flex flex-col h-full">
+                <Card className="col-span-12 lg:col-span-3 border-none shadow-sm flex flex-col h-full bg-white dark:bg-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 px-4">
-                        <TabsList>
+                        <TabsList className="bg-slate-100 dark:bg-muted/50">
                             <TabsTrigger className="cursor-default flex gap-2" value="urgent" activeValue="urgent">
                                 할 일
                                 <span className="text-[8px] px-1 py-0.5 rounded bg-destructive text-white">
@@ -606,7 +606,7 @@ export default function Dashboard() {
                         <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 text-xs rounded-full px-2 text-muted-foreground/70 cursor-pointer hover:py-0 "
+                            className="h-8 text-xs rounded-full px-3 text-muted-foreground/70 cursor-pointer hover:bg-muted"
                             onClick={() => navigate("/schedule")}
                         >
                             전체 보기
@@ -628,13 +628,13 @@ export default function Dashboard() {
                                         key={todo.id}
                                         onClick={() => openTodoEditModal(todo)}
                                         className={cn(
-                                            "group relative flex flex-col p-3 rounded-xl border bg-white transition-all hover:shadow-md cursor-pointer",
+                                            "group relative flex flex-col p-3 rounded-xl border bg-white dark:bg-card transition-all hover:shadow-md cursor-pointer",
                                             isOverdue ? "border-destructive border-dashed bg-destructive/10" : (priorityBorderColors[todo.priority] || "border-l-slate-200"),
                                             todo.is_completed
                                                 ? "border-accent bg-accent/20 opacity-80"
                                                 : isOverdue
                                                 ? ""
-                                                : "border-slate-100",
+                                                : "border-slate-100 dark:border-border",
                                         )}
                                     >
                                         <div className="flex items-center justify-between mb-2">
@@ -680,7 +680,7 @@ export default function Dashboard() {
                                                     "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
                                                     todo.is_completed
                                                         ? "bg-accent border-accent text-white"
-                                                        : "border-slate-300 bg-white hover:border-accent hover:bg-accent/10",
+                                                        : "border-slate-300 bg-white dark:bg-card hover:border-accent hover:bg-accent/10",
                                                 )}
                                             >
                                                 {todo.is_completed && (
@@ -694,7 +694,7 @@ export default function Dashboard() {
                                                         "text-[15px] font-medium wrap-break-word leading-tight",
                                                         todo.is_completed
                                                             ? "text-slate-400 line-through"
-                                                            : "text-slate-700",
+                                                            : "text-slate-700 dark:text-foreground group-hover:text-primary transition-colors",
                                                     )}
                                                 >
                                                     {todo.content}
@@ -716,7 +716,7 @@ export default function Dashboard() {
                         onClick={() => navigate("/courses", { 
                             state: { year: currentYear, month: currentMonth } 
                         })}
-                        className="flex-1 flex flex-col justify-between bg-card border-2 border-primary p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:shadow-md"
+                        className="flex-1 flex flex-col justify-between bg-white dark:bg-card border-2 border-primary p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-primary/5 transition-all hover:shadow-md"
                     >
                         <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
                             이번 달 예상 수익
@@ -746,13 +746,13 @@ export default function Dashboard() {
                         onClick={() => navigate("/students", { 
                             state: { status: "ACTIVE" } 
                         })}
-                        className="flex-1 flex flex-col justify-between bg-card border-2 border-accent p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:shadow-md"
+                        className="flex-1 flex flex-col justify-between bg-white dark:bg-card border-2 border-accent p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-accent/5 transition-all hover:shadow-md"
                     >
-                        <p className="text-sm font-semibold text-[#4a7a78] uppercase tracking-wider mb-2">
+                        <p className="text-sm font-semibold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider mb-2">
                             현재 수강중 학생 
                         </p>
                         <div className="flex justify-between items-center">
-                            <div className="flex bg-accent/20 text-[#4a7a78] px-3 py-2 rounded-full">
+                            <div className="flex bg-accent/20 text-[#4a7a78] dark:text-accent-foreground px-3 py-2 rounded-full">
                                 <span className="text-xs mr-1">인당 평균 수업</span>
                                 <span className="text-xs font-semibold">
                                     {stats?.active_students > 0 
@@ -761,31 +761,31 @@ export default function Dashboard() {
                                 </span>
                             </div>
 
-                            <h3 className="text-2xl font-extrabold text-[#4a7a78]">
+                            <h3 className="text-2xl font-extrabold text-[#4a7a78] dark:text-accent-foreground">
                                 총 {stats?.active_students || 0}명
                             </h3>
                         </div>
                     </div>
 
-                    <Card className="bg-linear-to-br from-[#4C72A9] to-[#3b5b8a] text-white border-none shadow-lg shrink-0">
+                    <Card className="bg-linear-to-br from-[#4C72A9] to-[#3b5b8a] text-white border-none shadow-lg shrink-0 overflow-hidden">
                         <CardContent className="p-5 space-y-3">
                             <Button
                                 variant="secondary"
-                                className="w-full justify-center bg-white text-primary hover:bg-white/90 h-11 gap-2 cursor-pointer"
+                                className="w-full justify-center bg-white text-primary hover:bg-white/90 h-11 gap-2 cursor-pointer shadow-md"
                                 onClick={() => setIsStudentModalOpen(true)}
                             >
                                 <LucideIcons.UserPlus className="mr-1 h-5 w-5" /> 학생 등록
                             </Button>
                             <Button
                                 variant="secondary"
-                                className="w-full justify-center h-11 gap-2 cursor-pointer"
+                                className="w-full justify-center h-11 gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
                                 onClick={openCreateModal}
                             >
                                 <LucideIcons.CalendarPlus className="mr-1 h-5 w-5" /> 수업 추가
                             </Button>
                             <Button
                                 variant="secondary"
-                                className="w-full justify-center h-11 gap-2 cursor-pointer"
+                                className="w-full justify-center h-11 gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
                                 onClick={openCreateTodoModal}
                             >
                                 <LucideIcons.ListPlus className="mr-1 h-5 w-5" /> 업무 추가

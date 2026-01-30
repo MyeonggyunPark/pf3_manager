@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2, Trash2, AlertTriangle, Clock } from "lucide-react";
+import { X, Loader2, Trash2, AlertTriangle, Clock, ChevronDown} from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -59,10 +59,9 @@ export default function AddLessonModal({
   // 수정 모드로 열릴 때 폼 데이터를 채우거나, 생성 모드일 때 기본값으로 초기화
   useEffect(() => {
     if (isOpen && lessonData) {
-
       const existingStart = lessonData.start_time.slice(0, 5);
       const existingEnd = lessonData.end_time.slice(0, 5);
-      
+
       setFormData({
         student: lessonData.student,
         date: lessonData.date,
@@ -231,7 +230,7 @@ export default function AddLessonModal({
         className={`relative flex items-center justify-center px-2 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-out whitespace-nowrap ${
           isSelected
             ? "bg-primary text-white shadow-md shadow-primary/30 ring-1 ring-primary transform scale-[1.02]"
-            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-transparent"
+            : "bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-muted/80 hover:text-slate-700 dark:hover:text-foreground border border-transparent"
         } ${className}`}
       >
         {label}
@@ -255,7 +254,9 @@ export default function AddLessonModal({
   const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 ${
-        hasError ? "text-destructive" : "text-slate-500"
+        hasError
+          ? "text-destructive"
+          : "text-slate-500 dark:text-muted-foreground"
       }`}
     >
       {label} {required && <span className="text-destructive">*</span>}
@@ -265,27 +266,29 @@ export default function AddLessonModal({
   // Use portal to render modal outside the parent DOM hierarchy for correct z-index stacking
   // 올바른 z-index 스태킹을 위해 부모 DOM 계층 외부에서 모달을 렌더링하도록 포털 사용
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-2xl bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden transform transition-all m-4 relative">
         {/* Delete Confirmation Overlay (Conditional Rendering) */}
         {/* 삭제 확인 오버레이 (조건부 렌더링) */}
         {showDeleteConfirm && (
-          <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+          <div className="absolute inset-0 z-10 bg-white dark:bg-card backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">삭제 확인</h3>
-            <p className="text-slate-500 text-center mb-8 max-w-xs">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
+              삭제 확인
+            </h3>
+            <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs">
               정말로 삭제하시겠습니까?
               <br />
-              <span className="text-sm text-destructive mt-1 block">
+              <span className="text-sm text-destructive mt-1 block font-medium">
                 이 작업은 되돌릴 수 없습니다.
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
               <Button
                 type="button"
-                className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+                className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
@@ -307,14 +310,14 @@ export default function AddLessonModal({
         )}
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
               {/* Dynamic title based on mode */}
               {/* 모드에 따른 동적 타이틀 */}
               {isEditMode ? "수업 변경" : "수업 추가"}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
                 ? "수정이 필요한 수업 정보를 변경해주세요."
                 : "추가할 새로운 수업의 정보를 입력하세요."}
@@ -322,7 +325,7 @@ export default function AddLessonModal({
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-muted text-slate-400 dark:text-muted-foreground hover:text-slate-600 dark:hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -332,7 +335,7 @@ export default function AddLessonModal({
         {/* 커스텀 UI 에러 처리를 사용하기 위해 브라우저 기본 유효성 검사 비활성화 */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6" noValidate>
           {submitError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2">
+            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2 text-center">
               {submitError}
             </div>
           )}
@@ -346,10 +349,10 @@ export default function AddLessonModal({
                   name="student"
                   value={formData.student}
                   onChange={handleChange}
-                  className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer ${
+                  className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer ${
                     formData.student === ""
-                      ? "text-slate-400"
-                      : "text-slate-800"
+                      ? "text-slate-400 dark:text-muted-foreground/60"
+                      : "text-slate-800 dark:text-foreground"
                   }`}
                 >
                   <option value="" disabled hidden>
@@ -359,30 +362,18 @@ export default function AddLessonModal({
                     <option
                       key={student.id}
                       value={student.id}
-                      className="text-slate-800"
+                      className="text-slate-800 dark:text-foreground dark:bg-card"
                     >
                       {student.name}
                     </option>
                   ))}
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-slate-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                  <ChevronDown className="w-5 h-5 text-slate-400 dark:text-muted-foreground/60" />
                 </div>
               </div>
               {students.length === 0 && (
-                <p className="text-xs text-destructive mt-1 ml-1">
+                <p className="text-xs text-destructive mt-1 ml-1 font-medium">
                   * 등록된 수강중인 학생이 없습니다.
                 </p>
               )}
@@ -398,7 +389,7 @@ export default function AddLessonModal({
                 value={formData.date}
                 onChange={handleChange}
                 onClick={(e) => e.target.showPicker()}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-sm cursor-pointer"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground text-sm cursor-pointer"
               />
               <ErrorMessage message={errors.date} />
             </div>
@@ -417,10 +408,10 @@ export default function AddLessonModal({
                     name="start_time"
                     value={formData.start_time}
                     onChange={handleChange}
-                    className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer text-center ${
+                    className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer text-center ${
                       formData.start_time === ""
-                        ? "text-slate-400"
-                        : "text-slate-800"
+                        ? "text-slate-400 dark:text-muted-foreground/60"
+                        : "text-slate-800 dark:text-foreground"
                     }`}
                   >
                     <option value="" disabled hidden>
@@ -433,33 +424,35 @@ export default function AddLessonModal({
                         </option>
                       )}
                     {timeOptions.map((time) => (
-                      <option key={`start-${time}`} value={time}>
+                      <option
+                        key={`start-${time}`}
+                        value={time}
+                        className="dark:bg-card"
+                      >
                         {time}
                       </option>
                     ))}
                   </select>
                   <div
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 ${
-                      formData.start_time === ""
-                        ? "text-slate-400"
-                        : "text-slate-800"
-                    }`}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-muted-foreground/50`}
                   >
                     <Clock className="w-3.5 h-3.5" />
                   </div>
                 </div>
 
-                <span className="text-slate-400 font-bold">-</span>
+                <span className="text-slate-400 dark:text-muted-foreground/50 font-bold">
+                  -
+                </span>
 
                 <div className="relative flex-1">
                   <select
                     name="end_time"
                     value={formData.end_time}
                     onChange={handleChange}
-                    className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer text-center ${
+                    className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer text-center ${
                       formData.end_time === ""
-                        ? "text-slate-400"
-                        : "text-slate-800"
+                        ? "text-slate-400 dark:text-muted-foreground/60"
+                        : "text-slate-800 dark:text-foreground"
                     }`}
                   >
                     <option value="" disabled hidden>
@@ -472,17 +465,17 @@ export default function AddLessonModal({
                         </option>
                       )}
                     {timeOptions.map((time) => (
-                      <option key={`end-${time}`} value={time}>
+                      <option
+                        key={`end-${time}`}
+                        value={time}
+                        className="dark:bg-card"
+                      >
                         {time}
                       </option>
                     ))}
                   </select>
                   <div
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 ${
-                      formData.end_time === ""
-                        ? "text-slate-400"
-                        : "text-slate-800"
-                    }`}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-muted-foreground/50`}
                   >
                     <Clock className="w-3.5 h-3.5" />
                   </div>
@@ -497,13 +490,14 @@ export default function AddLessonModal({
                 name="topic"
                 value={formData.topic}
                 onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 placeholder:text-slate-400 text-sm"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                 placeholder="예: Chapter 5 문법"
+                autoComplete="off"
               />
             </div>
           </div>
 
-          <div className="h-px bg-slate-100 w-full my-2" />
+          <div className="h-px bg-slate-100 dark:bg-border w-full my-2" />
 
           <div className="space-y-2">
             <InputLabel label="수업 상태" hasError={!!errors.status} required />
@@ -547,8 +541,9 @@ export default function AddLessonModal({
               value={formData.memo}
               onChange={handleChange}
               rows={3}
-              className="w-full p-3 rounded-lg border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400"
+              className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
               placeholder="추가사항 / 특이사항"
+              autoComplete="off"
             />
           </div>
 
@@ -576,7 +571,7 @@ export default function AddLessonModal({
 
             <Button
               type="button"
-              className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+              className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               onClick={handleClose}
               disabled={isLoading || isDeleting}
             >

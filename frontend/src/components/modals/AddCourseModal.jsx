@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { X, Loader2, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -92,7 +92,6 @@ export default function AddCourseModal({
   // 수정 모드 시 데이터 채우기
   useEffect(() => {
     if (isOpen) {
-
       setAllowAnimation(false);
 
       if (courseData) {
@@ -111,11 +110,11 @@ export default function AddCourseModal({
         setErrors({});
         setSubmitError(null);
       }
-      
+
       const timer = setTimeout(() => {
         setAllowAnimation(true);
       }, 200);
-  
+
       return () => clearTimeout(timer);
     }
   }, [isOpen, courseData]);
@@ -248,7 +247,9 @@ export default function AddCourseModal({
   const InputLabel = ({ label, required, hasError }) => (
     <label
       className={`text-xs font-bold uppercase tracking-wider pl-1 block mb-1.5 ${
-        hasError ? "text-destructive" : "text-slate-500"
+        hasError
+          ? "text-destructive"
+          : "text-slate-500 dark:text-muted-foreground"
       }`}
     >
       {label} {required && <span className="text-destructive">*</span>}
@@ -270,7 +271,7 @@ export default function AddCourseModal({
         className={`relative flex items-center justify-center px-2 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-out whitespace-nowrap ${
           isSelected
             ? "bg-primary text-white shadow-md shadow-primary/30 ring-1 ring-primary transform scale-[1.02]"
-            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-transparent"
+            : "bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-muted/80 hover:text-slate-700 dark:hover:text-foreground border border-transparent"
         } ${className}`}
       >
         {label}
@@ -279,25 +280,27 @@ export default function AddCourseModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden transform transition-all m-4 relative">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-2xl bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden transform transition-all m-4 relative">
         {/* Delete Overlay */}
         {showDeleteConfirm && (
-          <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+          <div className="absolute inset-0 z-10 bg-white dark:bg-card backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">삭제 확인</h3>
-            <p className="text-slate-500 text-center mb-8 max-w-xs text-sm">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
+              삭제 확인
+            </h3>
+            <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
               정말로 삭제하시겠습니까? <br />
-              <span className="text-destructive mt-1 block">
+              <span className="text-destructive mt-1 block font-medium">
                 이 작업은 되돌릴 수 없습니다.
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
               <Button
                 type="button"
-                className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 h-11 text-sm font-semibold cursor-pointer"
+                className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
                 onClick={() => setShowDeleteConfirm(false)}
               >
                 취소
@@ -318,12 +321,12 @@ export default function AddCourseModal({
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
               {isEditMode ? "수강권 정보 수정" : "수강권 등록"}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
                 ? "수정이 필요한 수강권 정보를 변경해주세요."
                 : "등록할 새로운 수강권의 정보를 입력하세요."}
@@ -331,7 +334,7 @@ export default function AddCourseModal({
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-muted text-slate-400 dark:text-muted-foreground hover:text-slate-600 dark:hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -340,7 +343,7 @@ export default function AddCourseModal({
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6" noValidate>
           {submitError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium">
+            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium text-center">
               {submitError}
             </div>
           )}
@@ -354,11 +357,11 @@ export default function AddCourseModal({
                   name="student"
                   value={formData.student}
                   onChange={handleChange}
-                  className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer
+                  className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer
                     ${
                       formData.student === ""
-                        ? "text-slate-400"
-                        : "text-slate-800"
+                        ? "text-slate-400 dark:text-muted-foreground/60"
+                        : "text-slate-800 dark:text-foreground"
                     }`}
                 >
                   <option value="" disabled hidden>
@@ -368,30 +371,18 @@ export default function AddCourseModal({
                     <option
                       key={student.id}
                       value={student.id}
-                      className="text-slate-800"
+                      className="text-slate-800 dark:text-foreground dark:bg-card"
                     >
                       {student.name}
                     </option>
                   ))}
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-slate-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                  <ChevronDown className="w-5 h-5 text-slate-400 dark:text-muted-foreground/60" />
                 </div>
               </div>
               {students.length === 0 && (
-                <p className="text-xs text-destructive mt-1 ml-1">
+                <p className="text-xs text-destructive mt-1 ml-1 font-medium">
                   * 등록된 수강중인 학생이 없습니다.
                 </p>
               )}
@@ -446,10 +437,10 @@ export default function AddCourseModal({
                 value={formData.start_date}
                 onClick={(e) => e.target.showPicker()}
                 onChange={handleChange}
-                className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
+                className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
                   formData.start_date === ""
-                    ? "text-slate-400 [&::-webkit-calendar-picker-indicator]:opacity-40"
-                    : "text-slate-800 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                    ? "text-slate-400 dark:text-muted-foreground/60 [&::-webkit-calendar-picker-indicator]:opacity-40"
+                    : "text-slate-800 dark:text-foreground [&::-webkit-calendar-picker-indicator]:opacity-100"
                 }`}
               />
               <ErrorMessage message={errors.start_date} />
@@ -467,17 +458,17 @@ export default function AddCourseModal({
                 value={formData.end_date}
                 onClick={(e) => e.target.showPicker()}
                 onChange={handleChange}
-                className={`w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
+                className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm cursor-pointer ${
                   formData.end_date === ""
-                    ? "text-slate-400 [&::-webkit-calendar-picker-indicator]:opacity-40"
-                    : "text-slate-800 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                    ? "text-slate-400 dark:text-muted-foreground/60 [&::-webkit-calendar-picker-indicator]:opacity-40"
+                    : "text-slate-800 dark:text-foreground [&::-webkit-calendar-picker-indicator]:opacity-100"
                 }`}
               />
               <ErrorMessage message={errors.end_date} />
             </div>
           </div>
 
-          <div className="h-px bg-slate-100 w-full" />
+          <div className="h-px bg-slate-100 dark:bg-border w-full" />
 
           {/* Row 3: Financials & Payment Status (Merged) */}
           <div className="grid grid-cols-12 gap-3 items-end">
@@ -495,14 +486,18 @@ export default function AddCourseModal({
                 value={formData.total_hours}
                 onChange={handleChange}
                 placeholder="0"
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-sm
-                placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground text-sm
+                placeholder:text-slate-400 dark:placeholder:text-muted-foreground/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
               />
             </div>
 
             {/* 2. Hourly Rate */}
             <div className="col-span-6 sm:col-span-3">
-              <InputLabel label="시간당 (€)" hasError={!!errors.hourly_rate} required />
+              <InputLabel
+                label="시간당 (€)"
+                hasError={!!errors.hourly_rate}
+                required
+              />
               <input
                 required
                 type="number"
@@ -510,14 +505,14 @@ export default function AddCourseModal({
                 value={formData.hourly_rate}
                 onChange={handleChange}
                 placeholder="0"
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 text-sm placeholder:text-slate-400  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground text-sm placeholder:text-slate-400 dark:placeholder:text-muted-foreground/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
               />
             </div>
 
             {/* 3. Total Fee (Read Only) */}
             <div className="col-span-6 sm:col-span-3">
               <InputLabel label="총 금액" hasError={false} />
-              <div className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 flex items-center justify-center overflow-hidden cursor-not-allowed">
+              <div className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 flex items-center justify-center overflow-hidden cursor-not-allowed">
                 <span className="text-sm font-bold text-primary truncate">
                   {formatCurrency(calculatedTotalFee)}
                 </span>
@@ -531,9 +526,9 @@ export default function AddCourseModal({
                 onClick={() => handleValueChange("is_paid", !formData.is_paid)}
                 className={`relative w-full h-10 rounded-lg cursor-pointer flex items-center px-1 border border-transparent ${
                   allowAnimation ? "transition-colors duration-300" : ""
-                } ${formData.is_paid ? "bg-accent/50" : "bg-destructive/50"}`}
+                } ${formData.is_paid ? "bg-accent/50 dark:bg-accent/20" : "bg-destructive/50 dark:bg-destructive/20"}`}
               >
-                {/* Text Layer: 미납 (Left side, visible when !is_paid) */}
+                {/* Text Layer: 미납 */}
                 <span
                   className={`absolute left-0 w-full text-center text-sm font-bold text-destructive transition-opacity duration-300 pl-8 ${
                     !formData.is_paid ? "opacity-100" : "opacity-0"
@@ -542,9 +537,9 @@ export default function AddCourseModal({
                   미납
                 </span>
 
-                {/* Text Layer: 완납 (Right side, visible when is_paid) */}
+                {/* Text Layer: 완납 */}
                 <span
-                  className={`absolute left-0 w-full text-center text-sm font-bold text-[#4a7a78] transition-opacity duration-300 pr-8 ${
+                  className={`absolute left-0 w-full text-center text-sm font-bold text-[#4a7a78] dark:text-accent transition-opacity duration-300 pr-8 ${
                     formData.is_paid ? "opacity-100" : "opacity-0"
                   }`}
                 >
@@ -553,7 +548,7 @@ export default function AddCourseModal({
 
                 {/* Sliding Circle */}
                 <div
-                  className={`absolute bg-slate-100 w-8 h-8 rounded-md shadow-sm ease-in-out
+                  className={`absolute bg-slate-100 dark:bg-slate-300 w-8 h-8 rounded-md shadow-sm ease-in-out
                     ${allowAnimation ? "transition-all duration-500" : ""}
                     ${formData.is_paid ? "left-[calc(100%-36px)]" : "left-1"}`}
                 />
@@ -570,8 +565,9 @@ export default function AddCourseModal({
               value={formData.memo}
               onChange={handleChange}
               rows={2}
-              className="w-full p-3 rounded-lg border border-slate-200 bg-destructive30 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm placeholder:text-slate-400"
+              className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
               placeholder="추가사항 / 특이사항"
+              autoComplete="off"
             />
           </div>
 
@@ -580,7 +576,7 @@ export default function AddCourseModal({
             {isEditMode && (
               <Button
                 type="button"
-                className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer"
+                className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
                 onClick={handleRequestDelete}
                 disabled={isLoading || isDeleting}
               >
@@ -593,7 +589,7 @@ export default function AddCourseModal({
             )}
             <Button
               type="button"
-              className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+              className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               onClick={handleClose}
               disabled={isLoading}
             >
@@ -601,7 +597,7 @@ export default function AddCourseModal({
             </Button>
             <Button
               type="submit"
-              className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
+              className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer transition-all"
               disabled={isLoading || isDeleting}
             >
               {isLoading ? (
