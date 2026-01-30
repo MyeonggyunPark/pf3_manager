@@ -14,66 +14,127 @@ import {
 import api from "../../api";
 import Button from "../ui/Button";
 
-// Grading scales configuration by level
-// 레벨별 등급 산정 기준 설정
+// Grading scales configuration by level and exam mode
+// 레벨 및 응시 유형별 등급 산정 기준 설정
 const MOCK_GRADING_SCALES = {
   A2: {
-    ranges: [
+    FULL: [
       { min: 54, grade: "sehr gut" },
       { min: 48, grade: "gut" },
       { min: 42, grade: "befriedigend" },
       { min: 36, grade: "ausreichend" },
       { min: 0, grade: "teilgenommen" },
     ],
+    WRITTEN: [
+      { min: 40.5, grade: "sehr gut" },
+      { min: 36, grade: "gut" },
+      { min: 31.5, grade: "befriedigend" },
+      { min: 27, grade: "ausreichend" },
+      { min: 0, grade: "teilgenommen" },
+    ],
+    ORAL: [
+      { min: 13.5, grade: "sehr gut" },
+      { min: 12, grade: "gut" },
+      { min: 10.5, grade: "befriedigend" },
+      { min: 9, grade: "ausreichend" },
+      { min: 0, grade: "teilgenommen" },
+    ],
   },
   B1: {
-    ranges: [
+    FULL: [
       { min: 270, grade: "sehr gut" },
       { min: 240, grade: "gut" },
       { min: 210, grade: "befriedigend" },
       { min: 180, grade: "ausreichend" },
+      { min: 0, grade: "nicht bestanden" },
+    ],
+    WRITTEN: [
+      { min: 202.5, grade: "sehr gut" },
+      { min: 180, grade: "gut" },
+      { min: 157.5, grade: "befriedigend" },
+      { min: 135, grade: "ausreichend" },
+      { min: 0, grade: "nicht bestanden" },
+    ],
+    ORAL: [
+      { min: 67.5, grade: "sehr gut" },
+      { min: 60, grade: "gut" },
+      { min: 52.5, grade: "befriedigend" },
+      { min: 45, grade: "ausreichend" },
       { min: 0, grade: "nicht bestanden" },
     ],
   },
   B2: {
-    ranges: [
+    FULL: [
       { min: 270, grade: "sehr gut" },
       { min: 240, grade: "gut" },
       { min: 210, grade: "befriedigend" },
       { min: 180, grade: "ausreichend" },
       { min: 0, grade: "nicht bestanden" },
     ],
+    WRITTEN: [
+      { min: 202.5, grade: "sehr gut" },
+      { min: 180, grade: "gut" },
+      { min: 157.5, grade: "befriedigend" },
+      { min: 135, grade: "ausreichend" },
+      { min: 0, grade: "nicht bestanden" },
+    ],
+    ORAL: [
+      { min: 67.5, grade: "sehr gut" },
+      { min: 60, grade: "gut" },
+      { min: 52.5, grade: "befriedigend" },
+      { min: 45, grade: "ausreichend" },
+      { min: 0, grade: "nicht bestanden" },
+    ],
   },
   C1: {
-    ranges: [
+    FULL: [
       { min: 193, grade: "sehr gut" },
       { min: 172, grade: "gut" },
       { min: 151, grade: "befriedigend" },
       { min: 128, grade: "ausreichend" },
       { min: 0, grade: "nicht bestanden" },
     ],
+    WRITTEN: [
+      { min: 149, grade: "sehr gut" },
+      { min: 132, grade: "gut" },
+      { min: 116, grade: "befriedigend" },
+      { min: 99, grade: "ausreichend" },
+      { min: 0, grade: "nicht bestanden" },
+    ],
+    ORAL: [
+      { min: 43, grade: "sehr gut" },
+      { min: 38, grade: "gut" },
+      { min: 33, grade: "befriedigend" },
+      { min: 29, grade: "ausreichend" },
+      { min: 0, grade: "nicht bestanden" },
+    ],
   },
 };
 
-// Calculate grade based on score and exam level
-// 점수와 시험 레벨에 따른 등급 계산 함수
-const calculateMockGrade = (examName, score) => {
-  if (!examName) return "";
+// Calculate grade based on score, exam level, and mode
+// 점수, 시험 레벨, 응시 유형에 따른 등급 계산 함수
+const calculateMockGrade = (examName, score, examMode) => {
+  if (!examName || !examMode) return "";
 
   const upperName = examName.toUpperCase();
-  let scale = null;
+  let levelData = null;
 
-  if (upperName.includes("A2")) scale = MOCK_GRADING_SCALES["A2"];
-  else if (upperName.includes("B1")) scale = MOCK_GRADING_SCALES["B1"];
-  else if (upperName.includes("B2")) scale = MOCK_GRADING_SCALES["B2"];
-  else if (upperName.includes("C1")) scale = MOCK_GRADING_SCALES["C1"];
+  if (upperName.includes("A2")) levelData = MOCK_GRADING_SCALES["A2"];
+  else if (upperName.includes("B1")) levelData = MOCK_GRADING_SCALES["B1"];
+  else if (upperName.includes("B2")) levelData = MOCK_GRADING_SCALES["B2"];
+  else if (upperName.includes("C1")) levelData = MOCK_GRADING_SCALES["C1"];
 
+  if (!levelData) return "";
+
+  // Select scale based on mode (FULL, WRITTEN, ORAL)
+  // 응시 유형에 따른 기준 선택
+  const scale = levelData[examMode];
   if (!scale) return "";
 
   const numScore = parseFloat(score);
   if (isNaN(numScore)) return "";
 
-  const result = scale.ranges.find((range) => numScore >= range.min);
+  const result = scale.find((range) => numScore >= range.min);
   return result ? result.grade : "";
 };
 
@@ -274,10 +335,18 @@ export default function AddMockExamModal({
     // Determine Grade
     // 등급 결정
     let calculatedGrade = "";
-    if (selectedStandardData && selectedStandardData.name) {
+    if (
+      selectedStandardData &&
+      selectedStandardData.name &&
+      formData.exam_mode
+    ) {
+      
+      // Pass exam_mode to grade calculator
+      // 등급 계산기에 응시 유형(exam_mode) 전달
       calculatedGrade = calculateMockGrade(
         selectedStandardData.name,
         finalScore,
+        formData.exam_mode,
       );
     }
 
