@@ -44,7 +44,7 @@
   /* Success: Aqua Gray (#9EAFA2) */
   /* 성공: Aqua Gray (#9EAFA2) */
   --color-success: hsl(134 10% 65%);
-  --color-success-foreground: hsl(0 0% 100%);
+  --color-success-foreground: hsl(135 8% 40%);
 
   /* UI Elements */
   /* UI 요소 */
@@ -107,7 +107,7 @@
   /* Add Firefox compatibility */
   /* 파이어폭스(Firefox) 호환성 추가 */
   scrollbar-width: thin;
-  scrollbar-color: #e2e8f0 transparent;
+  scrollbar-color: var(--color-border) transparent;
 }
 
 /* Chrome, Safari, Edge (Webkit Browsers) */
@@ -121,14 +121,14 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #e2e8f0;
+  background-color: var(--color-border);
   border-radius: 99px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #cbd5e1;
+  background-color: var(--color-muted-foreground);
 }
 
 /* Dark Mode Styles */
@@ -138,40 +138,46 @@
 @layer base {
   .dark {
 
-    /* Deep navy tone background */
-    /* 짙은 네이비 톤 배경 */
-    --color-background: hsl(222 47% 11%); 
+    /* Deep midnight navy background */
+    /* 깊은 심야 네이비 톤 배경 */
+    --color-background: hsl(222 47% 7%); 
 
-    /* Light gray text */
-    /* 밝은 회색 텍스트 */
-    --color-foreground: hsl(213 31% 91%); 
+    /* High contrast off-white text for better readability */
+    /* 가독성을 높인 고대비 아이보리 화이트 텍스트 */
+    --color-foreground: hsl(210 40% 98%); 
 
-    /* Brighter card than background */
-    /* 배경보다 약간 밝은 카드 색상 */
-    --color-card: hsl(222 47% 15%);
-    --color-card-foreground: hsl(213 31% 91%);
+    /* Slightly lighter navy for cards to create depth */
+    /* 깊이감을 위해 배경보다 약간 밝은 네이비 카드 색상 */
+    --color-card: hsl(222 47% 12%);
+    --color-card-foreground: hsl(210 40% 98%);
 
-    /* Secondary: Lower saturation */
-    /* 보조 색상: 채도 낮춤 */
+    /* Secondary: Muted navy for subtle elements */
+    /* 보조 색상: 보조 요소를 위한 차분한 네이비 톤 */
     --color-secondary: hsl(217 32% 20%);
     --color-secondary-foreground: hsl(210 40% 96%);
 
-    /* Muted elements */
-    /* 뮤트/비활성 요소 */
-    --color-muted: hsl(217 32% 17%);
-    --color-muted-foreground: hsl(215 20% 65%);
+    /* Muted elements: Adjusted for better visibility on dark backgrounds */
+    /* 뮤트 요소: 어두운 배경에서의 가시성을 위해 조정 */
+    --color-muted: hsl(217 32% 15%);
+    --color-muted-foreground: hsl(215 20% 70%);
 
-    /* Borders & Inputs */
-    /* 경계선 및 입력 필드 */
-    --color-border: hsl(217 32% 25%);
-    --color-input: hsl(217 32% 25%);
+    /* Borders & Inputs: Subtle yet defined */
+    /* 경계선 및 입력 필드: 은은하면서도 명확한 구분 */
+    --color-border: hsl(217 32% 22%);
+    --color-input: hsl(217 32% 22%);
 
-    /* Brand color: Slightly lighter for visibility */
-    /* 브랜드 색상: 가시성을 위해 약간 밝게 */
-    --color-primary: hsl(215 60% 60%); 
+    /* Brand color: Increased saturation for vibrant look in dark mode */
+    /* 브랜드 색상: 다크 모드에서 선명하게 보이도록 채도 및 명도 상향 */
+    --color-primary: hsl(215 75% 65%); 
 
-    /* Success Text: Visible in dark mode */
-    /* 성공 텍스트: 다크 모드에서 가시성 확보 */
-    --color-success-foreground: hsl(134 40% 80%);
+    /* Success Text: Optimized for readability on dark surfaces */
+    /* 성공 텍스트: 어두운 배경 위에서 최적화된 가독성 확보 */
+    --color-success: hsl(142 70% 45%);
+    --color-success-foreground: hsl(142 80% 90%);
+    
+    /* Destructive/Warning: High visibility colors */
+    /* 파괴적/경고 색상: 가시성이 높은 다크모드 색상 */
+    --color-destructive: hsl(0 84% 60%);
+    --color-warning: hsl(48 96% 60%);
   }
 }
