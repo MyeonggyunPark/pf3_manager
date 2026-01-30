@@ -497,8 +497,6 @@ export default function AddLessonModal({
             </div>
           </div>
 
-          <div className="h-px bg-slate-100 dark:bg-border w-full my-2" />
-
           <div className="space-y-2">
             <InputLabel label="수업 상태" hasError={!!errors.status} required />
             <div className="grid grid-cols-4 gap-2">

@@ -917,8 +917,6 @@ export default function AddMockExamModal({
               </div>
             )}
 
-            <div className="h-px bg-slate-100 dark:bg-border w-full" />
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 items-end">

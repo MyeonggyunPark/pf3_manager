@@ -666,8 +666,6 @@ export default function AddOfficialExamModal({
             </div>
           )}
 
-          <div className="h-px bg-slate-100 dark:bg-border w-full my-1" />
-
           {/* Exam Mode Selection */}
           {/* 응시 유형 선택 */}
           <div className="space-y-2">

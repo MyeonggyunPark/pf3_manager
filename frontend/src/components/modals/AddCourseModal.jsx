@@ -468,8 +468,6 @@ export default function AddCourseModal({
             </div>
           </div>
 
-          <div className="h-px bg-slate-100 dark:bg-border w-full" />
-
           {/* Row 3: Financials & Payment Status (Merged) */}
           <div className="grid grid-cols-12 gap-3 items-end">
             {/* 1. Total Hours */}
