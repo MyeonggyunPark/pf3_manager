@@ -56,11 +56,17 @@ api.interceptors.response.use(
     // Handle 401 Unauthorized (Session expired)
     // 401 미인증 에러 처리 (세션 만료)
     if (error.response && error.response.status === 401) {
+
+      // Prevent handling on Social Login Success page
+      // 소셜 로그인 성공 페이지에서는 처리 방지
+      const isSocialSuccessPage = window.location.pathname.includes("/social/success");
+
       // Skip for login/registration requests
       // 로그인/회원가입 요청은 로직 제외
       if (
         !originalRequest.url.includes("/login/") &&
-        !originalRequest.url.includes("/registration/")
+        !originalRequest.url.includes("/registration/") &&
+        !isSocialSuccessPage
       ) {
         console.warn("[API] Session expired or invalid. Logging out...");
 
