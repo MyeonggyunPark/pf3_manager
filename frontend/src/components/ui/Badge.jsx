@@ -8,7 +8,7 @@ const Badge = ({ variant = "default", className, children }) => {
     outline: "text-muted-foreground border-border",
     destructive:
       "border-transparent bg-destructive text-destructive-foreground",
-    success: "border-transparent bg-success/20 text-success-foreground",
+    success:"border-transparent bg-success/20 text-[#5f6e63] dark:text-success-foreground",
   };
   return (
     <div

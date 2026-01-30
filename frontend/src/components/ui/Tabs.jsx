@@ -24,7 +24,7 @@ export const TabsTrigger = ({
       "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all cursor-pointer",
       activeValue === value
         ? "bg-card text-primary font-semibold shadow-sm"
-        : "hover:bg-secondary/50 hover:text-foreground",
+        : "hover:bg-card/40 hover:font-semibold hover:text-primary dark:hover:bg-secondary/50 dark:hover:text-foreground",
       className,
     )}
   >

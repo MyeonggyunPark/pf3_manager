@@ -18,7 +18,7 @@ const Button = ({
     destructive:
       "bg-destructive text-destructive-foreground hover:bg-destructive/90",
     secondary:
-      "bg-white/10 dark:bg-secondary hover:bg-white/20 dark:hover:bg-secondary/80 text-white dark:text-secondary-foreground border-0 backdrop-blur-sm shadow-sm",
+      "bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm dark:bg-secondary dark:text-secondary-foreground",
   };
   const sizes = {
     default: "h-10 px-4 py-2",
