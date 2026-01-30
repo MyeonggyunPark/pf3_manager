@@ -132,6 +132,8 @@ class CourseRegistration(models.Model):
     )
     is_paid = models.BooleanField(default=False)
 
+    memo = models.TextField(blank=True, null=True, help_text="계약 관련 특이사항")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -270,6 +272,8 @@ class ExamRecord(models.Model):
 
     total_score = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     grade = models.CharField(max_length=20, blank=True, null=True)
+
+    memo = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
