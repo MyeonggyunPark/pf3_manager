@@ -1,21 +1,21 @@
 import axios from "axios";
 
 // Helper to retrieve cookie by name
-// 쿠키 이름으로 값 조회
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== "") {
-    const cookies = document.cookie.split(";");
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === name + "=") {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
+// 현재 설정에서는 JS가 쿠키를 읽을 수 없어 사용되지 않으므로 함수 정의도 주석 처리함.
+// function getCookie(name) {
+//   let cookieValue = null;
+//   if (document.cookie && document.cookie !== "") {
+//     const cookies = document.cookie.split(";");
+//     for (let i = 0; i < cookies.length; i++) {
+//       const cookie = cookies[i].trim();
+//       if (cookie.substring(0, name.length + 1) === name + "=") {
+//         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+//         break;
+//       }
+//     }
+//   }
+//   return cookieValue;
+// }
 
 // Base API URL setup from env
 // 환경 변수에서 API 기본 URL 설정
@@ -31,14 +31,18 @@ const api = axios.create({
   },
 });
 
-// Request interceptor: Attach CSRF token
-// 요청 인터셉터: CSRF 토큰 헤더 첨부
+// Request interceptor
+// 요청 인터셉터
 api.interceptors.request.use(
   (config) => {
-    const csrfToken = getCookie("csrftoken");
+
+    // CSRF 로직 비활성화
+    /* const csrfToken = getCookie("csrftoken");
     if (csrfToken) {
       config.headers["X-CSRFToken"] = csrfToken;
     }
+    */
+
     return config;
   },
   (error) => Promise.reject(error),
@@ -53,13 +57,14 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle 401 Unauthorized (Session expired)
-    // 401 미인증 에러 처리 (세션 만료)
+    // Handle 401 Unauthorized (Session/Token expired)
+    // 401 미인증 에러 처리 (토큰 만료 등)
     if (error.response && error.response.status === 401) {
-
+      
       // Prevent handling on Social Login Success page
       // 소셜 로그인 성공 페이지에서는 처리 방지
-      const isSocialSuccessPage = window.location.pathname.includes("/social/success");
+      const isSocialSuccessPage =
+        window.location.pathname.includes("/social/success");
 
       // Skip for login/registration requests
       // 로그인/회원가입 요청은 로직 제외
@@ -68,7 +73,7 @@ api.interceptors.response.use(
         !originalRequest.url.includes("/registration/") &&
         !isSocialSuccessPage
       ) {
-        console.warn("[API] Session expired or invalid. Logging out...");
+        console.warn("[API] Session/Token expired or invalid. Logging out...");
 
         // Clear local storage
         // 로컬 스토리지 초기화
