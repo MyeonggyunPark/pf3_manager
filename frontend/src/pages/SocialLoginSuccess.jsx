@@ -57,6 +57,11 @@ export default function SocialLoginSuccess() {
   // 컴포넌트 마운트 시 세션 검증 수행
   useEffect(() => {
     const verifyLogin = async () => {
+
+      // Small delay for better UX
+      // 더 나은 UX를 위한 짧은 지연
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       try {
         // Check URL for 'new_user' flag sent from Backend
         // 백엔드에서 보낸 URL의 'new_user' 플래그 확인
