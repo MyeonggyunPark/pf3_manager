@@ -175,7 +175,6 @@ export default function AddStudentModal({
     const newErrors = {};
 
     if (!formData.name.trim()) newErrors.name = "이름을 입력해주세요.";
-    if (!formData.age) newErrors.age = "나이를 입력해주세요.";
     if (!formData.gender) newErrors.gender = "성별을 선택해주세요.";
     if (!formData.current_level)
       newErrors.current_level = "현재 레벨을 선택해주세요.";
@@ -197,7 +196,7 @@ export default function AddStudentModal({
     try {
       const payload = {
         ...formData,
-        age: parseInt(formData.age, 10),
+        age: formData.age ? parseInt(formData.age, 10) : null,
       };
 
       if (isEditMode) {
@@ -408,9 +407,8 @@ export default function AddStudentModal({
             {/* Age Input */}
             {/* 나이 입력 */}
             <div className="col-span-4 sm:col-span-2 space-y-1.5">
-              <InputLabel label="나이" hasError={!!errors.age} required />
+              <InputLabel label="나이" hasError={!!errors.age} />
               <input
-                required
                 type="number"
                 name="age"
                 value={formData.age}

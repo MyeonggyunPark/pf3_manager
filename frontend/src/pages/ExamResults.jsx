@@ -18,7 +18,6 @@ import {
   PolarAngleAxis,
   Radar,
   LabelList,
-  Cell,
 } from "recharts";
 import api from "../api";
 import { cn } from "../lib/utils";
@@ -108,14 +107,9 @@ const FilePopover = ({ attachments }) => {
         ref={buttonRef}
         type="button"
         onClick={togglePopover}
-        className={cn(
-          "flex items-center gap-1.5 px-2 py-1 rounded-full transition-all border cursor-pointer relative",
-          isOpen
-            ? "bg-primary text-white border-primary shadow-md"
-            : "bg-slate-100 dark:bg-muted/50 text-slate-500 dark:text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
-        )}
+        className="transition-colors cursor-pointer text-primary/50 hover:text-primary"
       >
-        <LucideIcons.Paperclip className="w-4.5 h-4.5" />
+        <LucideIcons.Paperclip className="w-5 h-5" />
       </button>
 
       {isOpen &&
@@ -159,7 +153,6 @@ const FilePopover = ({ attachments }) => {
                     <span className="truncate flex-1 text-left text-xs">
                       {fileName}
                     </span>
-                    <LucideIcons.ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all shrink-0" />
                   </a>
                 );
               })}
@@ -1233,8 +1226,18 @@ export default function ExamResults() {
                           <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%]">
                             {formatDate(exam.exam_date)}
                           </td>
-                          <td className="px-2 py-4 text-center font-bold text-slate-800 dark:text-foreground truncate w-[20%]">
-                            {exam.exam_name}
+                          <td className="px-2 py-4 text-center w-[20%] align-middle">
+                            <div className="flex flex-col items-center justify-center">
+                              <span className="font-bold text-slate-800 dark:text-foreground truncate max-w-full">
+                                {exam.exam_name}
+                              </span>
+                              {/* Show source if exists */}
+                              {exam.source && (
+                                <span className="text-[12px] text-muted-foreground font-medium truncate max-w-full mt-0.5">
+                                  ({exam.source})
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-4 text-center w-[12%]">
                             <div className="flex justify-center items-center w-full">
@@ -1259,7 +1262,7 @@ export default function ExamResults() {
                               {exam.grade ? (
                                 <Badge
                                   variant="default"
-                                  className="text-[11px] text-slate-800 dark:text-foreground border border-slate-200 dark:border-border bg-white dark:bg-card rounded-md hover:bg-white dark:hover:bg-card px-2 py-0.5 justify-center"
+                                  className="text-[11px] text-slate-800 dark:text-foreground border border-slate-200 dark:border-border bg-muted/30 dark:bg-card rounded-md hover:bg-muted/30 dark:hover:bg-card px-2 py-0.5 justify-center"
                                 >
                                   {exam.grade}
                                 </Badge>

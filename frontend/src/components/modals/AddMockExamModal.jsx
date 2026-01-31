@@ -188,6 +188,7 @@ export default function AddMockExamModal({
     exam_standard: "",
     exam_date: "",
     exam_mode: "",
+    source: "",
     total_score: 0,
     grade: "",
     memo: "",
@@ -243,6 +244,7 @@ export default function AddMockExamModal({
           exam_standard: examData.exam_standard,
           exam_date: formatDateForInput(examData.exam_date),
           exam_mode: examData.exam_mode,
+          source: examData.source || "",
           total_score: examData.total_score,
           grade: examData.grade || "",
           memo: examData.memo || "",
@@ -263,7 +265,7 @@ export default function AddMockExamModal({
         if (examData.score_inputs) {
           const scores = {};
           examData.score_inputs.forEach((s) => {
-            scores[s.exam_section] = s.score;
+            scores[s.exam_section] = parseFloat(s.score);
           });
           setScoreInputs(scores);
         }
@@ -942,6 +944,18 @@ export default function AddMockExamModal({
               </div>
             </div>
 
+            <div>
+              <InputLabel label="시험 출처" />
+              <input
+                type="text"
+                name="source"
+                value={formData.source}
+                onChange={handleChange}
+                placeholder="모의고사 출처"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm placeholder:text-slate-400 dark:placeholder:text-muted-foreground/50"
+              />
+            </div>
+
             {/* Dynamic Section Rendering based on Module */}
             {/* 모듈에 따른 동적 섹션 렌더링 */}
             {formData.exam_mode &&
@@ -1009,12 +1023,12 @@ export default function AddMockExamModal({
                                           </span>
                                           <span className="text-xs text-slate-400 dark:text-muted-foreground">
                                             {sec.is_question_based
-                                              ? `${sec.points_per_question}점 x ${
+                                              ? `${parseFloat(sec.points_per_question)}점 x ${
                                                   sec.question_end_num -
                                                   sec.question_start_num +
                                                   1
                                                 }문항`
-                                              : `Max ${sec.section_max_score}점`}
+                                              : `Max. ${parseFloat(sec.section_max_score)}점`}
                                           </span>
                                         </div>
 
@@ -1262,7 +1276,7 @@ export default function AddMockExamModal({
 
         {/* Action Buttons Footer */}
         {/* 액션 버튼 푸터 */}
-        <div className="flex gap-3 p-4 shrink-0 bg-white dark:bg-card border-t border-slate-100 dark:border-border">
+        <div className="flex gap-3 p-4 shrink-0 bg-white dark:bg-card">
           {isEditMode && (
             <Button
               type="button"
