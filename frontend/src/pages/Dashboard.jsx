@@ -595,7 +595,7 @@ export default function Dashboard() {
                 { /* 중간 콘텐츠: 중요 할 일 */ }
                 <Card className="col-span-12 lg:col-span-3 border-none shadow-sm flex flex-col h-full bg-white dark:bg-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 px-4">
-                        <TabsList className="bg-slate-100 dark:bg-muted/50">
+                        <TabsList className="dark:bg-muted/50">
                             <TabsTrigger className="cursor-default flex gap-2" value="urgent" activeValue="urgent">
                                 할 일
                                 <span className="text-[8px] px-1 py-0.5 rounded bg-destructive text-white">
