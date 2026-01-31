@@ -630,7 +630,7 @@ export default function ExamResults() {
         <div className="flex flex-col sm:flex-row items-center gap-7 w-full xl:w-auto justify-end">
           {/* Tab Selector */}
           {/* 탭 선택기 */}
-          <TabsList className="w-full sm:w-auto h-10 bg-slate-100 dark:bg-muted/50">
+          <TabsList className="w-full sm:w-auto h-10 dark:bg-muted/50">
             <TabsTrigger
               value="mock"
               activeValue={activeTab}
@@ -1105,7 +1105,7 @@ export default function ExamResults() {
           <div className="flex items-center gap-2">
             {activeTab === "mock" && focusedStudent ? (
               <>
-                <TabsList className="bg-slate-100 dark:bg-muted/50">
+                <TabsList className="dark:bg-muted/50">
                   <TabsTrigger className="py-0.5 cursor-default flex items-center gap-2">
                     <Badge
                       variant="outline"
@@ -1119,7 +1119,7 @@ export default function ExamResults() {
                 </TabsList>
               </>
             ) : (
-              <TabsList className="bg-slate-100 dark:bg-muted/50">
+              <TabsList className="dark:bg-muted/50">
                 <TabsTrigger className="cursor-default">전체 목록</TabsTrigger>
               </TabsList>
             )}

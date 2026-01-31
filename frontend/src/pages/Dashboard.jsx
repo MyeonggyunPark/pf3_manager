@@ -373,7 +373,7 @@ export default function Dashboard() {
                 {/* 전체 개수가 포함된 헤더 */}
                 <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
-                        <TabsList className="text-sm font-bold flex items-center bg-slate-100 dark:bg-muted/50">
+                        <TabsList className="text-sm font-bold flex items-center dark:bg-muted/50">
                             <TabsTrigger className="cursor-default" value="upcoming" activeValue="upcoming">
                                 예정된 정규 시험    
                             </TabsTrigger>
@@ -519,7 +519,7 @@ export default function Dashboard() {
                 <Card className="col-span-12 lg:col-span-6 border-none shadow-sm flex flex-col h-full bg-white dark:bg-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                         <div className="flex items-center">
-                            <TabsList className="bg-slate-100 dark:bg-muted/50">
+                            <TabsList className="dark:bg-muted/50">
                                 <TabsTrigger value="today" activeValue={activeTab} onClick={() => setActiveTab("today")}>
                                     오늘의 수업
                                 </TabsTrigger>

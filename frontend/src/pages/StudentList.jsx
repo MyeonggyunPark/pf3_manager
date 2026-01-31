@@ -599,8 +599,12 @@ export default function StudentList() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium pl-1">
-                        <span>{activeStudent.age}세</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-border" />
+                        {activeStudent.age && (
+                          <>
+                            <span>{activeStudent.age}세</span>
+                            <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-border" />
+                          </>
+                        )}
                         <span>
                           등록일 - {formatDate(activeStudent.created_at)}
                         </span>
@@ -664,8 +668,7 @@ export default function StudentList() {
                         : "text-muted-foreground",
                     )}
                   >
-                    {activeStudent.memo ||
-                      "추가사항 / 특이사항에 대해 작성된 내용이 없습니다."}
+                    {activeStudent.memo || "추가사항 / 특이사항"}
                   </p>
                 </div>
               </div>

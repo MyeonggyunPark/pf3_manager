@@ -483,14 +483,14 @@ export default function CourseList() {
                             
                         {/* Chart Toggle Buttons */}
                         {/* 차트 모드 전환 버튼 (수익 / 수강생) */}
-                        <div className="flex bg-slate-100 dark:bg-muted/60 p-1 rounded-lg">
+                        <div className="flex bg-muted dark:bg-muted/60 p-1 rounded-lg">
                             <button
                                 onClick={() => setChartMode("REVENUE")}
                                 className={cn(
                                 "text-[13px] px-3 py-1 rounded-md transition-all cursor-pointer",
                                 chartMode === "REVENUE" 
                                     ? "bg-white dark:bg-card text-primary font-semibold shadow-sm" 
-                                    : "text-slate-500 dark:text-muted-foreground hover:font-semibold hover:text-primary"
+                                    : "text-slate-500 dark:text-muted-foreground hover:bg-card/40 hover:font-semibold hover:text-primary dark:hover:bg-secondary/50 dark:hover:text-foreground"
                                 )}
                             >
                                 수익
@@ -501,7 +501,7 @@ export default function CourseList() {
                                 "text-[13px] px-3 py-1 rounded-md transition-all cursor-pointer",
                                 chartMode === "COUNT" 
                                     ? "bg-white dark:bg-card text-primary font-semibold shadow-sm" 
-                                    : "text-slate-500 dark:text-muted-foreground hover:font-semibold hover:text-primary"
+                                    : "text-slate-500 dark:text-muted-foreground hover:bg-card/40 hover:font-semibold hover:text-primary dark:hover:bg-secondary/50 dark:hover:text-foreground"
                                 )}
                             >
                                 수강생
