@@ -66,7 +66,7 @@ class Student(models.Model):
     gender = models.CharField(
         max_length=10, choices=GenderChoices.choices, blank=True, null=True
     )
-    age = models.PositiveIntegerField()
+    age = models.PositiveIntegerField(null=True, blank=True)
     current_level = models.CharField(max_length=10, help_text="z.B. A2, B1")
     target_level = models.CharField(max_length=10, help_text="z.B. B2, C1")
 
@@ -269,6 +269,13 @@ class ExamRecord(models.Model):
     # Actual mode taken (Full / Written Only / Oral Only)
     # 실제 응시 유형 (전체 / 필기만 / 구술만)
     exam_mode = models.CharField(max_length=20, choices=ExamModeChoices.choices)
+
+    source = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="모의고사 출처",
+    )
 
     total_score = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     grade = models.CharField(max_length=20, blank=True, null=True)
