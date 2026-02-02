@@ -946,6 +946,11 @@ export default function AddMockExamModal({
                       <ChevronDown className="w-5 h-5 text-slate-400 dark:text-muted-foreground/60" />
                     </div>
                   </div>
+                  {students.length === 0 && (
+                    <p className="text-xs text-destructive mt-1 ml-1 font-medium">
+                      * 등록된 수강중인 학생이 없습니다.
+                    </p>
+                  )}
                   <ErrorMessage message={errors.student} />
                 </div>
 
