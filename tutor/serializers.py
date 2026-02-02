@@ -6,6 +6,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -211,6 +212,7 @@ class ExamScoreInputSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExamScoreInput
         fields = "__all__"
+        read_only_fields = ("exam_record",)
 
 
 class ExamDetailResultSerializer(serializers.ModelSerializer):
@@ -235,6 +237,7 @@ class ExamDetailResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExamDetailResult
         fields = "__all__"
+        read_only_fields = ("exam_record",)
 
 
 class ExamRecordSerializer(serializers.ModelSerializer):
@@ -263,9 +266,9 @@ class ExamRecordSerializer(serializers.ModelSerializer):
     # Used for displaying all related data in the detail view
     # 중첩 시리얼라이저 (역참조 관계)
     # 상세 보기에서 관련된 모든 하위 데이터를 표시하기 위해 사용됩니다
-    attachments = ExamAttachmentSerializer(many=True, read_only=True)
-    score_inputs = ExamScoreInputSerializer(many=True, read_only=True)
-    detail_results = ExamDetailResultSerializer(many=True, read_only=True)
+    attachments = ExamAttachmentSerializer(many=True)
+    score_inputs = ExamScoreInputSerializer(many=True)
+    detail_results = ExamDetailResultSerializer(many=True)
 
     class Meta:
         model = ExamRecord
@@ -290,6 +293,85 @@ class ExamRecordSerializer(serializers.ModelSerializer):
         # 응시 모드에 해당하는 모듈 탐색
         module = obj.exam_standard.modules.filter(module_type=obj.exam_mode).first()
         return module.max_score if module else 0
+
+    @transaction.atomic
+    def create(self, validated_data):
+        """
+        Transactional Create.
+        Saves ExamRecord and all nested results in one go.
+
+        트랜잭션 생성.
+        시험 기록과 모든 중첩된 결과를 한 번에 저장합니다.
+        """
+        
+        # Extract nested data from validated_data
+        # 검증된 데이터에서 중첩 데이터 추출
+        score_inputs_data = validated_data.pop("score_inputs", [])
+        detail_results_data = validated_data.pop("detail_results", [])
+
+        # Create the Parent
+        # 시험 기록 헤더 생성
+        exam_record = ExamRecord.objects.create(**validated_data)
+
+        # Bulk Create Score Inputs
+        # 점수 입력 데이터 대량 생성
+        score_instances = [
+            ExamScoreInput(exam_record=exam_record, **item)
+            for item in score_inputs_data
+        ]
+        ExamScoreInput.objects.bulk_create(score_instances)
+
+        # Bulk Create Detail Results (O/X)
+        # 상세 결과 데이터 대량 생성
+        detail_instances = [
+            ExamDetailResult(exam_record=exam_record, **item)
+            for item in detail_results_data
+        ]
+        ExamDetailResult.objects.bulk_create(detail_instances)
+
+        return exam_record
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """
+        Transactional Update.
+        Updates header and replaces nested results.
+
+        트랜잭션 수정.
+        헤더를 수정하고 중첩된 결과들을 교체(재작성)합니다.
+        """
+        
+        score_inputs_data = validated_data.pop("score_inputs", None)
+        detail_results_data = validated_data.pop("detail_results", None)
+
+        # Update standard fields
+        # 기본 필드 업데이트
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update Nested Data: Strategy -> Delete Old & Create New
+        # Simplest & Safest strategy for ensuring data integrity in exams
+        # 중첩 데이터 업데이트 전략: 기존 데이터 삭제 후 재생성
+        # 시험 데이터의 무결성을 보장하기 위한 가장 간단하고 안전한 전략
+
+        if score_inputs_data is not None:
+            instance.score_inputs.all().delete()
+            score_instances = [
+                ExamScoreInput(exam_record=instance, **item)
+                for item in score_inputs_data
+            ]
+            ExamScoreInput.objects.bulk_create(score_instances)
+
+        if detail_results_data is not None:
+            instance.detail_results.all().delete()
+            detail_instances = [
+                ExamDetailResult(exam_record=instance, **item)
+                for item in detail_results_data
+            ]
+            ExamDetailResult.objects.bulk_create(detail_instances)
+
+        return instance
 
 
 # ==========================================

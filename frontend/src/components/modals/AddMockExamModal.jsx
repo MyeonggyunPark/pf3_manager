@@ -530,72 +530,88 @@ export default function AddMockExamModal({
     setIsLoading(true);
 
     try {
+      
+      // Prepare Nested Data Arrays for Bulk Insert
+      // 대량 저장을 위한 중첩 데이터 배열 준비
+      const detail_results = [];
+      const score_inputs = [];
+
+      // Filter logic to include only relevant sections
+      // 관련 섹션만 포함하기 위한 필터 로직
+      if (formData.exam_mode && selectedStandardData) {
+        const activeModules = selectedStandardData.modules.filter((mod) => {
+          if (formData.exam_mode === "FULL") return true;
+          return mod.module_type === formData.exam_mode;
+        });
+
+        const isSectionActive = (sectionId) => {
+          return activeModules.some((mod) =>
+            mod.sections?.some((s) => s.id === parseInt(sectionId)),
+          );
+        };
+
+        // Collect Detail Results (Checkboxes)
+        // 상세 결과 수집 (체크박스)
+        Object.entries(detailInputs).forEach(([key, isCorrect]) => {
+          const [sectionId, questionNum] = key.split("-");
+          if (isSectionActive(sectionId)) {
+            detail_results.push({
+              exam_section: parseInt(sectionId),
+              question_number: parseInt(questionNum),
+              is_correct: isCorrect,
+            });
+          }
+        });
+
+        // Collect Score Inputs (Numeric)
+        // 점수 입력 수집 (숫자)
+        Object.entries(scoreInputs).forEach(([sectionId, score]) => {
+
+          // Check for explicit value (including 0)
+          // 명시적인 값이 있는지 확인 (0점 포함)
+          if ((score || score === 0) && isSectionActive(sectionId)) {
+            score_inputs.push({
+              exam_section: parseInt(sectionId),
+              score: parseFloat(score),
+            });
+          }
+        });
+      }
+
+      // Construct Main Payload with Nested Data
+      // 데이터가 포함된 메인 페이로드 구성
       const payload = {
         ...formData,
         student: parseInt(formData.student),
         exam_standard: parseInt(formData.exam_standard),
         total_score: parseFloat(formData.total_score),
+
+        // Include the prepared arrays directly in the payload
+        // 준비된 배열들을 페이로드에 직접 포함
+        detail_results: detail_results,
+        score_inputs: score_inputs,
       };
 
       let recordId;
-      // API Call: Create or Update Record
-      // API 호출: 기록 생성 또는 수정
+
+      // Single API Call for Transactional Save
+      // 트랜잭션 저장을 위한 단일 API 호출
       if (isEditMode) {
+
+        // PATCH: Backend replaces nested data (delete old -> insert new)
+        // PATCH: 백엔드에서 중첩 데이터를 교체함 (기존 삭제 -> 신규 생성)
         await api.patch(`/api/exam-records/${examData.id}/`, payload);
         recordId = examData.id;
       } else {
+
+        // POST: Creates header and all nested data in one transaction
+        // POST: 헤더와 모든 중첩 데이터를 하나의 트랜잭션으로 생성
         const res = await api.post("/api/exam-records/", payload);
         recordId = res.data.id;
       }
 
-      const detailPromises = [];
-
-      if (!formData.exam_mode) return;
-
-      const activeModules = selectedStandardData.modules.filter((mod) => {
-        if (formData.exam_mode === "FULL") return true;
-        return mod.module_type === formData.exam_mode;
-      });
-
-      const isSectionActive = (sectionId) => {
-        return activeModules.some((mod) =>
-          mod.sections?.some((s) => s.id === parseInt(sectionId)),
-        );
-      };
-
-      // Save Detail Results (Checkboxes)
-      // 상세 결과 저장 (체크박스)
-      Object.entries(detailInputs).forEach(([key, isCorrect]) => {
-        const [sectionId, questionNum] = key.split("-");
-
-        if (isSectionActive(sectionId)) {
-          detailPromises.push(
-            api.post("/api/exam-detail-results/", {
-              exam_record: recordId,
-              exam_section: parseInt(sectionId),
-              question_number: parseInt(questionNum),
-              is_correct: isCorrect,
-            }),
-          );
-        }
-      });
-
-      // Save Score Inputs (Numeric)
-      // 점수 입력 저장 (숫자)
-      Object.entries(scoreInputs).forEach(([sectionId, score]) => {
-        if (score && isSectionActive(sectionId)) {
-          detailPromises.push(
-            api.post("/api/exam-score-inputs/", {
-              exam_record: recordId,
-              exam_section: parseInt(sectionId),
-              score: parseFloat(score),
-            }),
-          );
-        }
-      });
-
-      // Upload Multiple Attachments
-      // 다중 첨부파일 업로드
+      // Upload Multiple Attachments (Remains separate due to Multipart format)
+      // 다중 첨부파일 업로드 (Multipart 형식이므로 별도 처리 유지)
       if (selectedFiles.length > 0 && recordId) {
 
         // Create an array of upload promises
@@ -614,10 +630,6 @@ export default function AddMockExamModal({
         // 모든 업로드가 완료될 때까지 대기
         await Promise.all(uploadPromises);
       }
-
-      // Wait for all detail/score/file saves
-      // 모든 상세/점수/파일 저장이 완료될 때까지 대기
-      await Promise.all(detailPromises);
 
       onSuccess();
       handleClose();
