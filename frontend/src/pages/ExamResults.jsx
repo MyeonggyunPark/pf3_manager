@@ -1391,7 +1391,7 @@ export default function ExamResults() {
                                 variant="default"
                                 className="text-[11px] border border-primary/10 rounded-md hover:bg-primary/10 px-2 py-0.5 justify-center"
                               >
-                                Gesamt
+                                {EXAM_MODE_LABELS[exam.exam_mode] || exam.exam_mode || "Gesamt"}
                               </Badge>
                             </div>
                           </td>
