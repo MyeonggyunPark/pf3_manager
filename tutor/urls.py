@@ -13,6 +13,10 @@ from .views import (
     LessonViewSet,
     DashboardStatsView,
     TodoViewSet,
+    CustomRegisterView,
+    CustomVerifyEmailView,
+    CustomLoginView,
+    CustomUserDetailsView,
     social_login_callback,
 )
 
@@ -67,6 +71,22 @@ urlpatterns = [
     # Include all router-generated URLs
     # 라우터가 생성한 모든 URL을 포함합니다
     path("", include(router.urls)),
+    
+    # Custom Registration Endpoint
+    # 커스텀 회원가입 엔드포인트
+    path("auth/registration/", CustomRegisterView.as_view(), name="custom_register"),
+    
+    # Custom Email Verification Endpoint
+    # 커스텀 이메일 인증 엔드포인트
+    path("auth/registration/verify-email/", CustomVerifyEmailView.as_view(), name="rest_verify_email"),
+    
+    # Custom Login Endpoint
+    # 커스텀 로그인 엔드포인트
+    path("auth/login/", CustomLoginView.as_view(), name="rest_login"),
+    
+    # Custom User Details Endpoint
+    # 사용자 상세 정보 엔드포인트
+    path("auth/user/", CustomUserDetailsView.as_view(), name="user_details"),
     
     # Dashboard Stats Endpoint
     # 대시보드 통계 엔드포인트

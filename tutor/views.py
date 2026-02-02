@@ -7,7 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, Count, Avg, Q
 from django.db.models.functions import TruncMonth
 
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,6 +18,8 @@ from rest_framework.decorators import (
 )
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
+from dj_rest_auth.views import UserDetailsView, LoginView
+from dj_rest_auth.registration.views import RegisterView, VerifyEmailView
 
 from .models import (
     Student,
@@ -679,6 +681,78 @@ class ExamScoreInputViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(obj)
         status_code = 201 if created else 200
         return Response(serializer.data, status=status_code)
+
+
+class CustomRegisterView(RegisterView):
+    """
+    Custom Register View to bypass authentication checks.
+    Fixes 'User not found' error when a deleted user tries to sign up again
+    with a stale cookie still in the browser.
+
+    인증 검사를 우회하는 커스텀 회원가입 뷰.
+    계정이 삭제된 유저가 브라우저에 남은 만료된 쿠키를 가지고 재가입을 시도할 때
+    발생하는 'User not found' 401 에러를 방지합니다.
+    """
+
+    authentication_classes = []
+
+class CustomVerifyEmailView(VerifyEmailView):
+    """
+    Custom Verify Email View to bypass authentication checks.
+    Prevents 'User not found' 401 error caused by stale cookies from deleted accounts.
+
+    인증 검사를 우회하는 커스텀 이메일 인증 뷰.
+    삭제된 계정의 만료된 쿠키로 인해 발생하는 'User not found' 401 에러를 방지합니다.
+    """
+    authentication_classes = [] 
+    permission_classes = [permissions.AllowAny]
+
+class CustomUserDetailsView(UserDetailsView):
+    """
+    Custom User Details View.
+    Extends dj_rest_auth's UserDetailsView to support DELETE method.
+
+    커스텀 유저 상세 정보 뷰.
+    dj_rest_auth의 UserDetailsView를 상속받아 DELETE(회원탈퇴) 기능을 지원합니다.
+    """
+
+    def delete(self, request, *args, **kwargs):
+        """
+        Handle DELETE request to delete the user account.
+        계정 삭제 요청(DELETE)을 처리합니다.
+        """
+        user = self.request.user
+
+        if user.is_authenticated:
+            user.delete()
+            response = Response(
+                {"detail": "계정이 성공적으로 삭제되었습니다."},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+
+            response.delete_cookie(settings.REST_AUTH["JWT_AUTH_COOKIE"])
+            response.delete_cookie(settings.REST_AUTH["JWT_AUTH_REFRESH_COOKIE"])
+
+            return response
+
+        return Response(
+            {"detail": "인증되지 않은 사용자입니다."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+
+class CustomLoginView(LoginView):
+    """
+    Custom Login View to bypass authentication checks.
+    Fixes 'User not found' 401 error when a user with a stale cookie (from a deleted account)
+    tries to log in.
+
+    인증 검사를 우회하는 커스텀 로그인 뷰.
+    삭제된 계정의 만료된 쿠키를 가진 유저가 로그인할 때 발생하는 'User not found' 에러를 방지합니다.
+    기존 세션/쿠키를 무시하고 새로운 로그인 자격 증명만 확인합니다.
+    """
+
+    authentication_classes = []
 
 
 @api_view(["GET"])
