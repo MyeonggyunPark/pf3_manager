@@ -224,13 +224,18 @@ export default function AddMockExamModal({
         if (resStudents) setStudents(resStudents.data);
         else setSubmitError("학생 목록을 불러오는데 실패했습니다.");
 
-        if (resStandards) setExamStandards(resStandards.data);
-        else
+        if (resStandards) {
+          const sortedStandards = resStandards.data.sort((a, b) =>
+            a.name.localeCompare(b.name),
+          );
+          setExamStandards(sortedStandards);
+        } else {
           setSubmitError((prev) =>
             prev
               ? prev + " / 시험 기준 로딩 실패"
               : "시험 기준을 불러오는데 실패했습니다.",
           );
+        }
       };
       loadData();
     }
@@ -1171,7 +1176,7 @@ export default function AddMockExamModal({
                                                     key={qNum}
                                                     className="flex flex-col items-center gap-1"
                                                   >
-                                                    <span className="text-xs text-slate-400 font-bold">
+                                                    <span className="text-xs text-slate-300 dark:text-slate-400 font-bold">
                                                       {qNum}
                                                     </span>
                                                     <input
