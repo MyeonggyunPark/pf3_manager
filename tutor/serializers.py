@@ -266,7 +266,7 @@ class ExamRecordSerializer(serializers.ModelSerializer):
     # Used for displaying all related data in the detail view
     # 중첩 시리얼라이저 (역참조 관계)
     # 상세 보기에서 관련된 모든 하위 데이터를 표시하기 위해 사용됩니다
-    attachments = ExamAttachmentSerializer(many=True)
+    attachments = ExamAttachmentSerializer(many=True, read_only=True)
     score_inputs = ExamScoreInputSerializer(many=True)
     detail_results = ExamDetailResultSerializer(many=True)
 
@@ -303,7 +303,7 @@ class ExamRecordSerializer(serializers.ModelSerializer):
         트랜잭션 생성.
         시험 기록과 모든 중첩된 결과를 한 번에 저장합니다.
         """
-        
+
         # Extract nested data from validated_data
         # 검증된 데이터에서 중첩 데이터 추출
         score_inputs_data = validated_data.pop("score_inputs", [])
@@ -340,7 +340,7 @@ class ExamRecordSerializer(serializers.ModelSerializer):
         트랜잭션 수정.
         헤더를 수정하고 중첩된 결과들을 교체(재작성)합니다.
         """
-        
+
         score_inputs_data = validated_data.pop("score_inputs", None)
         detail_results_data = validated_data.pop("detail_results", None)
 

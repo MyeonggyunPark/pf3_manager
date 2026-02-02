@@ -262,6 +262,10 @@ class ExamSectionAdmin(admin.ModelAdmin):
         "exam_module",
         "category",
         "name",
+        "question_start_num",
+        "question_end_num",
+        "points_per_question",
+        "allow_partial_score",
         "is_question_based",
         "section_max_score",
     )

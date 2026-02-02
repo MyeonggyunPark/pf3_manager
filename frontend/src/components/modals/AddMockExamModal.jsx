@@ -166,6 +166,8 @@ export default function AddMockExamModal({
 
   // Detailed Input States (Checks, Scores)
   // 상세 입력 상태 (체크박스, 점수)
+  // detailInputs handles both Boolean (O/X) and Number (Partial Scores)
+  // detailInputs는 불리언(O/X) 및 숫자(부분 점수)를 모두 처리
   const [detailInputs, setDetailInputs] = useState({});
   const [scoreInputs, setScoreInputs] = useState({});
 
@@ -250,12 +252,22 @@ export default function AddMockExamModal({
           memo: examData.memo || "",
         });
 
-        // Restore Detail Results (Checkboxes)
-        // 상세 결과 복원 (체크박스)
+        // Restore Detail Results (Checkboxes & Partial Scores)
+        // 상세 결과 복원 (체크박스 및 부분 점수)
+        // Restore logic to handle both O/X and Partial Scores
+        // O/X 및 부분 점수 모두를 처리하도록 복원 로직 수정
         if (examData.detail_results) {
           const details = {};
           examData.detail_results.forEach((d) => {
-            details[`${d.exam_section}-${d.question_number}`] = d.is_correct;
+            const key = `${d.exam_section}-${d.question_number}`;
+
+            // If score exists (Partial Score), store the score. Otherwise store boolean.
+            // 점수가 존재하면(부분 점수) 점수를 저장하고, 아니면 불리언 저장.
+            if (d.score !== null && d.score !== undefined) {
+              details[key] = parseFloat(d.score);
+            } else {
+              details[key] = d.is_correct;
+            }
           });
           setDetailInputs(details);
         }
@@ -318,24 +330,39 @@ export default function AddMockExamModal({
       return mod.module_type === formData.exam_mode;
     });
 
-    // Calculate score from Checkboxes
-    // 체크박스 입력으로부터 점수 계산
-    Object.entries(detailInputs).forEach(([key, isCorrect]) => {
-      if (isCorrect) {
-        const [sectionId] = key.split("-");
-        let points = 0;
-        activeModules.forEach((mod) => {
-          const section = mod.sections?.find(
-            (s) => s.id === parseInt(sectionId),
-          );
-          if (section) points = parseFloat(section.points_per_question);
-        });
-        calculatedScore += points;
+    // Calculate score from Checkboxes AND Partial Inputs
+    // 체크박스 및 부분 점수 입력으로부터 점수 계산
+    Object.entries(detailInputs).forEach(([key, value]) => {
+      const [sectionId] = key.split("-");
+      let pointsToAdd = 0;
+
+      // Find the section to check scoring rules
+      // 채점 규칙 확인을 위한 섹션 탐색
+      let targetSection = null;
+      activeModules.forEach((mod) => {
+        const found = mod.sections?.find((s) => s.id === parseInt(sectionId));
+        if (found) targetSection = found;
+      });
+
+      if (targetSection) {
+        if (targetSection.allow_partial_score) {
+          // Logic for Partial Score (Numeric value)
+          // 부분 점수 로직 (숫자 값 합산)
+          const parsedVal = parseFloat(value);
+          pointsToAdd = isNaN(parsedVal) ? 0 : parsedVal;
+        } else {
+          // Logic for O/X (Boolean value)
+          // O/X 로직 (참일 경우 배점 합산)
+          if (value === true) {
+            pointsToAdd = parseFloat(targetSection.points_per_question);
+          }
+        }
+        calculatedScore += pointsToAdd;
       }
     });
 
-    // Calculate score from Numeric Inputs
-    // 숫자 입력으로부터 점수 계산
+    // Calculate score from Numeric Inputs (Whole Sections like Writing)
+    // 숫자 입력으로부터 점수 계산 (쓰기 등 전체 섹션)
     Object.entries(scoreInputs).forEach(([sectionId, score]) => {
       let isValidSection = false;
       activeModules.forEach((mod) => {
@@ -445,7 +472,6 @@ export default function AddMockExamModal({
     setFileToDelete(fileId);
   };
 
-
   // Delete Existing File from Server
   // 서버에서 기존 파일 삭제
   const executeFileDelete = async () => {
@@ -471,6 +497,39 @@ export default function AddMockExamModal({
     setDetailInputs((prev) => ({
       ...prev,
       [key]: !prev[key],
+    }));
+  };
+
+  // Handle Input Focus for Auto-filling Max Score
+  // 입력창 포커스 시 만점 자동 입력 핸들러 (UX 개선)
+  const handleDetailScoreFocus = (sectionId, questionNum, maxScore) => {
+    const key = `${sectionId}-${questionNum}`;
+
+    // Only fill if currently empty or undefined
+    // 현재 값이 비어있거나 정의되지 않은 경우에만 자동 입력
+    if (
+      detailInputs[key] === "" ||
+      detailInputs[key] === undefined ||
+      detailInputs[key] === null
+    ) {
+      setDetailInputs((prev) => ({
+        ...prev,
+        [key]: parseFloat(maxScore),
+      }));
+    }
+  };
+
+  // Handle Partial Score Input for specific questions
+  // 특정 문항에 대한 부분 점수 입력 처리 함수
+  const handleDetailScoreChange = (sectionId, questionNum, value, maxScore) => {
+    // Validate max score
+    // 최대 점수 검증
+    if (parseFloat(value) > maxScore) return;
+
+    const key = `${sectionId}-${questionNum}`;
+    setDetailInputs((prev) => ({
+      ...prev,
+      [key]: value === "" ? "" : parseFloat(value),
     }));
   };
 
@@ -507,7 +566,7 @@ export default function AddMockExamModal({
   };
 
   // Handle Form Submit (Create/Update)
-  // 폼 제출 처리 (생성/수정)
+  // 폼 제출 처리 (생성/수정) - Bulk Insert Logic Applied
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -530,7 +589,7 @@ export default function AddMockExamModal({
     setIsLoading(true);
 
     try {
-      
+
       // Prepare Nested Data Arrays for Bulk Insert
       // 대량 저장을 위한 중첩 데이터 배열 준비
       const detail_results = [];
@@ -550,16 +609,44 @@ export default function AddMockExamModal({
           );
         };
 
-        // Collect Detail Results (Checkboxes)
-        // 상세 결과 수집 (체크박스)
-        Object.entries(detailInputs).forEach(([key, isCorrect]) => {
+        // Collect Detail Results (Checkboxes & Partial Scores)
+        // 상세 결과 수집 (체크박스 및 부분 점수)
+        // Collect logic to handle Partial Scores
+        // 부분 점수를 처리하도록 수집 로직 수정
+        Object.entries(detailInputs).forEach(([key, value]) => {
           const [sectionId, questionNum] = key.split("-");
+
           if (isSectionActive(sectionId)) {
-            detail_results.push({
-              exam_section: parseInt(sectionId),
-              question_number: parseInt(questionNum),
-              is_correct: isCorrect,
-            });
+            // Find section to check type
+            // 섹션 유형 확인을 위한 섹션 탐색
+            const activeModule = activeModules.find((m) =>
+              m.sections?.some((s) => s.id === parseInt(sectionId)),
+            );
+            const section = activeModule?.sections?.find(
+              (s) => s.id === parseInt(sectionId),
+            );
+
+            if (section) {
+              if (section.allow_partial_score) {
+                // Send score for partial sections
+                // 부분 점수 섹션인 경우 점수(score) 전송
+                detail_results.push({
+                  exam_section: parseInt(sectionId),
+                  question_number: parseInt(questionNum),
+                  is_correct: value > 0, // Set is_correct based on score > 0
+                  score: parseFloat(value || 0),
+                });
+              } else {
+                // Send boolean for O/X sections
+                // O/X 섹션인 경우 불리언 전송
+                detail_results.push({
+                  exam_section: parseInt(sectionId),
+                  question_number: parseInt(questionNum),
+                  is_correct: value,
+                  score: value ? parseFloat(section.points_per_question) : 0, // Optional, but saves explicit score
+                });
+              }
+            }
           }
         });
 
@@ -579,7 +666,7 @@ export default function AddMockExamModal({
       }
 
       // Construct Main Payload with Nested Data
-      // 데이터가 포함된 메인 페이로드 구성
+      // 중첩 데이터가 포함된 메인 페이로드 구성
       const payload = {
         ...formData,
         student: parseInt(formData.student),
@@ -964,6 +1051,7 @@ export default function AddMockExamModal({
                 value={formData.source}
                 onChange={handleChange}
                 placeholder="모의고사 출처"
+                autoComplete="off"
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm placeholder:text-slate-400 dark:placeholder:text-muted-foreground/50"
               />
             </div>
@@ -1035,12 +1123,16 @@ export default function AddMockExamModal({
                                           </span>
                                           <span className="text-xs text-slate-400 dark:text-muted-foreground">
                                             {sec.is_question_based
-                                              ? `${parseFloat(sec.points_per_question)}점 x ${
+                                              ? `${parseFloat(
+                                                  sec.points_per_question,
+                                                )}점 x ${
                                                   sec.question_end_num -
                                                   sec.question_start_num +
                                                   1
                                                 }문항`
-                                              : `Max. ${parseFloat(sec.section_max_score)}점`}
+                                              : `Max. ${parseFloat(
+                                                  sec.section_max_score,
+                                                )}점`}
                                           </span>
                                         </div>
 
@@ -1056,6 +1148,65 @@ export default function AddMockExamModal({
                                               (_, i) =>
                                                 sec.question_start_num + i,
                                             ).map((qNum) => {
+                                              // Branching Rendering based on 'allow_partial_score'
+                                              // 'allow_partial_score'에 따른 분기 렌더링
+
+                                              // Case 1: Partial Score Input (Number)
+                                              // 케이스 1: 부분 점수 입력 (숫자형)
+                                              if (sec.allow_partial_score) {
+                                                const key = `${sec.id}-${qNum}`;
+                                                const val =
+                                                  detailInputs[key] !==
+                                                  undefined
+                                                    ? detailInputs[key]
+                                                    : "";
+
+                                                return (
+                                                  <div
+                                                    key={qNum}
+                                                    className="flex flex-col items-center gap-1"
+                                                  >
+                                                    <span className="text-xs text-slate-400 font-bold">
+                                                      {qNum}
+                                                    </span>
+                                                    <input
+                                                      type="number"
+                                                      value={val}
+                                                      onFocus={() =>
+                                                        handleDetailScoreFocus(
+                                                          sec.id,
+                                                          qNum,
+                                                          sec.points_per_question,
+                                                        )
+                                                      }
+                                                      onChange={(e) =>
+                                                        handleDetailScoreChange(
+                                                          sec.id,
+                                                          qNum,
+                                                          e.target.value,
+                                                          sec.points_per_question,
+                                                        )
+                                                      }
+                                                      className={`w-10 h-9 rounded-md border text-center text-xs font-bold focus:ring-1 focus:border-primary focus:ring-primary/10 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-slate-300
+                                                        ${
+                                                          val > 0
+                                                            ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
+                                                            : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border"
+                                                        }
+                                                    `}
+                                                      placeholder="0"
+                                                      min="0"
+                                                      max={
+                                                        sec.points_per_question
+                                                      }
+                                                      step="0.5"
+                                                    />
+                                                  </div>
+                                                );
+                                              }
+
+                                              // Case 2: Standard O/X Checkbox (Button) - Existing Code
+                                              // 케이스 2: 표준 O/X 체크박스 (버튼) - 기존 코드 유지
                                               const isCorrect =
                                                 !!detailInputs[
                                                   `${sec.id}-${qNum}`
@@ -1071,13 +1222,13 @@ export default function AddMockExamModal({
                                                     )
                                                   }
                                                   className={`
-                                                  w-9 h-9 rounded-lg text-xs font-bold flex items-center justify-center transition-all border cursor-pointer
-                                                  ${
-                                                    isCorrect
-                                                      ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
-                                                      : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border hover:border-slate-400 dark:hover:border-muted-foreground"
-                                                  }
-                                                `}
+                                        w-9 h-9 rounded-lg text-xs font-bold flex items-center justify-center transition-all border cursor-pointer
+                                        ${
+                                          isCorrect
+                                            ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
+                                            : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border hover:border-slate-400 dark:hover:border-muted-foreground"
+                                        }
+                                      `}
                                                 >
                                                   {isCorrect ? (
                                                     <Check className="w-4 h-4" />

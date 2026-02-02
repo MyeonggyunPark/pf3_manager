@@ -221,6 +221,13 @@ class ExamSection(models.Model):
     # UI 로직: 체크박스형(True) vs 점수 입력형(False)
     is_question_based = models.BooleanField(default=True)
 
+    # Allow Partial Score Flag
+    # 부분 점수 허용 여부 플래그 (예: C1 Hörverstehen Teil 3)
+    allow_partial_score = models.BooleanField(
+        default=False,
+        help_text="문항별 부분 점수 허용 여부 (True일 경우 O/X 대신 점수 입력)",
+    )
+
     question_start_num = models.PositiveIntegerField(null=True, blank=True)
     question_end_num = models.PositiveIntegerField(null=True, blank=True)
 
@@ -341,6 +348,16 @@ class ExamDetailResult(models.Model):
 
     question_number = models.PositiveIntegerField()
     is_correct = models.BooleanField(default=False)
+
+    # Actual Score Field for Partial Scoring
+    # 부분 점수를 위한 실제 점수 필드 (O/X가 아닌 정확한 점수 저장)
+    score = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="획득 점수 (부분 점수 포함)",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
