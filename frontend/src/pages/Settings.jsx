@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import * as LucideIcons from "lucide-react";
 import api from "../api";
 import {
@@ -12,6 +13,77 @@ import EditProfileModal from "../components/modals/EditProfileModal";
 import ChangePasswordModal from "../components/modals/ChangePasswordModal";
 import DeleteAccountModal from "../components/modals/DeleteAccountModal";
 
+
+const DeletionSuccessModal = ({ isOpen, onConfirm }) => {
+  // Prevent rendering if not open
+  // 열려있지 않으면 렌더링 방지
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-sm bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden m-4 animate-in zoom-in-95">
+        <div className="p-8 flex flex-col items-center text-center">
+          <div className="w-16 h-16 bg-accent/20 dark:bg-accent/10 text-[#4a7a78] dark:text-accent rounded-full flex items-center justify-center mb-4">
+            <LucideIcons.HeartHandshake className="w-8 h-8" />
+          </div>
+
+          <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent mb-2">
+            계정삭제 완료
+          </h3>
+
+          <p className="text-slate-400 dark:text-muted-foreground text-center mb-6 text-sm leading-relaxed">
+            그동안 서비스를 이용해 주셔서 감사합니다.
+          </p>
+
+          <Button
+            onClick={onConfirm}
+            className="w-full h-11 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
+          >
+            확인
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+};
+
+const DeletionErrorModal = ({ isOpen, onClose }) => {
+  // Prevent rendering if not open
+  // 열려있지 않으면 렌더링 방지
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-sm bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden m-4 animate-in zoom-in-95">
+        <div className="p-8 flex flex-col items-center text-center">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+            <LucideIcons.XCircle className="w-8 h-8 text-destructive" />
+          </div>
+
+          <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
+            삭제 실패
+          </h3>
+
+          <p className="text-sm text-center text-slate-500 dark:text-muted-foreground mb-8">
+            계정 삭제 중 오류가 발생했습니다.
+            <br />
+            잠시 후 다시 시도해 주세요.
+          </p>
+
+          <Button
+            onClick={onClose}
+            className="w-full bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 h-11 font-semibold text-sm transition-all cursor-pointer"
+          >
+            확인
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+};
+
 export default function Settings() {
   const [user, setUser] = useState(null);
 
@@ -22,9 +94,16 @@ export default function Settings() {
   );
   const [isLoading, setIsLoading] = useState(true);
 
+  // Modal States
+  // 모달 상태 관리
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Account Deletion States
+  // 계정 삭제 관련 상태 관리
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // 1st Step: Confirmation (1단계: 확인)
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // 2nd Step: Success (2단계: 성공)
+  const [showErrorModal, setShowErrorModal] = useState(false); // 2nd Step: Error (2단계: 실패)
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Sync profile data with backend on mount
@@ -57,21 +136,34 @@ export default function Settings() {
     }
   }, [isDarkMode]);
 
-  // Clean up session and redirect after deletion
-  // 탈퇴 후 세션 정리 및 페이지 이동
+  // Handle Account Deletion Process
+  // 계정 삭제 프로세스 처리
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
       await api.delete("/api/auth/user/");
-      localStorage.clear();
-      window.location.href = "/login";
+
+      // Success: Close confirm modal, Open success modal
+      // 성공: 확인 모달 닫기, 성공 모달 열기
+      setShowDeleteConfirm(false);
+      setShowSuccessModal(true);
     } catch (e) {
       console.error("Delete failed", e);
-      alert("계정 삭제에 실패했습니다.");
+
+      // Failure: Close confirm modal, Open error modal
+      // 실패: 확인 모달 닫기, 에러 모달 열기
       setShowDeleteConfirm(false);
+      setShowErrorModal(true);
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  // Final Cleanup and Redirect
+  // 최종 정리 및 리다이렉트 (성공 모달에서 확인 버튼 클릭 시 호출)
+  const handleFinalRedirect = () => {
+    localStorage.clear();
+    window.location.href = "/login";
   };
 
   // Helper function to get badge styles based on provider
@@ -128,11 +220,28 @@ export default function Settings() {
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
       />
+
+      {/* Account Deletion Modals */}
+      {/* 계정 삭제 관련 모달 컴포넌트 */}
       <DeleteAccountModal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteAccount}
         isDeleting={isDeleting}
+      />
+
+      {/* Deletion Success Modal (Custom Popup) */}
+      {/* 삭제 성공 모달 (커스텀 팝업) */}
+      <DeletionSuccessModal
+        isOpen={showSuccessModal}
+        onConfirm={handleFinalRedirect}
+      />
+
+      {/* Deletion Error Modal (Custom Popup) */}
+      {/* 삭제 실패 모달 (커스텀 팝업) */}
+      <DeletionErrorModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
       />
 
       {/* Profile Overview */}
