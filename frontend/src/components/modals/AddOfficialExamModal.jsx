@@ -178,12 +178,17 @@ export default function AddOfficialExamModal({
         }
 
         if (standardsRes) {
-          setExamStandards(standardsRes.data);
+          const sortedStandards = standardsRes.data.sort((a, b) =>
+            a.name.localeCompare(b.name),
+          );
+          setExamStandards(sortedStandards);
         } else {
           // Append error message if student fetch also failed, or set new
           // 학생 목록 실패 시 메시지 추가, 아니면 새로 설정
           setSubmitError((prev) =>
-            prev ? `${prev}` : "시험 기준을 불러오는데 실패했습니다.",
+            prev
+              ? `${prev} / 시험 기준을 불러오는데 실패했습니다.`
+              : "시험 기준을 불러오는데 실패했습니다.",
           );
         }
       };
@@ -354,6 +359,7 @@ export default function AddOfficialExamModal({
             ? null
             : parseInt(formData.exam_standard, 10),
         exam_name_manual: formData.exam_name_manual,
+        exam_mode: formData.exam_mode,
         total_score: formData.total_score
           ? parseFloat(formData.total_score)
           : null,

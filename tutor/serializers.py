@@ -286,12 +286,18 @@ class ExamRecordSerializer(serializers.ModelSerializer):
         응시 유형에 따른 만점 점수를 반환합니다.
         전체 응시인 경우 표준 총점을, 부분 응시인 경우 해당 모듈의 만점을 찾아 반환합니다.
         """
+        
+        # Full Exam (Total Score from Standard)
+        # 전체 응시인 경우: ExamStandard 모델의 total_score 사용
         if obj.exam_mode == "FULL":
             return obj.exam_standard.total_score
 
-        # Find the module corresponding to the exam mode
-        # 응시 모드에 해당하는 모듈 탐색
+        # Partial Exam (Written/Oral Score from Module)
+        # 부분 응시인 경우: ExamStandard와 연결된 ExamModule 중 타입이 일치하는 것 검색
         module = obj.exam_standard.modules.filter(module_type=obj.exam_mode).first()
+
+        # Return module max_score if exists, else 0
+        # 모듈이 존재하면 해당 모듈의 max_score 반환, 없으면 0
         return module.max_score if module else 0
 
     @transaction.atomic
@@ -407,14 +413,32 @@ class OfficialExamResultSerializer(serializers.ModelSerializer):
 
     def get_max_score(self, obj):
         """
-        Retrieve the total score from the linked ExamStandard.
-        Returns None if it's a manually entered exam without a standard.
+        Calculate max score dynamically based on exam mode.
+        Returns None for manual entries without a standard link.
 
-        연결된 시험 표준(ExamStandard)에서 총점을 조회합니다.
-        표준 없이 수동으로 입력한 시험인 경우 None을 반환합니다.
+        응시 유형에 따라 만점을 동적으로 계산합니다.
+        표준과 연결되지 않은 수동 입력의 경우 None을 반환합니다.
         """
-        if obj.exam_standard:
+        
+        # Manual entry without standard link -> Max score unknown
+        # 표준 링크가 없는 수동 입력 -> 만점 알 수 없음
+        if not obj.exam_standard:
+            return None
+
+        # Full Exam
+        # 전체 응시인 경우: 표준 총점 반환
+        if obj.exam_mode == "FULL":
             return obj.exam_standard.total_score
+
+        # Partial Exam (Written/Oral)
+        # Search for matching module in standard
+        # 부분 응시인 경우: 표준 내에서 일치하는 모듈(ExamModule) 검색하여 점수 반환
+        elif obj.exam_mode in ["WRITTEN", "ORAL"]:
+            # 'modules' is the related_name from ExamModule to ExamStandard
+            module = obj.exam_standard.modules.filter(module_type=obj.exam_mode).first()
+            if module:
+                return module.max_score
+
         return None
 
 
