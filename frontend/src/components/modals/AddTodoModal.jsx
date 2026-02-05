@@ -143,7 +143,32 @@ export default function AddTodoModal({
       handleClose();
     } catch (err) {
       console.error("Todo Save Failed:", err);
-      setSubmitError("저장 중 오류가 발생했습니다.");
+      const responseData = err.response?.data;
+
+      // Robust Error Handling logic applied
+      // 견고한 에러 핸들링 로직 적용
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        !responseData.detail
+      ) {
+        const fieldErrors = {};
+        Object.keys(responseData).forEach((key) => {
+          fieldErrors[key] = Array.isArray(responseData[key])
+            ? responseData[key][0]
+            : responseData[key];
+        });
+        setErrors(fieldErrors);
+
+        // 필드 에러가 있어도 상단에 공통 에러 메시지 표시
+        setSubmitError("입력 값을 확인해주세요.");
+      } else {
+        // 일반 에러
+        setSubmitError(
+          responseData?.detail ||
+            `업무 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
+        );
+      }
     } finally {
       setIsLoading(false);
     }

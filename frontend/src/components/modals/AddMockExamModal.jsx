@@ -292,7 +292,6 @@ export default function AddMockExamModal({
         if (examData.attachments) {
           setExistingFiles(examData.attachments);
         }
-
       } else {
         // Reset for Create Mode
         // 생성 모드 초기화
@@ -727,10 +726,36 @@ export default function AddMockExamModal({
       handleClose();
     } catch (err) {
       console.error("Mock Exam Submit Failed:", err);
-      setSubmitError(
-        err.response?.data?.detail ||
-          `모의고사 결과 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
-      );
+      const responseData = err.response?.data;
+
+      // Handle both Field Errors and General Errors properly
+      // 필드 에러와 일반 에러를 모두 적절히 처리
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        !responseData.detail
+      ) {
+        // Handle Field Errors (Validation Failed)
+        // 필드 에러 처리 (유효성 검사 실패)
+        const fieldErrors = {};
+        Object.keys(responseData).forEach((key) => {
+          fieldErrors[key] = Array.isArray(responseData[key])
+            ? responseData[key][0]
+            : responseData[key];
+        });
+        setErrors(fieldErrors);
+
+        // Show generic error message at top
+        // 상단에 공통 에러 메시지 표시
+        setSubmitError("입력 값을 확인해주세요.");
+      } else {
+        // Handle General Errors (Server Error, Permission, etc.)
+        // 일반 에러 처리 (서버 오류, 권한 등)
+        setSubmitError(
+          responseData?.detail ||
+            `모의고사 결과 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -1198,12 +1223,12 @@ export default function AddMockExamModal({
                                                         )
                                                       }
                                                       className={`w-10 h-9 rounded-md border text-center text-xs font-bold focus:ring-1 focus:border-primary focus:ring-primary/10 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-slate-300
-                                                        ${
-                                                          val > 0
-                                                            ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
-                                                            : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border"
-                                                        }
-                                                    `}
+                                                                ${
+                                                                  val > 0
+                                                                    ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
+                                                                    : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border"
+                                                                }
+                                                              `}
                                                       placeholder="0"
                                                       min="0"
                                                       max={
@@ -1232,13 +1257,13 @@ export default function AddMockExamModal({
                                                     )
                                                   }
                                                   className={`
-                                        w-9 h-9 rounded-lg text-xs font-bold flex items-center justify-center transition-all border cursor-pointer
-                                        ${
-                                          isCorrect
-                                            ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
-                                            : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border hover:border-slate-400 dark:hover:border-muted-foreground"
-                                        }
-                                      `}
+                                                                w-9 h-9 rounded-lg text-xs font-bold flex items-center justify-center transition-all border cursor-pointer
+                                                                ${
+                                                                  isCorrect
+                                                                    ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
+                                                                    : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border hover:border-slate-400 dark:hover:border-muted-foreground"
+                                                                }
+                                                              `}
                                                 >
                                                   {isCorrect ? (
                                                     <Check className="w-4 h-4" />
@@ -1449,7 +1474,7 @@ export default function AddMockExamModal({
 
         {/* Action Buttons Footer */}
         {/* 액션 버튼 푸터 */}
-        <div className="flex gap-3 p-4 shrink-0 bg-white dark:bg-card">
+        <div className="flex gap-3 p-4">
           {isEditMode && (
             <Button
               type="button"

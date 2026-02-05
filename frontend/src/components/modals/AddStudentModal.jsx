@@ -229,6 +229,9 @@ export default function AddStudentModal({
             : responseData[key];
         });
         setErrors(fieldErrors);
+
+        // 필드 에러가 있어도 상단에 에러 메시지 표시
+        setSubmitError("입력 값을 확인해주세요.");
       } else {
         // Fallback for general errors
         // 일반 에러 처리

@@ -217,15 +217,36 @@ export default function AddCourseModal({
       handleClose();
     } catch (err) {
       console.error("Course Create Failed:", err);
+      const responseData = err.response?.data;
 
-      // Set dynamic error message based on the mode (Edit vs Create)
-      // 모드(수정 vs 생성)에 따라 동적인 에러 메시지 설정
-      setSubmitError(
-        err.response?.data?.detail ||
-          `수강권 ${
-            isEditMode ? "변경" : "등록"
-          }에 실패했습니다. 입력 값을 확인해주세요.`,
-      );
+      // Handle both Field Errors and General Errors properly
+      // 필드 에러와 일반 에러를 모두 적절히 처리
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        !responseData.detail
+      ) {
+        // Handle Field Errors (Validation Failed)
+        // 필드 에러 처리 (유효성 검사 실패)
+        const fieldErrors = {};
+        Object.keys(responseData).forEach((key) => {
+          fieldErrors[key] = Array.isArray(responseData[key])
+            ? responseData[key][0]
+            : responseData[key];
+        });
+        setErrors(fieldErrors);
+
+        // Show generic error message at top
+        // 상단에 공통 에러 메시지 표시
+        setSubmitError("입력 값을 확인해주세요.");
+      } else {
+        // Handle General Errors (Server Error, Permission, etc.)
+        // 일반 에러 처리 (서버 오류, 권한 등)
+        setSubmitError(
+          responseData?.detail ||
+            `수강권 ${isEditMode ? "변경" : "등록"}에 실패했습니다.`,
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -343,7 +364,7 @@ export default function AddCourseModal({
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6" noValidate>
           {submitError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium text-center">
+            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium text-center animate-in slide-in-from-top-1">
               {submitError}
             </div>
           )}
@@ -358,11 +379,11 @@ export default function AddCourseModal({
                   value={formData.student}
                   onChange={handleChange}
                   className={`w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm appearance-none cursor-pointer
-                    ${
-                      formData.student === ""
-                        ? "text-slate-400 dark:text-muted-foreground/60"
-                        : "text-slate-800 dark:text-foreground"
-                    }`}
+                  ${
+                    formData.student === ""
+                      ? "text-slate-400 dark:text-muted-foreground/60"
+                      : "text-slate-800 dark:text-foreground"
+                  }`}
                 >
                   <option value="" disabled hidden>
                     학생을 선택하세요.

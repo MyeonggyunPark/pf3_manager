@@ -116,6 +116,9 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
             : responseData[key];
         });
         setErrors(fieldErrors);
+
+        // 필드 에러가 있어도 상단에 에러 메시지 표시
+        setSubmitError("입력 값을 확인해주세요.");
       } else {
         setSubmitError(responseData?.detail || "비밀번호 변경에 실패했습니다.");
       }
