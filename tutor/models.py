@@ -180,8 +180,7 @@ class Student(models.Model):
         _("Kundennummer"),
         max_length=20,
         blank=True,
-        null=True,
-        unique=False,
+        unique=True,
         help_text="학생 고유 식별 번호 (예: KD-1001)",
     )
 
