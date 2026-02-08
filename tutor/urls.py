@@ -18,6 +18,8 @@ from .views import (
     CustomLoginView,
     CustomUserDetailsView,
     social_login_callback,
+    BusinessProfileDetailView,
+    InvoiceViewSet,
 )
 
 # Initialize DefaultRouter to automatically generate URLs for ViewSets
@@ -67,6 +69,10 @@ router.register(r"lessons", LessonViewSet, basename="lesson")
 # /api/todos/ -> 투두 리스트 CRUD 작업
 router.register(r"todos", TodoViewSet, basename="todo")
 
+# /api/invoices/ -> Invoice CRUD operations
+# /api/invoices/ -> 영수증 CRUD 작업
+router.register(r"invoices", InvoiceViewSet, basename="invoice")
+
 urlpatterns = [
     # Include all router-generated URLs
     # 라우터가 생성한 모든 URL을 포함합니다
@@ -87,6 +93,10 @@ urlpatterns = [
     # Custom User Details Endpoint
     # 사용자 상세 정보 엔드포인트
     path("auth/user/", CustomUserDetailsView.as_view(), name="user_details"),
+    
+    # Business Profile Endpoint
+    # 사업자 프로필 설정 엔드포인트
+    path("business-profile/", BusinessProfileDetailView.as_view(), name="business-profile"),
     
     # Dashboard Stats Endpoint
     # 대시보드 통계 엔드포인트

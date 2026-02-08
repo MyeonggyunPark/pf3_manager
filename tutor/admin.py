@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.utils.translation import gettext_lazy as _
+
 from .models import (
     Tutor,
     Student,
@@ -14,12 +16,30 @@ from .models import (
     OfficialExamResult,
     Lesson,
     Todo,
+    BusinessProfile,
+    Invoice,
+    InvoiceItem,
+    InvoiceAdjustment,
 )
 
 
 # ==========================================
 # 1. Tutor (Custom User) Configuration
 # ==========================================
+class BusinessProfileInline(admin.StackedInline):
+    """
+    Inline Admin for Business Profile.
+    Allows editing profile directly inside Tutor admin page.
+
+    사업자 프로필을 위한 인라인 어드민.
+    튜터 관리자 페이지 내에서 프로필을 직접 수정할 수 있게 함.
+    """
+
+    model = BusinessProfile
+    can_delete = False
+    verbose_name_plural = "Business Profile (Settings)"
+
+
 @admin.register(Tutor)
 class TutorAdmin(UserAdmin):
     """
@@ -31,6 +51,8 @@ class TutorAdmin(UserAdmin):
     'provider'와 같은 커스텀 필드를 관리자 패널에 표시함.
     UserAdmin을 상속받아 비밀번호 해싱 등을 올바르게 처리함.
     """
+
+    inlines = [BusinessProfileInline]
 
     list_display = ("email", "name", "provider", "is_staff", "created_at")
     list_filter = ("provider", "is_staff", "is_active")
@@ -73,7 +95,7 @@ class CourseRegistrationInline(admin.TabularInline):
     model = CourseRegistration
 
     # No empty rows by default (깔끔한 UI를 위해 빈 줄 숨김)
-    extra = 0 
+    extra = 0
 
 
 class ExamRecordInline(admin.TabularInline):
@@ -93,9 +115,7 @@ class ExamRecordInline(admin.TabularInline):
 
     # Score is calculated automatically, so keep it read-only here
     # 점수는 자동 계산되므로 여기서는 읽기 전용으로 설정
-    readonly_fields = (
-        "total_score",
-    )  
+    readonly_fields = ("total_score",)
     show_change_link = True
 
 
@@ -130,6 +150,7 @@ class StudentAdmin(admin.ModelAdmin):
 
     list_display = (
         "name",
+        "customer_number",  # Added: Critical for invoicing (추가: 송장 발행에 필수)
         "tutor",
         "status",
         "current_level",
@@ -137,7 +158,10 @@ class StudentAdmin(admin.ModelAdmin):
         "target_exam_mode",
     )
     list_filter = ("status", "current_level", "target_level", "gender")
-    search_fields = ("name", "tutor__name")
+
+    # Added customer_number and billing_name to search fields
+    # 검색 필드에 고객 번호(customer_number)와 청구인 이름(billing_name) 추가
+    search_fields = ("name", "customer_number", "billing_name", "tutor__name")
 
     # Optimization: Fetch tutor data in a single query (N+1 Problem Fix)
     # 최적화: 튜터 정보를 한 번의 쿼리로 가져옴
@@ -148,6 +172,41 @@ class StudentAdmin(admin.ModelAdmin):
     # 학생 페이지 내부에 수강 등록 및 시험 이력 테이블 삽입
     # 학생의 모든 이력(수강, 모의고사, 정규 시험)을 한 화면에서 통합 관리
     inlines = [CourseRegistrationInline, ExamRecordInline, OfficialExamResultInline]
+
+    # Organize fields logically with the new address structure
+    # 새로운 주소 구조에 맞춰 필드를 논리적으로 그룹화
+    fieldsets = (
+        (
+            "Basic Info",
+            {"fields": ("tutor", "name", "customer_number", "gender", "age", "memo")},
+        ),
+        (
+            "Academic Status",
+            {
+                "fields": (
+                    "status",
+                    "current_level",
+                    "target_level",
+                    "target_exam_mode",
+                )
+            },
+        ),
+        (
+            "Invoice Information (Rechnungsdaten)",
+            {
+                "fields": (
+                    "billing_name",
+                    "street",
+                    ("postcode", "city"),
+                    "country",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+    )
+    # Make customer_number read-only to prevent manual errors (auto-generated)
+    # 고객 번호는 자동 생성되므로 실수 방지를 위해 읽기 전용으로 설정
+    readonly_fields = ("customer_number",)
 
 
 @admin.register(CourseRegistration)
@@ -528,3 +587,111 @@ class TodoAdmin(admin.ModelAdmin):
     # Default sorting for admin view
     # 관리자 뷰 기본 정렬
     ordering = ("is_completed", "priority", "due_date")
+
+
+# ==========================================
+# 8. Invoice Management
+# ==========================================
+class InvoiceItemInline(admin.TabularInline):
+    """
+    Inline for Invoice Line Items.
+    Allows managing products/services within the invoice.
+
+    영수증 상세 항목 인라인.
+    영수증 내에서 상품/서비스를 관리할 수 있게 함.
+    """
+
+    model = InvoiceItem
+    extra = 1
+
+
+class InvoiceAdjustmentInline(admin.TabularInline):
+    """
+    Inline for Invoice Adjustments.
+    Allows managing global discounts or surcharges.
+
+    영수증 조정(할인/추가금) 인라인.
+    전체 할인이나 추가금을 관리할 수 있게 함.
+    """
+
+    model = InvoiceAdjustment
+    extra = 0
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    """
+    Invoice Admin Configuration.
+    Manages generated invoices. Sender data is read-only as it's a snapshot.
+    Updated to include Adjustments (Discounts/Surcharges).
+
+    영수증 관리 설정.
+    생성된 영수증을 관리함. 발신자 데이터는 스냅샷이므로 읽기 전용임.
+    조정 항목(할인/추가금) 관리가 포함되도록 업데이트됨.
+    """
+
+    list_display = (
+        "full_invoice_code",
+        "recipient_name",
+        "total_amount",
+        "due_date",
+        "is_paid",
+        "created_at",
+    )
+    list_filter = ("is_paid", "created_at", "is_small_business")
+    search_fields = ("full_invoice_code", "recipient_name", "student__name")
+
+    # Included InvoiceAdjustmentInline for complete invoice management
+    # 완전한 영수증 관리를 위해 조정 항목 인라인 포함
+    inlines = [InvoiceItemInline, InvoiceAdjustmentInline]
+
+    # Protect integrity of the invoice and calculated fields
+    # 영수증 무결성 및 계산된 필드 보호
+    readonly_fields = (
+        "full_invoice_code",
+        "invoice_number",
+        "sender_data",
+        "subtotal",
+        "vat_amount",
+        "total_adjustment_amount",
+        "total_amount",
+    )
+
+    fieldsets = (
+        (
+            "Basic Info",
+            {
+                "fields": (
+                    "tutor",
+                    "student",
+                    "course_registration",
+                    "full_invoice_code",
+                    "created_at",
+                )
+            },
+        ),
+        ("Recipient", {"fields": ("recipient_name", "recipient_address")}),
+        ("Dates", {"fields": ("delivery_date_start", "delivery_date_end", "due_date")}),
+        ("Content", {"fields": ("subject", "header_text", "footer_text")}),
+        (
+            "Financials (Read-Only)",
+            {
+                "fields": (
+                    "subtotal",
+                    "total_adjustment_amount",
+                    "vat_amount",
+                    "total_amount",
+                    "is_paid",
+                    "is_small_business",
+                )
+            },
+        ),
+        ("Snapshot", {"fields": ("sender_data",)}),
+        (
+            "Delivery Options",
+            {
+                "fields": ("is_sent",),
+                "classes": ("collapse",),
+            },
+        ),
+    )
