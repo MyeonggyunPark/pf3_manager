@@ -1,4 +1,6 @@
+import json
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 
 from django.shortcuts import redirect
 from django.conf import settings
@@ -6,6 +8,9 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, Count, Avg, Q
 from django.db.models.functions import TruncMonth
+from django.db import transaction
+from django.template.loader import render_to_string
+from django.http import HttpResponse
 
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
@@ -21,6 +26,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from dj_rest_auth.views import UserDetailsView, LoginView
 from dj_rest_auth.registration.views import RegisterView, VerifyEmailView
 
+from weasyprint import HTML
+
 from .models import (
     Student,
     CourseRegistration,
@@ -32,7 +39,11 @@ from .models import (
     OfficialExamResult,
     Lesson,
     Todo,
+    BusinessProfile,
+    Invoice,
+    InvoiceAdjustment,
 )
+
 from .serializers import (
     StudentSerializer,
     CourseRegistrationSerializer,
@@ -44,6 +55,8 @@ from .serializers import (
     OfficialExamResultSerializer,
     LessonSerializer,
     TodoSerializer,
+    BusinessProfileSerializer,
+    InvoiceSerializer,
 )
 
 
@@ -696,6 +709,7 @@ class CustomRegisterView(RegisterView):
 
     authentication_classes = []
 
+
 class CustomVerifyEmailView(VerifyEmailView):
     """
     Custom Verify Email View to bypass authentication checks.
@@ -704,8 +718,10 @@ class CustomVerifyEmailView(VerifyEmailView):
     인증 검사를 우회하는 커스텀 이메일 인증 뷰.
     삭제된 계정의 만료된 쿠키로 인해 발생하는 'User not found' 401 에러를 방지합니다.
     """
-    authentication_classes = [] 
+
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
+
 
 class CustomUserDetailsView(UserDetailsView):
     """
@@ -753,6 +769,602 @@ class CustomLoginView(LoginView):
     """
 
     authentication_classes = []
+
+
+class BusinessProfileDetailView(APIView):
+    """
+    API View for retrieving and updating Business Profile.
+    Handles 'Upsert' (Update or Insert) logic and Logo deletion.
+
+    사업자 프로필 조회 및 수정을 위한 API View.
+    'Upsert' (수정 또는 생성) 로직과 로고 삭제 처리를 담당함.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        Retrieve the Business Profile for the logged-in user.
+        Returns 404 if not found (Frontend interprets this as Create Mode).
+
+        로그인한 사용자의 사업자 프로필을 조회함.
+        없으면 404 반환 (프론트엔드에서 이를 생성 모드로 인식함).
+        """
+        try:
+            profile = BusinessProfile.objects.get(tutor=request.user)
+            serializer = BusinessProfileSerializer(profile)
+            return Response(serializer.data)
+        except BusinessProfile.DoesNotExist:
+            return Response(
+                {"detail": "Business profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    def post(self, request):
+        """
+        Create or Update Business Profile.
+        Handles specific logic for logo deletion ('DELETE' string).
+
+        사업자 프로필 생성 또는 수정.
+        로고 삭제('DELETE' 문자열)에 대한 특정 로직을 처리함.
+        """
+        data = request.data.copy()
+        user = request.user
+
+        # Logo Deletion Logic
+        # 로고 삭제 로직: 'logo' 필드로 "DELETE" 문자열이 전송된 경우
+        if data.get("logo") == "DELETE":
+            try:
+                profile = BusinessProfile.objects.get(tutor=user)
+                # Delete file from storage but keep the record
+                # 저장소에서 파일은 삭제하지만 DB 레코드는 유지
+                profile.logo.delete(save=False)
+                profile.logo = None
+                profile.save()
+            except BusinessProfile.DoesNotExist:
+                pass
+
+            # Remove 'logo' key to prevent serializer validation error
+            # 시리얼라이저 유효성 검사 오류 방지를 위해 'logo' 키 제거
+            if "logo" in data:
+                del data["logo"]
+
+        try:
+            # Update Mode
+            # 수정 모드: 기존 프로필이 있으면 업데이트
+            profile = BusinessProfile.objects.get(tutor=user)
+            serializer = BusinessProfileSerializer(profile, data=data, partial=True)
+        except BusinessProfile.DoesNotExist:
+            # Create Mode
+            # 생성 모드: 프로필이 없으면 새로 생성
+            serializer = BusinessProfileSerializer(data=data)
+
+        if serializer.is_valid():
+            # Force assignment of the logged-in user as tutor
+            # 로그인한 사용자를 튜터로 강제 할당
+            serializer.save(tutor=user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class InvoiceViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing Invoices.
+    Handles CRUD operations, PDF generation, and sequence management.
+
+    영수증 관리를 위한 ViewSet.
+    CRUD 작업, PDF 생성 및 번호 순서 관리를 처리함.
+    """
+
+    serializer_class = InvoiceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Retrieve invoices only for the logged-in tutor.
+        로그인한 튜터의 영수증만 조회.
+        """
+        return Invoice.objects.filter(tutor=self.request.user)
+
+    @action(detail=False, methods=["get"])
+    def next_number(self, request):
+        """
+        Get the next invoice number based on BusinessProfile settings.
+        Also returns the Tax Configuration (Small Business Status).
+        Format: RE-{Seq}{YY}{MM} (e.g., RE-10012602)
+
+        비즈니스 프로필 설정을 기반으로 다음 영수증 번호를 반환함.
+        동시에 세금 설정(소규모 사업자 여부) 정보도 반환하여 프론트엔드 초기값을 설정함.
+        """
+        try:
+            profile = BusinessProfile.objects.get(tutor=request.user)
+            seq = profile.next_invoice_number
+            now = datetime.now()
+            # YYMM format
+            # YYMM 포맷 (예: 2602)
+            yymm = now.strftime("%y%m")
+            full_code = f"RE-{seq}{yymm}"
+
+            return Response(
+                {
+                    "next_number": full_code,
+                    "sequence": seq,
+                    "yymm": yymm,
+                    # Return tax settings for frontend logic
+                    # 프론트엔드 로직(부가세 자동 설정)을 위해 세금 설정 반환
+                    "tax_config": {
+                        "is_small_business": profile.is_small_business,
+                        "vat_rate": 0 if profile.is_small_business else 19,
+                    },
+                }
+            )
+        except BusinessProfile.DoesNotExist:
+            return Response(
+                {"detail": "Business profile not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    @action(detail=False, methods=["post"])
+    @transaction.atomic
+    def create_full(self, request):
+        """
+        Create a complete invoice with items.
+        Generates the invoice number safely on the server side.
+        Uses transaction.atomic to ensure data integrity.
+
+        완전한 영수증 생성.
+        서버 사이드에서 영수증 번호를 안전하게(중복 없이) 생성하고 저장함.
+        transaction.atomic을 사용하여 데이터 무결성을 보장함.
+        """
+        user = request.user
+        data = request.data.copy()
+
+        try:
+            # Lock the profile row to prevent race conditions on invoice number
+            # 영수증 번호 동시성 문제를 방지하기 위해 프로필 행을 잠금(Lock)
+            profile = BusinessProfile.objects.select_for_update().get(tutor=user)
+        except BusinessProfile.DoesNotExist:
+            return Response(
+                {"detail": "먼저 사업자 프로필(설정)을 완료해주세요."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        seq = profile.next_invoice_number
+        yymm = datetime.now().strftime("%y%m")
+        full_code = f"RE-{seq}{yymm}"
+
+        # Assign generated values
+        # 생성된 값 할당
+        data["invoice_number"] = seq
+        data["full_invoice_code"] = full_code
+        # Snapshot current profile data
+        # 현재 프로필 데이터를 스냅샷으로 저장
+        data["sender_data"] = BusinessProfileSerializer(profile).data
+
+        data["is_small_business"] = profile.is_small_business
+
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+
+            invoice = serializer.save(
+                tutor=user,
+                invoice_number=seq,
+                full_invoice_code=full_code,
+                sender_data=data["sender_data"],
+                is_small_business=data["is_small_business"],
+            )
+
+            # Increment sequence number safely
+            # 순서 번호를 안전하게 증가
+            profile.next_invoice_number += 1
+            profile.save()
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"])
+    def preview_pdf(self, request):
+        """
+        Generate a PDF preview for the invoice without saving it.
+        Uses WeasyPrint to render HTML to PDF.
+
+        저장하지 않고 영수증 PDF 미리보기를 생성함.
+        WeasyPrint를 사용하여 HTML을 PDF로 렌더링함.
+        """
+        if HTML is None:
+            return Response(
+                {"detail": "WeasyPrint library is not installed."}, status=500
+            )
+
+        data = request.data
+        user = request.user
+
+        # Helper function: Format number to German standard (e.g., 1.000,00)
+        # 헬퍼 함수: 독일 표준 숫자 형식으로 변환 (예: 1.000,00)
+        def format_de(value):
+            if value is None:
+                return "0,00"
+            try:
+                val = Decimal(str(value))
+            except:
+                return "0,00"
+            s = "{:,.2f}".format(val)
+            # Swap dots and commas
+            # 점과 쉼표를 교체
+            return s.replace(",", "X").replace(".", ",").replace("X", ".")
+
+        # Helper function: Format date to German standard (DD.MM.YYYY)
+        # 헬퍼 함수: 독일 표준 날짜 형식으로 변환 (DD.MM.YYYY)
+        def format_date_de(date_str):
+            if not date_str:
+                return ""
+            try:
+                return datetime.strptime(date_str, "%Y-%m-%d").strftime("%d.%m.%Y")
+            except:
+                return date_str
+
+        # Fetch Business Profile for sender data
+        # 발신자 데이터 구성을 위한 비즈니스 프로필 조회
+        try:
+            profile = BusinessProfile.objects.get(tutor=user)
+            req_small_biz = data.get("is_small_business")
+            is_small_business = (
+                req_small_biz
+                if req_small_biz is not None
+                else getattr(profile, "is_small_business", False)
+            )
+
+            sender_data = {
+                "company_name": profile.company_name,
+                "manager_name": profile.manager_name,
+                "street": profile.street,
+                "postcode": profile.postcode,
+                "city": profile.city,
+                "phone": profile.phone,
+                "email": profile.email,
+                "website": profile.website,
+                "bank_name": profile.bank_name,
+                "iban": profile.iban,
+                "bic": profile.bic,
+                "tax_number": profile.tax_number,
+                "country": profile.country,
+            }
+        except BusinessProfile.DoesNotExist:
+            sender_data = {}
+            is_small_business = False
+
+        # Parse Recipient Address
+        # 수신자 주소 파싱
+        try:
+            recipient_address = json.loads(data.get("recipient_address", "{}"))
+        except:
+            recipient_address = {}
+
+        recipient_name = data.get("recipient_name", "Unbekannt")
+        recipient_no = ""
+        recipient_salutation = ""
+        student_id = data.get("student") or data.get("recipient_id")
+
+        # If student is linked, fetch details for defaults
+        # 학생이 연결된 경우, 기본값 설정을 위해 상세 정보 조회
+        if student_id:
+            try:
+                student = Student.objects.get(id=student_id)
+
+                if recipient_name == "Unbekannt":
+                    recipient_name = student.billing_name or student.name
+
+                recipient_no = student.customer_number
+
+                if student.gender == "M":
+                    recipient_salutation = "Herr"
+                elif student.gender == "F":
+                    recipient_salutation = "Frau"
+            except Student.DoesNotExist:
+                pass
+
+        header_text = data.get("header_text", "")
+
+        # Infer salutation from header text if not set
+        # 설정되지 않은 경우 헤더 텍스트에서 인사말 추론
+        if not recipient_salutation:
+            if "Frau" in header_text and "Herr" not in header_text:
+                recipient_salutation = "Frau"
+            elif "Herr" in header_text and "Frau" not in header_text:
+                recipient_salutation = "Herr"
+
+        recipient_data = {
+            "name": recipient_name,
+            "customer_no": recipient_no,
+            "salutation": recipient_salutation,
+            "street": recipient_address.get("street", ""),
+            "zip": recipient_address.get("zip", ""),
+            "city": recipient_address.get("city", ""),
+            "country": recipient_address.get("country", ""),
+        }
+
+        # Process Footer Variables
+        # 푸터 변수(치환자) 처리
+        raw_footer = data.get("footer_text", "")
+        formatted_due_date = ""
+        due_date_str = data.get("due_date")
+
+        if due_date_str:
+            formatted_due_date = format_date_de(due_date_str)
+            raw_footer = raw_footer.replace("[%ZAHLUNGSZIEL%]", formatted_due_date)
+
+        raw_footer = raw_footer.replace(
+            "[%KONTAKTPERSON%]", sender_data.get("manager_name", "")
+        )
+
+        # Format Dates
+        # 날짜 포맷팅
+        invoice_date = format_date_de(data.get("invoice_date"))
+        delivery_start = format_date_de(data.get("delivery_date_start"))
+        delivery_end = format_date_de(data.get("delivery_date_end"))
+
+        delivery_text = delivery_start
+        if delivery_end:
+            delivery_text = f"{delivery_start} - {delivery_end}"
+
+        # Process Items
+        # 항목(Items) 처리 및 계산
+        items = data.get("items", [])
+        items_data = []
+
+        items_sum_decimal = Decimal("0.00")
+
+        UNIT_TRANS = {
+            "DAY": "Tag(e)",
+            "HOUR": "Std.",
+            "PIECE": "Stk.",
+            "FLAT_RATE": "pauschal",
+        }
+
+        for item in items:
+            try:
+                qty = Decimal(str(item.get("quantity", 0) or 0))
+                price = Decimal(str(item.get("unit_price", 0) or 0))
+                disc_val = Decimal(str(item.get("discount_value", 0) or 0))
+                vat_rate = Decimal(str(item.get("vat_rate", 0) or 0))
+                total_p = Decimal(str(item.get("total_price", 0) or 0))
+            except:
+                qty = price = disc_val = vat_rate = total_p = Decimal(0)
+
+            items_sum_decimal += total_p
+
+            raw_unit = item.get("unit", "PIECE")
+
+            items_data.append(
+                {
+                    "description": item.get("description", ""),
+                    "quantity": format_de(qty),
+                    "unit_display": UNIT_TRANS.get(raw_unit, raw_unit),
+                    "unit_price": format_de(price),
+                    "discount_value": format_de(disc_val),
+                    "discount_unit": item.get("discount_unit", "PERCENT"),
+                    "vat_rate": format_de(vat_rate),
+                    "total_price": format_de(total_p),
+                }
+            )
+
+        # Process Adjustments (Discounts/Surcharges)
+        # 조정 항목(할인/추가금) 처리
+        adjustments_input = data.get("adjustments", [])
+        processed_adjustments = []
+
+        for adj in adjustments_input:
+            try:
+                val = Decimal(str(adj.get("value", 0) or 0))
+                amt = Decimal(str(adj.get("amount", 0) or 0))
+
+            except:
+                val = amt = Decimal(0)
+
+            processed_adjustments.append(
+                {
+                    "label": adj.get("label", ""),
+                    "type": adj.get("type", "DISCOUNT"),
+                    "value": format_de(val),
+                    "unit": adj.get("unit", "PERCENT"),
+                    "amount": format_de(amt),
+                }
+            )
+
+        # Process Totals
+        # 총계 처리
+        try:
+            subtotal = Decimal(str(data.get("subtotal", 0) or 0))
+            vat_amount = Decimal(str(data.get("vat_amount", 0) or 0))
+            total_amount = Decimal(str(data.get("total_amount", 0) or 0))
+        except:
+            subtotal = vat_amount = total_amount = Decimal(0)
+
+        # Context for Template
+        # 템플릿에 전달할 컨텍스트
+        context = {
+            "invoice_number": data.get("invoice_number", ""),
+            "invoice_date": invoice_date,
+            "delivery_date": delivery_text,
+            "subject": data.get("subject", ""),
+            "header_text": header_text,
+            "footer_text": raw_footer,
+            "sender": sender_data,
+            "recipient": recipient_data,
+            "items": items_data,
+            "items_total": format_de(items_sum_decimal),
+            "subtotal": format_de(subtotal),
+            "vat_amount": format_de(vat_amount),
+            "total_amount": format_de(total_amount),
+            "adjustments": processed_adjustments,
+            "is_small_business": is_small_business,
+            "due_date": formatted_due_date,
+        }
+
+        # Render HTML and create PDF
+        # HTML 렌더링 및 PDF 생성
+        html_string = render_to_string("invoices/invoice_pdf.html", context)
+        pdf_file = HTML(string=html_string).write_pdf()
+
+        # Return PDF file response
+        # PDF 파일 응답 반환
+        response = HttpResponse(pdf_file, content_type="application/pdf")
+        response["Content-Disposition"] = 'inline; filename="preview.pdf"'
+        return response
+
+    @action(detail=True, methods=["get"])
+    def download_pdf(self, request, pk=None):
+        """
+        Download PDF for an existing invoice.
+        Fetches data from the database and renders the PDF.
+
+        기존 영수증에 대한 PDF 다운로드.
+        데이터베이스에서 데이터를 가져와 PDF를 렌더링함.
+        """
+        if HTML is None:
+            return Response(
+                {"detail": "WeasyPrint library is not installed."}, status=500
+            )
+
+        invoice = self.get_object()
+
+        # Helper: Format Number
+        # 헬퍼: 숫자 포맷팅
+        def format_de(value):
+            if value is None:
+                return "0,00"
+            try:
+                val = Decimal(str(value))
+            except:
+                return "0,00"
+            s = "{:,.2f}".format(val)
+            return s.replace(",", "X").replace(".", ",").replace("X", ".")
+
+        # Helper: Format Date
+        # 헬퍼: 날짜 포맷팅
+        def format_date_de(d):
+            if not d:
+                return ""
+            return d.strftime("%d.%m.%Y")
+
+        # Use stored snapshot data if available, else fetch current profile
+        # 저장된 스냅샷 데이터가 있으면 사용하고, 없으면 현재 프로필 조회
+        sender_data = invoice.sender_data
+
+        if not sender_data:
+            try:
+                profile = BusinessProfile.objects.get(tutor=invoice.tutor)
+                sender_data = BusinessProfileSerializer(profile).data
+            except BusinessProfile.DoesNotExist:
+                sender_data = {}
+
+        try:
+            r_addr = json.loads(invoice.recipient_address)
+        except (TypeError, json.JSONDecodeError):
+            r_addr = {}
+
+        # Determine Salutation
+        # 인사말 결정
+        header_text = invoice.header_text or ""
+        recipient_salutation = ""
+        if "Frau" in header_text and "Herr" not in header_text:
+            recipient_salutation = "Frau"
+        elif "Herr" in header_text and "Frau" not in header_text:
+            recipient_salutation = "Herr"
+
+        customer_no = ""
+        if invoice.student and invoice.student.customer_number:
+            customer_no = invoice.student.customer_number
+
+        recipient_data = {
+            "name": invoice.recipient_name,
+            "salutation": recipient_salutation,
+            "customer_no": customer_no,
+            "street": r_addr.get("street", ""),
+            "zip": r_addr.get("zip", ""),
+            "city": r_addr.get("city", ""),
+            "country": r_addr.get("country", ""),
+        }
+
+        # Footer Processing
+        # 푸터 처리
+        raw_footer = invoice.footer_text or ""
+        formatted_due_date = format_date_de(invoice.due_date)
+        raw_footer = raw_footer.replace("[%ZAHLUNGSZIEL%]", formatted_due_date)
+        raw_footer = raw_footer.replace(
+            "[%KONTAKTPERSON%]", sender_data.get("manager_name", "")
+        )
+
+        delivery_text = format_date_de(invoice.delivery_date_start)
+        if invoice.delivery_date_end:
+            delivery_text += f" - {format_date_de(invoice.delivery_date_end)}"
+
+        items_data = []
+        items_sum_decimal = Decimal("0.00")
+
+        UNIT_TRANS = {
+            "DAY": "Tag(e)",
+            "HOUR": "Std.",
+            "PIECE": "Stk.",
+            "FLAT_RATE": "pauschal",
+        }
+
+        for item in invoice.items.all():
+            items_sum_decimal += item.total_price
+
+            items_data.append(
+                {
+                    "description": item.description,
+                    "quantity": format_de(item.quantity),
+                    "unit_display": UNIT_TRANS.get(item.unit, item.unit),
+                    "unit_price": format_de(item.unit_price),
+                    "discount_value": format_de(item.discount_value),
+                    "vat_rate": format_de(item.vat_rate),
+                    "total_price": format_de(item.total_price),
+                    "discount_unit": item.discount_unit,
+                }
+            )
+
+        processed_adjustments = []
+        for adj in invoice.adjustments.all():
+            processed_adjustments.append(
+                {
+                    "label": adj.label,
+                    "type": adj.type,
+                    "value": format_de(adj.value),
+                    "unit": adj.unit,
+                    "amount": format_de(adj.amount),
+                }
+            )
+
+        context = {
+            "invoice_number": invoice.full_invoice_code,
+            "invoice_date": invoice.created_at.strftime("%d.%m.%Y"),
+            "delivery_date": delivery_text,
+            "subject": invoice.subject,
+            "header_text": invoice.header_text,
+            "footer_text": raw_footer,
+            "sender": sender_data,
+            "recipient": recipient_data,
+            "items": items_data,
+            "items_total": format_de(items_sum_decimal),
+            "subtotal": format_de(invoice.subtotal),
+            "vat_amount": format_de(invoice.vat_amount),
+            "total_amount": format_de(invoice.total_amount),
+            "adjustments": processed_adjustments,
+            "is_small_business": invoice.is_small_business,
+            "due_date": formatted_due_date,
+        }
+
+        html_string = render_to_string("invoices/invoice_pdf.html", context)
+        pdf_file = HTML(string=html_string).write_pdf()
+
+        response = HttpResponse(pdf_file, content_type="application/pdf")
+        filename = f"Rechnung_{invoice.full_invoice_code}.pdf"
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
 
 
 @api_view(["GET"])

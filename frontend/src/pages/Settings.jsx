@@ -12,7 +12,7 @@ import Button from "../components/ui/Button";
 import EditProfileModal from "../components/modals/EditProfileModal";
 import ChangePasswordModal from "../components/modals/ChangePasswordModal";
 import DeleteAccountModal from "../components/modals/DeleteAccountModal";
-
+import InvoiceSettingsModal from "../components/modals/InvoiceSettingsModal";
 
 const DeletionSuccessModal = ({ isOpen, onConfirm }) => {
   // Prevent rendering if not open
@@ -98,6 +98,7 @@ export default function Settings() {
   // 모달 상태 관리
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   // Account Deletion States
   // 계정 삭제 관련 상태 관리
@@ -207,7 +208,7 @@ export default function Settings() {
   const isEmailUser = !user.provider || user.provider === "email";
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 animate-in fade-in">
+    <div className="max-w-xl mx-auto space-y-6 animate-in fade-in pb-10">
       {/* Modals for specific actions */}
       {/* 개별 기능을 위한 모달 컴포넌트 */}
       <EditProfileModal
@@ -219,6 +220,18 @@ export default function Settings() {
       <ChangePasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
+      />
+
+      {/* Invoice Settings Modal */}
+      {/* 영수증 설정 모달 */}
+      <InvoiceSettingsModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        onSuccess={() => {
+          // Optional: Show a toast notification or just close
+          // 선택사항: 토스트 알림 표시 또는 단순 닫기
+          // console.log("Business Profile Updated");
+        }}
       />
 
       {/* Account Deletion Modals */}
@@ -280,6 +293,37 @@ export default function Settings() {
             <LucideIcons.Edit3 className="w-4 h-4 mr-2" /> 정보 수정
           </Button>
         </CardHeader>
+      </Card>
+
+      {/* Business Settings */}
+      {/* 사업자 설정 */}
+      <Card className="overflow-hidden border-none shadow-md bg-white dark:bg-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-muted-foreground dark:text-muted-foreground">
+            <div className="w-8 h-8 border-3 border-muted dark:border-border rounded-lg flex items-center justify-center shadow-md">
+              <LucideIcons.Building2 className="w-5 h-5" />
+            </div>
+            사업자 설정
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
+                정보 관리
+              </div>
+              <div className="text-xs text-muted-foreground hidden sm:block">
+                (영수증 발행을 위한 사업자 정보를 설정하세요.)
+              </div>
+            </div>
+            <button
+              onClick={() => setIsInvoiceModalOpen(true)}
+              className="p-2 rounded-full bg-muted-foreground/20 text-muted-foreground/80 hover:bg-muted-foreground/80 hover:text-card transition-colors active:scale-95 shadow-md cursor-pointer dark:bg-muted dark:text-muted-foreground"
+            >
+              <LucideIcons.Settings2 className="w-5.5 h-5.5" />
+            </button>
+          </div>
+        </CardContent>
       </Card>
 
       {/* System Settings */}
@@ -356,7 +400,7 @@ export default function Settings() {
                 <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
                   비밀번호 변경
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground hidden sm:block">
                   (보안을 위해 주기적으로 변경하세요.)
                 </div>
               </div>
@@ -376,7 +420,7 @@ export default function Settings() {
               <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
                 계정 삭제
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground hidden sm:block">
                 (모든 데이터가 영구적으로 삭제됩니다.)
               </div>
             </div>

@@ -8,8 +8,8 @@ import { Card } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import AddStudentModal from "../components/modals/AddStudentModal";
-import AddCourseModal from "../components/modals/AddCourseModal"; 
-import AddOfficialExamModal from "../components/modals/AddOfficialExamModal"; 
+import AddCourseModal from "../components/modals/AddCourseModal";
+import AddOfficialExamModal from "../components/modals/AddOfficialExamModal";
 import AddMockExamModal from "../components/modals/AddMockExamModal";
 
 const MaleIcon = ({ className }) => (
@@ -49,7 +49,8 @@ const FemaleIcon = ({ className }) => (
 // UI Styles and Label Mappings
 // UI 스타일 및 라벨 매핑 상수
 const statusStyles = {
-  ACTIVE: "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
+  ACTIVE:
+    "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
   PAUSED:
     "bg-secondary/50 text-muted-foreground border-secondary hover:bg-secondary/50",
   FINISHED:
@@ -62,10 +63,12 @@ const STATUS_LABELS = {
 };
 
 const examResultStyles = {
-  PASSED: "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
+  PASSED:
+    "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
   FAILED:
     "bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10",
-  WAITING: "bg-muted/50 text-muted-foreground border-border hover:bg-muted/50",
+  WAITING:
+    "bg-muted/50 text-muted-foreground border-border hover:bg-muted/50",
 };
 
 const EXAM_MODE_LABELS = {
@@ -221,7 +224,9 @@ export default function StudentList() {
 
   // Search and Filter states
   // 검색 및 필터링 상태
-  const [statusFilter, setStatusFilter] = useState(location.state?.status || "");
+  const [statusFilter, setStatusFilter] = useState(
+    location.state?.status || "",
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
 
@@ -657,19 +662,49 @@ export default function StudentList() {
                   </div>
                 </div>
 
-                {/* Memo Section */}
-                <div className="mt-5 flex gap-3 items-start bg-secondary/30 dark:bg-secondary/20 p-3 rounded-lg border border-secondary/50">
-                  <LucideIcons.StickyNote className="w-4 h-4 text-secondary-foreground mt-0.5 shrink-0" />
-                  <p
-                    className={cn(
-                      "text-sm leading-relaxed whitespace-pre-wrap",
-                      activeStudent.memo
-                        ? "text-slate-800 dark:text-card-foreground"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {activeStudent.memo || "추가사항 / 특이사항"}
-                  </p>
+                {/* Memo and Billing Info Row */}
+                {/* 메모 및 청구 정보 행 */}
+                <div className="mt-6 flex flex-col xl:flex-row gap-4">
+                  {/* Memo Section (Left) */}
+                  {/* 메모 섹션 (좌측) */}
+                  <div className="flex-1 flex gap-3 items-start bg-slate-50 dark:bg-muted/10 p-4 rounded-xl border border-slate-200 dark:border-border/50 min-h-20">
+                    <LucideIcons.StickyNote className="w-4 h-4 text-secondary-foreground mt-0.5 shrink-0" />
+                    <p
+                      className={cn(
+                        "text-sm font-medium leading-relaxed whitespace-pre-wrap",
+                        activeStudent.memo
+                          ? "text-slate-800 dark:text-card-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {activeStudent.memo || "추가사항 / 특이사항"}
+                    </p>
+                  </div>
+
+                  {/* Billing Info Card (Right) */}
+                  {/* 청구 정보 카드 (우측) */}
+                  <div className="flex-1 flex gap-3 items-start bg-slate-50 dark:bg-muted/10 p-4 rounded-xl border border-slate-200 dark:border-border/50 min-h-20">
+                    <LucideIcons.Landmark className="w-4 h-4 text-secondary-foreground mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      {activeStudent.street ? (
+                        <div className="flex flex-col mt-0.5">
+                          <div className="">
+                            <p className="text-sm font-bold text-slate-800 dark:text-foreground">
+                              {activeStudent.billing_name || activeStudent.name}
+                            </p>
+                            <p className="text-sm text-slate-600 dark:text-muted-foreground truncate">
+                              {activeStudent.street}, {activeStudent.postcode}{" "}
+                              {activeStudent.city}, {activeStudent.country}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-medium text-muted-foreground flex items-center">
+                          등록된 영수증 정보가 없습니다.
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

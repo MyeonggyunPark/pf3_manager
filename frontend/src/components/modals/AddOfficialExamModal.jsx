@@ -394,6 +394,9 @@ export default function AddOfficialExamModal({
             : responseData[key];
         });
         setErrors(fieldErrors);
+
+        // 필드 에러가 있더라도 상단에 공통 메시지를 표시
+        setSubmitError("입력 값을 확인해주세요.");
       } else {
         setSubmitError(
           responseData?.detail ||
@@ -760,7 +763,7 @@ export default function AddOfficialExamModal({
                 name="grade"
                 value={formData.grade}
                 readOnly
-                className="w-full h-10 px-3 mt-1.5 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 focus:outline-none font-bold text-sm pointer-events-none text-primary dark:text-primary placeholder:text-slate-400 text-center"
+                className="w-full h-10 px-3 mt-1.5 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 focus:outline-none font-bold text-sm pointer-events-none text-center text-primary dark:text-primary placeholder:text-slate-400"
                 placeholder="자동 입력"
               />
             </div>

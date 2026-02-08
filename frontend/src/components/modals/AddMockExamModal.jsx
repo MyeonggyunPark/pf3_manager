@@ -271,7 +271,7 @@ export default function AddMockExamModal({
             if (d.score !== null && d.score !== undefined) {
               details[key] = parseFloat(d.score);
             } else {
-              details[key] = d.is_correct;
+              details[key] = !!d.is_correct;
             }
           });
           setDetailInputs(details);
@@ -292,7 +292,6 @@ export default function AddMockExamModal({
         if (examData.attachments) {
           setExistingFiles(examData.attachments);
         }
-
       } else {
         // Reset for Create Mode
         // 생성 모드 초기화
@@ -633,22 +632,26 @@ export default function AddMockExamModal({
 
             if (section) {
               if (section.allow_partial_score) {
+                const numVal = parseFloat(value || 0);
                 // Send score for partial sections
                 // 부분 점수 섹션인 경우 점수(score) 전송
                 detail_results.push({
                   exam_section: parseInt(sectionId),
                   question_number: parseInt(questionNum),
-                  is_correct: value > 0, // Set is_correct based on score > 0
-                  score: parseFloat(value || 0),
+                  is_correct: numVal > 0,
+                  score: numVal,
                 });
               } else {
                 // Send boolean for O/X sections
                 // O/X 섹션인 경우 불리언 전송
+                const boolValue = !!value;
                 detail_results.push({
                   exam_section: parseInt(sectionId),
                   question_number: parseInt(questionNum),
-                  is_correct: value,
-                  score: value ? parseFloat(section.points_per_question) : 0, // Optional, but saves explicit score
+                  is_correct: boolValue,
+                  score: boolValue
+                    ? parseFloat(section.points_per_question)
+                    : 0,
                 });
               }
             }
@@ -662,10 +665,13 @@ export default function AddMockExamModal({
           // Check for explicit value (including 0)
           // 명시적인 값이 있는지 확인 (0점 포함)
           if ((score || score === 0) && isSectionActive(sectionId)) {
-            score_inputs.push({
-              exam_section: parseInt(sectionId),
-              score: parseFloat(score),
-            });
+            const numScore = parseFloat(score);
+            if (!isNaN(numScore)) {
+              score_inputs.push({
+                exam_section: parseInt(sectionId),
+                score: numScore,
+              });
+            }
           }
         });
       }
@@ -727,10 +733,36 @@ export default function AddMockExamModal({
       handleClose();
     } catch (err) {
       console.error("Mock Exam Submit Failed:", err);
-      setSubmitError(
-        err.response?.data?.detail ||
-          `모의고사 결과 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
-      );
+      const responseData = err.response?.data;
+
+      // Handle both Field Errors and General Errors properly
+      // 필드 에러와 일반 에러를 모두 적절히 처리
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        !responseData.detail
+      ) {
+        // Handle Field Errors (Validation Failed)
+        // 필드 에러 처리 (유효성 검사 실패)
+        const fieldErrors = {};
+        Object.keys(responseData).forEach((key) => {
+          fieldErrors[key] = Array.isArray(responseData[key])
+            ? responseData[key][0]
+            : responseData[key];
+        });
+        setErrors(fieldErrors);
+
+        // Show generic error message at top
+        // 상단에 공통 에러 메시지 표시
+        setSubmitError("입력 값을 확인해주세요.");
+      } else {
+        // Handle General Errors (Server Error, Permission, etc.)
+        // 일반 에러 처리 (서버 오류, 권한 등)
+        setSubmitError(
+          responseData?.detail ||
+            `모의고사 결과 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -935,7 +967,7 @@ export default function AddMockExamModal({
                       }`}
                     >
                       <option value="" disabled hidden>
-                        학생을 선택하세요
+                        학생을 선택하세요.
                       </option>
                       {students.map((student) => (
                         <option
@@ -1000,7 +1032,7 @@ export default function AddMockExamModal({
                       }`}
                     >
                       <option value="" disabled hidden>
-                        시험 종류를 선택하세요
+                        시험 종류를 선택하세요.
                       </option>
                       {examStandards.map((standard) => (
                         <option
@@ -1198,12 +1230,12 @@ export default function AddMockExamModal({
                                                         )
                                                       }
                                                       className={`w-10 h-9 rounded-md border text-center text-xs font-bold focus:ring-1 focus:border-primary focus:ring-primary/10 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-slate-300
-                                                        ${
-                                                          val > 0
-                                                            ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
-                                                            : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border"
-                                                        }
-                                                    `}
+                                                                ${
+                                                                  val > 0
+                                                                    ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
+                                                                    : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border"
+                                                                }
+                                                              `}
                                                       placeholder="0"
                                                       min="0"
                                                       max={
@@ -1232,13 +1264,13 @@ export default function AddMockExamModal({
                                                     )
                                                   }
                                                   className={`
-                                        w-9 h-9 rounded-lg text-xs font-bold flex items-center justify-center transition-all border cursor-pointer
-                                        ${
-                                          isCorrect
-                                            ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
-                                            : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border hover:border-slate-400 dark:hover:border-muted-foreground"
-                                        }
-                                      `}
+                                                                w-9 h-9 rounded-lg text-xs font-bold flex items-center justify-center transition-all border cursor-pointer
+                                                                ${
+                                                                  isCorrect
+                                                                    ? "bg-accent/80 text-white border-accent shadow-sm transform scale-105"
+                                                                    : "bg-slate-100 dark:bg-muted text-slate-300 dark:text-muted-foreground border-slate-200 dark:border-border hover:border-slate-400 dark:hover:border-muted-foreground"
+                                                                }
+                                                              `}
                                                 >
                                                   {isCorrect ? (
                                                     <Check className="w-4 h-4" />
@@ -1449,7 +1481,7 @@ export default function AddMockExamModal({
 
         {/* Action Buttons Footer */}
         {/* 액션 버튼 푸터 */}
-        <div className="flex gap-3 p-4 shrink-0 bg-white dark:bg-card">
+        <div className="flex gap-3 p-4">
           {isEditMode && (
             <Button
               type="button"

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Rechnung</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap');
+
+        @page {
+            size: A4;
+            margin: 1.2cm 1.8cm 1.5cm 1.8cm;
+            @bottom-center { content: ""; }
+        }
+
+        body {
+            font-family: 'Open Sans', 'Noto Sans KR', Helvetica, sans-serif;
+            font-size: 8.5pt;
+            line-height: 1.25;
+            color: #000;
+        }
+
+        .top-section { width: 100%; margin-bottom: 30px; }
+        .top-logo { text-align: right; font-size: 20pt; font-weight: 600; margin-bottom: 30px; }
+        .info-wrapper { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; }
+        .address-block { width: 50%; font-size: 9pt; }
+        .sender-tiny { font-size: 7pt; margin-bottom: 10px; color: #333; }
+        .meta-block { width: 45%; margin-top: 20px; }
+        .meta-table { width: 100%; border-collapse: collapse; }
+        .meta-table td { padding: 1px 0; vertical-align: top; }
+        .meta-label { text-align: left; font-weight: bold; color: #333; width: 50%; }
+        .meta-value { text-align: right; width: 50%; }
+        .meta-row-highlight td { font-size: 12pt; font-weight: bold; padding-bottom: 5px; }
+        .spacer { height: 10px; }
+
+        h1 { font-size: 13pt; font-weight: bold; margin-top: 60px; margin-bottom: 20px; }
+        .intro-text {
+            font-size: 10pt; margin-bottom: 20px; white-space: pre-wrap;
+        }
+        .intro-text p {
+            margin: 0 !important;
+            padding: 0 !important; 
+            padding-top: 5px !important;  
+        }
+        .intro-text table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            table-layout: fixed;
+        }
+        .intro-text td {
+            padding-top: 0;
+            padding-bottom: 0;
+            vertical-align: top;
+            text-align: left;
+            font-size: 9pt;
+            border: none;
+        }
+        .intro-text tr:first-child td {
+            font-size: 10pt;
+            border-top: 2px solid #62748e !important; 
+            font-weight: bold;
+            background-color: transparent;
+        }
+        .intro-text td:empty::before {
+            content: "\00a0";
+            display: inline-block;
+        }
+        .intro-text table p {
+            margin: 0 !important; 
+            padding: 0 !important;
+            padding-top: 5px !important;
+        }
+
+        .fixed-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        .item-table { margin-top: 10px; margin-bottom: 0; }
+        .item-table th {
+            background-color: #f0f0f0;
+            padding: 6px 4px;
+            font-weight: bold;
+            font-size: 9pt;
+            border-bottom: 1px solid #ccc;
+        }
+        .item-table td {
+            padding: 6px 4px;
+            vertical-align: top;
+            border-bottom: 1px solid #eee;
+        }
+
+
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+
+
+        .total-container {
+            width: 100%;
+            margin-top: 0;
+            page-break-inside: avoid;
+        }
+        .total-row-td {
+            padding: 4px 4px;
+            font-size: 9pt;
+            vertical-align: bottom;
+        }
+        .bg-gray {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            border-top: 1px solid #fff; 
+        }
+
+        .bottom-text { margin-top: 25px; font-size: 8.5pt; white-space: pre-wrap; }
+        .footer {
+            position: fixed; bottom: -20px; left: 0; right: 0;
+            height: 2.2cm; font-size: 7.5pt; font-weight: 600; color: #444;
+            border-top: 1px solid #ccc; padding-top: 8px; background-color: #fff;
+        }
+        .footer-cols { display: flex; justify-content: space-between; }
+        .footer-col { vertical-align: top; line-height: 1.3; }
+    </style>
+</head>
+<body>
+
+    <div class="top-section">
+        <div class="top-logo">{{ sender.company_name }}</div>
+        <div class="info-wrapper">
+            <div class="address-block">
+                <div class="sender-tiny">
+                    {{ sender.company_name }} - {{ sender.street }} - {{ sender.postcode }} {{ sender.city }}
+                </div>
+                <br>
+                {{ recipient.salutation }} {{ recipient.name }}<br>
+                {{ recipient.street }}<br>
+                {{ recipient.zip }} {{ recipient.city }}<br>
+                {{ recipient.country|default:"Deutschland" }}
+            </div>
+
+            <div class="meta-block">
+                <table class="meta-table">
+                    <tr class="meta-row-highlight">
+                        <td class="meta-label">Rechnungs-Nr.</td>
+                        <td class="meta-value">{{ invoice_number }}</td>
+                    </tr>
+                    <tr>
+                        <td class="meta-label">Rechnungsdatum</td>
+                        <td class="meta-value">{{ invoice_date }}</td>
+                    </tr>
+                    <tr>
+                        <td class="meta-label">Leistungszeitraum</td>
+                        <td class="meta-value">{{ delivery_date }}</td>
+                    </tr>
+                    <tr><td colspan="2" class="spacer"></td></tr>
+                    {% if recipient.customer_no %}
+                    <tr>
+                        <td class="meta-label">Ihre Kundennummer</td>
+                        <td class="meta-value">{{ recipient.customer_no }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="meta-label">Ihr Ansprechpartner</td>
+                        <td class="meta-value">{{ sender.manager_name }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <h1>Rechnung Nr. {{ invoice_number }}</h1>
+    <div class="intro-text">{{ header_text|safe }}</div>
+
+    <table class="fixed-table item-table">
+        <colgroup>
+            <col style="width: 5%;">  <col style="width: 45%;"> <col style="width: 15%;"> <col style="width: 15%;"> <col style="width: 20%;"> </colgroup>
+        <thead>
+            <tr>
+                <th class="text-left">Pos.</th>
+                <th class="text-left">Beschreibung</th>
+                <th class="text-right">Menge</th>
+                <th class="text-right">Einzelpreis</th>
+                <th class="text-right">Gesamtpreis</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="text-left" style="font-size: 9pt;">{{ forloop.counter }}.</td>
+                <td class="text-left" style="font-size: 9pt; font-weight: bold;">{{ item.description }}</td>
+                <td class="text-right" style="font-size: 9pt;">{{ item.quantity }} {{ item.unit_display }}</td>
+                <td class="text-right" style="font-size: 9pt;">{{ item.unit_price }} EUR</td>
+                <td class="text-right" style="font-size: 9pt;">{{ item.total_price }} EUR</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="total-container">
+        <table class="fixed-table">
+            <colgroup>
+                <col style="width: 5%;">
+                <col style="width: 45%;">
+                <col style="width: 15%;">
+                <col style="width: 15%;">
+                <col style="width: 20%;">
+            </colgroup>
+            
+            {% if adjustments %}
+                <tr class="bg-gray">
+                    <td></td>
+                    <td colspan="3" class="total-row-td" style="font-weight: normal;">
+                        Zwischensumme
+                    </td>
+                    <td class="total-row-td text-right" style="font-weight: normal;">
+                        {{ items_total }} EUR
+                    </td>
+                </tr>
+
+                {% for adj in adjustments %}
+                <tr>
+                    <td></td>
+                    <td colspan="3" class="total-row-td" style="font-weight: normal;">
+                        {{ adj.label }}
+                    </td>
+                    <td class="total-row-td text-right">
+                        {% if adj.type == 'DISCOUNT' %}-{% endif %}{{ adj.amount }} EUR
+                    </td>
+                </tr>
+                {% endfor %}
+
+                <tr class="bg-gray">
+                    <td></td>
+                    <td colspan="3" class="total-row-td" style="font-weight: normal;">
+                        Gesamtbetrag netto
+                    </td>
+                    <td class="total-row-td text-right" style="font-weight: normal;">
+                        {{ subtotal }} EUR
+                    </td>
+                </tr>
+
+            {% else %}
+                <tr class="bg-gray">
+                    <td></td>
+                    <td colspan="3" class="total-row-td" style="font-weight: normal;">
+                        Gesamtbetrag netto
+                    </td>
+                    <td class="total-row-td text-right" style="font-weight: normal;">
+                        {{ subtotal }} EUR
+                    </td>
+                </tr>
+            {% endif %}
+            {% if is_small_business %}
+                <tr>
+                    <td></td>
+                    <td colspan="3" class="total-row-td">
+                        Umsatzsteuer nicht erhoben gemäß §19 UStG.
+                    </td>
+                    <td></td> 
+                </tr>
+            {% else %}
+                <tr>
+                    <td></td>
+                    <td colspan="3" class="total-row-td" style="font-weight: normal;">
+                        Umsatzsteuer (19%):
+                    </td>
+                    <td class="total-row-td text-right">{{ vat_amount }} EUR</td>
+                </tr>
+            {% endif %}
+
+            <tr class="bg-gray">
+                <td></td>
+                <td colspan="3" class="total-row-td">
+                    Gesamtbetrag brutto
+                </td>
+                <td class="total-row-td text-right">
+                    {{ total_amount }} EUR
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="bottom-text">{{ footer_text }}</div>
+
+    <div class="footer">
+        <div class="footer-cols">
+            <div class="footer-col">
+                {{ sender.company_name }}<br>
+                {{ sender.street }}<br>
+                {{ sender.postcode }} {{ sender.city }}<br>
+                {{ sender.country|default:"Deutschland" }}
+            </div>
+            <div class="footer-col">
+                Tel. {{ sender.phone }}<br>
+                E-Mail {{ sender.email }}<br>
+                {% if sender.website %}Web {{ sender.website }}{% endif %}
+            </div>
+            <div class="footer-col">
+                Steuer-Nr. {{ sender.tax_number }}<br>
+                Geschäftsführung {{ sender.manager_name }}<br>
+            </div>
+            <div class="footer-col">
+                Bank {{ sender.bank_name }}<br>
+                IBAN {{ sender.iban }}<br>
+                BIC {{ sender.bic }}<br>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

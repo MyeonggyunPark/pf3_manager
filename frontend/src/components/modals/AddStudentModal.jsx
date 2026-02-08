@@ -83,6 +83,11 @@ export default function AddStudentModal({
     target_level: "",
     target_exam_mode: "",
     status: "",
+    street: "",
+    postcode: "",
+    city: "",
+    country: "Deutschland",
+    billing_name: "",
     memo: "",
   };
 
@@ -100,6 +105,11 @@ export default function AddStudentModal({
         target_level: studentData.target_level,
         target_exam_mode: studentData.target_exam_mode,
         status: studentData.status,
+        street: studentData.street || "",
+        postcode: studentData.postcode || "",
+        city: studentData.city || "",
+        country: studentData.country || "Deutschland",
+        billing_name: studentData.billing_name || "",
         memo: studentData.memo || "",
       });
     } else if (isOpen) {
@@ -197,6 +207,7 @@ export default function AddStudentModal({
       const payload = {
         ...formData,
         age: formData.age ? parseInt(formData.age, 10) : null,
+        billing_name: formData.billing_name.trim() || formData.name,
       };
 
       if (isEditMode) {
@@ -207,7 +218,7 @@ export default function AddStudentModal({
 
       setFormData(initialFormState);
       onSuccess();
-      onClose();
+      handleClose();
     } catch (err) {
       console.error("Student Create Failed:", err);
       const responseData = err.response?.data;
@@ -229,6 +240,9 @@ export default function AddStudentModal({
             : responseData[key];
         });
         setErrors(fieldErrors);
+
+        // 필드 에러가 있어도 상단에 에러 메시지 표시
+        setSubmitError("입력 값을 확인해주세요.");
       } else {
         // Fallback for general errors
         // 일반 에러 처리
@@ -296,21 +310,26 @@ export default function AddStudentModal({
 
   // Helper component for Labels with conditional error styling
   // 조건부 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
-  const InputLabel = ({ label, required, hasError }) => (
+  const InputLabel = ({ label, required, hasError, subLabel }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center ${
+      className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center mb-1.5 ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
       }`}
     >
-      {label} {required && <span className="text-destructive">*</span>}
+      {label} {required && <span className="text-destructive ml-0.5">*</span>}
+      {subLabel && (
+        <span className="text-[10px] normal-case font-normal ml-2 opacity-70 text-slate-400">
+          ({subLabel})
+        </span>
+      )}
     </label>
   );
 
   return createPortal(
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-2xl bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden transform transition-all m-4 relative">
+      <div className="w-full max-w-2xl bg-white dark:bg-card rounded-2xl shadow-2xl border border-white/20 dark:border-border overflow-hidden transform transition-all m-4 relative flex flex-col max-h-[85vh]">
         {/* Delete Confirmation Overlay */}
         {showDeleteConfirm && (
           <div className="absolute inset-0 z-10 bg-white dark:bg-card backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
@@ -353,7 +372,7 @@ export default function AddStudentModal({
 
         {/* Header */}
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border shrink-0">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
               {isEditMode ? "학생 정보 수정" : "학생 등록"}
@@ -372,260 +391,358 @@ export default function AddStudentModal({
           </button>
         </div>
 
-        {/* Form Body */}
-        {/* 폼 본문 */}
+        {/* Form Body (Scrollable) */}
+        {/* 폼 본문 (스크롤 가능) */}
         {/* noValidate prevents browser default tooltips */}
         {/* noValidate는 브라우저 기본 툴팁 표시를 방지함 */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6" noValidate>
-          {/* Display general API submission errors at the top */}
-          {/* API 제출 관련 일반 에러는 상단에 표시 */}
-          {submitError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2">
-              {submitError}
-            </div>
-          )}
-
-          {/* Row 1: Name, Age, Gender */}
-          {/* 1행: 이름, 나이, 성별 */}
-          <div className="grid grid-cols-12 gap-4 items-start">
-            {/* Name Input */}
-            {/* 이름 입력 */}
-            <div className="col-span-12 sm:col-span-5 space-y-1.5">
-              <InputLabel label="이름" hasError={!!errors.name} required />
-              <input
-                required
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
-                placeholder="학생 이름"
-                autoComplete="off"
-              />
-              <ErrorMessage message={errors.name} />
-            </div>
-
-            {/* Age Input */}
-            {/* 나이 입력 */}
-            <div className="col-span-4 sm:col-span-2 space-y-1.5">
-              <InputLabel label="나이" hasError={!!errors.age} />
-              <input
-                type="number"
-                name="age"
-                value={formData.age}
-                onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="학생 나이"
-              />
-              <ErrorMessage message={errors.age} />
-            </div>
-
-            {/* Gender Selection */}
-            {/* 성별 선택 */}
-            <div className="col-span-8 sm:col-span-5 space-y-1.5">
-              <InputLabel label="성별" hasError={!!errors.gender} required />
-              <div className="grid grid-cols-2 gap-2 h-10">
-                <SelectionChip
-                  label="남성"
-                  value="M"
-                  icon={MaleIcon}
-                  selectedValue={formData.gender}
-                  onClick={(val) => handleValueChange("gender", val)}
-                  className="h-full cursor-pointer dark:hover:text-foreground"
-                />
-                <SelectionChip
-                  label="여성"
-                  value="F"
-                  icon={FemaleIcon}
-                  selectedValue={formData.gender}
-                  onClick={(val) => handleValueChange("gender", val)}
-                  className="h-full cursor-pointer dark:hover:text-foreground"
-                />
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <form
+            id="student-form"
+            onSubmit={handleSubmit}
+            className="p-6 space-y-6"
+            noValidate
+          >
+            {/* Display general API submission errors at the top */}
+            {/* API 제출 관련 일반 에러는 상단에 표시 */}
+            {submitError && (
+              <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium animate-in slide-in-from-top-2">
+                {submitError}
               </div>
-              <ErrorMessage message={errors.gender} />
-            </div>
-          </div>
-
-          {/* Row 2: Levels */}
-          {/* 2행: 레벨 */}
-          <div className="grid grid-cols-2 gap-6 items-start">
-            {/* Current Level */}
-            {/* 현재 레벨 */}
-            <div className="space-y-2">
-              <InputLabel
-                label="현재 레벨"
-                hasError={!!errors.current_level}
-                required
-              />
-              <div className="grid grid-cols-3 gap-1.5">
-                {CURRENT_LEVEL_OPTIONS.map((lv) => (
-                  <SelectionChip
-                    key={`curr-${lv}`}
-                    label={lv}
-                    value={lv}
-                    selectedValue={formData.current_level}
-                    onClick={(val) => handleValueChange("current_level", val)}
-                    className="cursor-pointer dark:hover:text-foreground"
-                  />
-                ))}
-              </div>
-              <ErrorMessage message={errors.current_level} />
-            </div>
-
-            {/* Target Level */}
-            {/* 목표 레벨 */}
-            <div className="space-y-2">
-              <InputLabel
-                label="목표 레벨"
-                hasError={!!errors.target_level}
-                required
-              />
-              <div className="grid grid-cols-3 gap-1.5">
-                {TARGET_LEVEL_OPTIONS.map((lv) => (
-                  <SelectionChip
-                    key={`target-${lv}`}
-                    label={lv}
-                    value={lv}
-                    selectedValue={formData.target_level}
-                    onClick={(val) => handleValueChange("target_level", val)}
-                    className="cursor-pointer dark:hover:text-foreground"
-                  />
-                ))}
-              </div>
-              <ErrorMessage message={errors.target_level} />
-            </div>
-          </div>
-
-          {/* Row 3: Exam & Status */}
-          {/* 3행: 시험 유형 및 상태 */}
-          <div className="grid grid-cols-12 gap-6 items-start">
-            {/* Target Exam Mode */}
-            {/* 목표 시험 유형 */}
-            <div className="col-span-12 sm:col-span-7 space-y-2">
-              <InputLabel
-                label="목표 응시 유형"
-                hasError={!!errors.target_exam_mode}
-                required
-              />
-              <div className="grid grid-cols-3 gap-1.5">
-                <SelectionChip
-                  label="Gesamt"
-                  value="FULL"
-                  selectedValue={formData.target_exam_mode}
-                  onClick={(val) => handleValueChange("target_exam_mode", val)}
-                  className="cursor-pointer dark:hover:text-foreground"
-                />
-                <SelectionChip
-                  label="Schriftlich"
-                  value="WRITTEN"
-                  selectedValue={formData.target_exam_mode}
-                  onClick={(val) => handleValueChange("target_exam_mode", val)}
-                  className="cursor-pointer dark:hover:text-foreground"
-                />
-                <SelectionChip
-                  label="Mündlich"
-                  value="ORAL"
-                  selectedValue={formData.target_exam_mode}
-                  onClick={(val) => handleValueChange("target_exam_mode", val)}
-                  className="cursor-pointer dark:hover:text-foreground"
-                />
-              </div>
-              <ErrorMessage message={errors.target_exam_mode} />
-            </div>
-
-            {/* Status */}
-            {/* 수강 상태 */}
-            <div className="col-span-12 sm:col-span-5 space-y-2">
-              <InputLabel
-                label="수강 상태"
-                hasError={!!errors.status}
-                required
-              />
-              <div className="grid grid-cols-3 gap-1.5">
-                <SelectionChip
-                  label="수강중"
-                  value="ACTIVE"
-                  selectedValue={formData.status}
-                  onClick={(val) => handleValueChange("status", val)}
-                  className="cursor-pointer dark:hover:text-foreground"
-                />
-                <SelectionChip
-                  label="일시중지"
-                  value="PAUSED"
-                  selectedValue={formData.status}
-                  onClick={(val) => handleValueChange("status", val)}
-                  className="cursor-pointer dark:hover:text-foreground"
-                />
-                <SelectionChip
-                  label="종료"
-                  value="FINISHED"
-                  selectedValue={formData.status}
-                  onClick={(val) => handleValueChange("status", val)}
-                  className="cursor-pointer dark:hover:text-foreground"
-                />
-              </div>
-              <ErrorMessage message={errors.status} />
-            </div>
-          </div>
-
-          {/* Row 4: Memo */}
-          {/* 4행: 메모 */}
-          <div className="space-y-1.5">
-            <InputLabel label="메모" hasError={false} />
-            <textarea
-              name="memo"
-              value={formData.memo}
-              onChange={handleChange}
-              rows={4}
-              className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
-              placeholder="추가사항 / 특이사항"
-              autoComplete="off"
-            />
-          </div>
-
-          {/* Action Buttons */}
-          {/* 하단 액션 버튼 */}
-          <div className="flex gap-3 pt-2">
-            {isEditMode && (
-              <Button
-                type="button"
-                className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
-                onClick={handleRequestDelete}
-                disabled={isLoading || isDeleting}
-              >
-                {isDeleting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-              </Button>
             )}
 
+            {/* Row 1: Name, Age, Gender */}
+            {/* 1행: 이름, 나이, 성별 */}
+            <div className="grid grid-cols-12 gap-4 items-start">
+              {/* Name Input */}
+              {/* 이름 입력 */}
+              <div className="col-span-12 sm:col-span-5 space-y-1.5">
+                <InputLabel label="이름" hasError={!!errors.name} required />
+                <input
+                  required
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
+                  placeholder="학생 이름"
+                  autoComplete="off"
+                />
+                <ErrorMessage message={errors.name} />
+              </div>
+
+              {/* Age Input */}
+              {/* 나이 입력 */}
+              <div className="col-span-4 sm:col-span-2 space-y-1.5">
+                <InputLabel label="나이" hasError={!!errors.age} />
+                <input
+                  type="number"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleChange}
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="나이"
+                />
+                <ErrorMessage message={errors.age} />
+              </div>
+
+              {/* Gender Selection */}
+              {/* 성별 선택 */}
+              <div className="col-span-8 sm:col-span-5 space-y-1.5">
+                <InputLabel label="성별" hasError={!!errors.gender} required />
+                <div className="grid grid-cols-2 gap-2 h-10">
+                  <SelectionChip
+                    label="남성"
+                    value="M"
+                    icon={MaleIcon}
+                    selectedValue={formData.gender}
+                    onClick={(val) => handleValueChange("gender", val)}
+                    className="h-full cursor-pointer dark:hover:text-foreground"
+                  />
+                  <SelectionChip
+                    label="여성"
+                    value="F"
+                    icon={FemaleIcon}
+                    selectedValue={formData.gender}
+                    onClick={(val) => handleValueChange("gender", val)}
+                    className="h-full cursor-pointer dark:hover:text-foreground"
+                  />
+                </div>
+                <ErrorMessage message={errors.gender} />
+              </div>
+            </div>
+
+            {/* Row 2: Levels */}
+            {/* 2행: 레벨 */}
+            <div className="grid grid-cols-2 gap-6 items-start">
+              {/* Current Level */}
+              {/* 현재 레벨 */}
+              <div className="space-y-2">
+                <InputLabel
+                  label="현재 레벨"
+                  hasError={!!errors.current_level}
+                  required
+                />
+                <div className="grid grid-cols-3 gap-1.5">
+                  {CURRENT_LEVEL_OPTIONS.map((lv) => (
+                    <SelectionChip
+                      key={`curr-${lv}`}
+                      label={lv}
+                      value={lv}
+                      selectedValue={formData.current_level}
+                      onClick={(val) => handleValueChange("current_level", val)}
+                      className="cursor-pointer dark:hover:text-foreground"
+                    />
+                  ))}
+                </div>
+                <ErrorMessage message={errors.current_level} />
+              </div>
+
+              {/* Target Level */}
+              {/* 목표 레벨 */}
+              <div className="space-y-2">
+                <InputLabel
+                  label="목표 레벨"
+                  hasError={!!errors.target_level}
+                  required
+                />
+                <div className="grid grid-cols-3 gap-1.5">
+                  {TARGET_LEVEL_OPTIONS.map((lv) => (
+                    <SelectionChip
+                      key={`target-${lv}`}
+                      label={lv}
+                      value={lv}
+                      selectedValue={formData.target_level}
+                      onClick={(val) => handleValueChange("target_level", val)}
+                      className="cursor-pointer dark:hover:text-foreground"
+                    />
+                  ))}
+                </div>
+                <ErrorMessage message={errors.target_level} />
+              </div>
+            </div>
+
+            {/* Row 3: Exam & Status */}
+            {/* 3행: 시험 유형 및 상태 */}
+            <div className="grid grid-cols-12 gap-6 items-start">
+              {/* Target Exam Mode */}
+              {/* 목표 시험 유형 */}
+              <div className="col-span-12 sm:col-span-7 space-y-2">
+                <InputLabel
+                  label="목표 응시 유형"
+                  hasError={!!errors.target_exam_mode}
+                  required
+                />
+                <div className="grid grid-cols-3 gap-1.5">
+                  <SelectionChip
+                    label="Gesamt"
+                    value="FULL"
+                    selectedValue={formData.target_exam_mode}
+                    onClick={(val) =>
+                      handleValueChange("target_exam_mode", val)
+                    }
+                    className="cursor-pointer dark:hover:text-foreground"
+                  />
+                  <SelectionChip
+                    label="Schriftlich"
+                    value="WRITTEN"
+                    selectedValue={formData.target_exam_mode}
+                    onClick={(val) =>
+                      handleValueChange("target_exam_mode", val)
+                    }
+                    className="cursor-pointer dark:hover:text-foreground"
+                  />
+                  <SelectionChip
+                    label="Mündlich"
+                    value="ORAL"
+                    selectedValue={formData.target_exam_mode}
+                    onClick={(val) =>
+                      handleValueChange("target_exam_mode", val)
+                    }
+                    className="cursor-pointer dark:hover:text-foreground"
+                  />
+                </div>
+                <ErrorMessage message={errors.target_exam_mode} />
+              </div>
+
+              {/* Status */}
+              {/* 수강 상태 */}
+              <div className="col-span-12 sm:col-span-5 space-y-2">
+                <InputLabel
+                  label="수강 상태"
+                  hasError={!!errors.status}
+                  required
+                />
+                <div className="grid grid-cols-3 gap-1.5">
+                  <SelectionChip
+                    label="수강중"
+                    value="ACTIVE"
+                    selectedValue={formData.status}
+                    onClick={(val) => handleValueChange("status", val)}
+                    className="cursor-pointer dark:hover:text-foreground"
+                  />
+                  <SelectionChip
+                    label="일시중지"
+                    value="PAUSED"
+                    selectedValue={formData.status}
+                    onClick={(val) => handleValueChange("status", val)}
+                    className="cursor-pointer dark:hover:text-foreground"
+                  />
+                  <SelectionChip
+                    label="종료"
+                    value="FINISHED"
+                    selectedValue={formData.status}
+                    onClick={(val) => handleValueChange("status", val)}
+                    className="cursor-pointer dark:hover:text-foreground"
+                  />
+                </div>
+                <ErrorMessage message={errors.status} />
+              </div>
+            </div>
+
+            {/* Row 4: Memo */}
+            {/* 4행: 메모 */}
+            <div className="space-y-1.5">
+              <InputLabel label="메모" hasError={false} />
+              <textarea
+                name="memo"
+                value={formData.memo}
+                onChange={handleChange}
+                rows={4}
+                className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
+                placeholder="추가사항 / 특이사항"
+                autoComplete="off"
+              />
+            </div>
+
+            {/* Raw 5: Invoice Information */}
+            {/* 5행: 영수증 정보 입력 */}
+            <div className="pt-2">
+              <h4 className="text-sm font-bold text-slate-700 dark:text-foreground mb-3 flex items-center gap-2">
+                영수증 정보
+                <div className="h-px flex-1 bg-slate-100 dark:bg-border"></div>
+              </h4>
+              <div className="grid grid-cols-6 gap-4">
+
+                {/* Billing Name Input (Full Width) */}
+                {/* 청구인 이름 입력 (전체 너비) */}
+                <div className="col-span-6 space-y-1.5">
+                  <InputLabel
+                    label="청구인"
+                    subLabel="학생 본인이 아닌 경우 / 비워두면 학생 이름 사용"
+                  />
+                  <input
+                    name="billing_name"
+                    value={formData.billing_name}
+                    onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
+                    placeholder="청구인 이름"
+                    autoComplete="off"
+                  />
+                </div>
+
+                {/* Street Input */}
+                {/* 주소 입력 */}
+                <div className="col-span-6 space-y-1.5">
+                  <InputLabel label="주소" />
+                  <input
+                    name="street"
+                    value={formData.street}
+                    onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
+                    placeholder="청구인 주소 / 예) Musterstraße 123"
+                    autoComplete="off"
+                  />
+                </div>
+
+                {/* Postcode Input */}
+                {/* 우편번호 입력 */}
+                <div className="col-span-2 space-y-1.5">
+                  <InputLabel label="우편번호" />
+                  <input
+                    name="postcode"
+                    value={formData.postcode}
+                    onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
+                    placeholder="우편번호(PLZ)"
+                    autoComplete="off"
+                  />
+                </div>
+
+                {/* City Input */}
+                {/* 도시 입력 */}
+                <div className="col-span-2 space-y-1.5">
+                  <InputLabel label="도시" />
+                  <input
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
+                    placeholder="도시명"
+                    autoComplete="off"
+                  />
+                </div>
+
+                {/* Country Input */}
+                {/* 국가 입력 */}
+                <div className="col-span-2 space-y-1.5">
+                  <InputLabel label="국가" />
+                  <input
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
+                    placeholder="국가명"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Footer Actions */}
+        {/* 하단 액션 버튼 */}
+        <div className="px-6 py-4 flex gap-3">
+          {isEditMode && (
             <Button
               type="button"
-              className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              취소
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer transition-all"
+              className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-11 w-11 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
+              onClick={handleRequestDelete}
               disabled={isLoading || isDeleting}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                  {isEditMode ? "수정 중..." : "저장 중..."}
-                </>
-              ) : isEditMode ? (
-                "수정"
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                "등록"
+                <Trash2 className="w-4 h-4" />
               )}
             </Button>
-          </div>
-        </form>
+          )}
+
+          <Button
+            type="button"
+            className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+            onClick={handleClose}
+            disabled={isLoading}
+          >
+            취소
+          </Button>
+          <Button
+            type="submit"
+            form="student-form"
+            className="flex-1 h-11 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer transition-all"
+            disabled={isLoading || isDeleting}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                {isEditMode ? "수정 중..." : "저장 중..."}
+              </>
+            ) : isEditMode ? (
+              "수정"
+            ) : (
+              "등록"
+            )}
+          </Button>
+        </div>
       </div>
     </div>,
     document.body,
