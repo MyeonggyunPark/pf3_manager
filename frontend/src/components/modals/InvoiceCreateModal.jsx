@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Bold,
   Italic,
@@ -849,9 +850,9 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="fixed inset-0 h-dvh z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
         <div className="bg-white dark:bg-card w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl border border-white/20 dark:border-border flex flex-col overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border bg-white dark:bg-card">
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
@@ -1537,6 +1538,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
           studentData={selectedStudentForEdit}
         />
       )}
-    </>
+    </>,
+    document.body
   );
 }
