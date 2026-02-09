@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
 import { cn, getIcon } from "../../lib/utils";
@@ -41,6 +41,11 @@ export default function Layout() {
     // States for unpaid course count and notification dropdown visibility
     // 미납 수강권 개수 및 알림 드롭다운 표시 상태
     const [unpaidCount, setUnpaidCount] = useState(0);
+
+    // State for unsent invoice count
+    // 미발송 영수증 개수 상태
+    const [unsentCount, setUnsentCount] = useState(0);
+
     const [showNotifications, setShowNotifications] = useState(false);
     
     // Reference for the notification area to detect outside clicks
@@ -134,19 +139,51 @@ export default function Layout() {
         fetchLatestUser();
     }, [location.pathname]);
 
-    // Fetch the count of unpaid courses for the notification badge
-    // 알림 배지를 위해 미납된 수강권 개수를 조회
+    // Fetch function wrapped in useCallback for reusability
+    // 재사용성을 위해 useCallback으로 감싼 알림 조회 함수
+    const fetchNotifications = useCallback(async () => {
+        try {
+
+            // Fetch both unpaid courses and unsent invoices in parallel
+            // 미납 수강권과 미발송 영수증을 병렬로 요청
+            // Note: Even if backend filtering fails, we filter on client side to be safe
+            // 참고: 백엔드 필터링이 실패하더라도 안전을 위해 클라이언트 측에서 한 번 더 필터링
+            const [coursesRes, invoicesRes] = await Promise.all([
+                api.get("/api/courses/"),
+                api.get("/api/invoices/"),
+            ]);
+            
+            // Client-side filtering to ensure accurate counts
+            // 정확한 개수 보장을 위한 클라이언트 사이드 필터링
+            const unpaid = coursesRes.data.filter(c => !c.is_paid).length;
+            const unsent = invoicesRes.data.filter(i => !i.is_sent).length;
+
+            setUnpaidCount(unpaid);
+            setUnsentCount(unsent);
+        } catch (e) {
+            console.error("Notification fetch failed", e);
+        }
+    }, []);
+
+    // Effect to handle initial fetch and event listener for real-time updates
+    // 초기 조회 및 실시간 업데이트를 위한 이벤트 리스너 처리 Effect
     useEffect(() => {
-        const fetchNotifications = async () => {
-            try {
-                const res = await api.get("/api/courses/?is_paid=false");
-                setUnpaidCount(res.data.length);
-            } catch (e) {
-                console.error(e);
-            }
-        };
         fetchNotifications();
-    }, [location.pathname]);
+
+        // Listen for custom event 'notificationUpdated'
+        // 'notificationUpdated' 커스텀 이벤트 수신
+        const handleNotificationUpdate = () => {
+            fetchNotifications();
+        };
+
+        window.addEventListener("notificationUpdated", handleNotificationUpdate);
+
+        // Cleanup listener
+        return () => {
+            window.removeEventListener("notificationUpdated", handleNotificationUpdate);
+        };
+    }, [fetchNotifications, location.pathname]);
+
 
     // Clear session data and redirect to the login page on logout
     // 로그아웃 시 세션 데이터를 삭제하고 로그인 페이지로 리다이렉트
@@ -161,6 +198,10 @@ export default function Layout() {
         window.location.href = "/login";
     };
 
+    // Calculate total notifications
+    // 전체 알림 개수 계산
+    const totalNotifications = unpaidCount + unsentCount;
+
     return (
         <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans transition-colors duration-300">
 
@@ -172,7 +213,7 @@ export default function Layout() {
                         
                         {/* Application Logo Container */}
                         {/* 애플리케이션 로고 컨테이너 */}
-                        <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-200 flex items-center justify-center shadow-inner overflow-hidden shrink-0 border-3 border-muted dark:border-accent">
+                        <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-200 flex items-center justify-center shadow-inner overflow-hidden shrink-0 border-3 border-muted dark:border-accent">
                             <img src="/logo.svg" alt="MS Planer Logo" className="w-7 h-7" />
                         </div>
                         <h1 className="text-xl font-black tracking-tighter text-white dark:text-primary">MS Planer</h1>
@@ -203,7 +244,7 @@ export default function Layout() {
 
                         {/* User Profile Image Wrapper */}
                         {/* 유저 프로필 이미지 래퍼 */}
-                        <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-200 flex items-center justify-center shadow-inner overflow-hidden shrink-0 border-2 border-accent">
+                        <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-200 flex items-center justify-center shadow-inner overflow-hidden shrink-0 border-2 border-muted dark:border-accent">
                             <img src="/icons/tutor-icon.png" alt="Tutor" className="w-7 h-7 object-contain" />
                         </div>
                         <div className="flex-1 overflow-hidden">
@@ -248,7 +289,7 @@ export default function Layout() {
                             onClick={() => setShowNotifications(!showNotifications)}
                         >
                             <LucideIcons.Bell className="w-5 h-5" />
-                            {unpaidCount > 0 && (
+                            {totalNotifications > 0 && (
                                 <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-destructive rounded-full ring-2 ring-background animate-pulse"></span>
                             )}
                         </Button>
@@ -260,25 +301,57 @@ export default function Layout() {
                                 <div className="p-4 border-b border-border">
                                     <h4 className="font-bold text-sm">알림</h4>
                                 </div>
-                                <div className="p-2">
-                                    {unpaidCount > 0 ? (
-                                        <div
-                                            className="flex items-start gap-3 p-3 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors cursor-pointer"
-                                            onClick={() => {
-                                                setShowNotifications(false);
-                                                navigate("/courses", { state: { view: "unpaid_all" } });
-                                            }}
-                                        >
-                                            <div className="bg-destructive/20 p-1.5 rounded-full text-destructive mt-0.5">
-                                                <LucideIcons.AlertCircle className="w-4 h-4" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p className="text-sm font-medium text-destructive">수강료 미납 알림</p>
-                                                <p className="text-xs text-destructive/80">
-                                                    현재 <span className="font-bold">{unpaidCount}명</span>의 학생이 미납 상태입니다.
-                                                </p>
-                                            </div>
-                                        </div>
+                                <div className="p-2 space-y-1">
+                                    {totalNotifications > 0 ? (
+                                        <>
+                                            {/* Unpaid Courses Notification */}
+                                            {/* 수강료 미납 알림 */}
+                                            {unpaidCount > 0 && (
+                                                <div
+                                                    className="flex items-start gap-3 p-3 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors cursor-pointer"
+                                                    onClick={() => {
+                                                        setShowNotifications(false);
+                                                        // Pass 'unpaid' view state
+                                                        // 'unpaid' 뷰 상태 전달
+                                                        navigate("/courses", { state: { view: "unpaid" } });
+                                                    }}
+                                                >
+                                                    <div className="bg-destructive/20 p-1.5 rounded-full text-destructive mt-0.5">
+                                                        <LucideIcons.AlertCircle className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-sm font-medium text-destructive">수강료 미납 알림</p>
+                                                        <p className="text-xs text-destructive/80">
+                                                            현재 <span className="font-bold">{unpaidCount}명</span>의 학생이 미납 상태입니다.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Unsent Invoices Notification */}
+                                            {/* 영수증 미발송 알림 */}
+                                            {unsentCount > 0 && (
+                                                <div
+                                                    className="flex items-start gap-3 p-3 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors cursor-pointer"
+                                                    onClick={() => {
+                                                        setShowNotifications(false);
+                                                        // Pass 'unsent' view state
+                                                        // 'unsent' 뷰 상태 전달
+                                                        navigate("/courses", { state: { view: "unsent" } });
+                                                    }}
+                                                >
+                                                    <div className="bg-destructive/20 p-1.5 rounded-full text-destructive mt-0.5">
+                                                        <LucideIcons.AlertCircle className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-sm font-medium text-destructive">영수증 미발송 알림</p>
+                                                        <p className="text-xs text-destructive/80">
+                                                            현재 <span className="font-bold">{unsentCount}건</span>의 영수증이 미발송 상태입니다.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
                                     ) : (
                                         <div className="p-8 text-center text-sm text-muted-foreground">새로운 알림이 없습니다.</div>
                                     )}

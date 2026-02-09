@@ -75,8 +75,8 @@ export default function CourseList() {
     // 탭 상태 관리 (courses: 수강권, receipts: 영수증)
     const [activeTab, setActiveTab] = useState("courses");
 
-    // Filter States (Year, Month, Payment)
-    // 필터 상태 관리 (연도, 월, 결제 상태)
+    // Filter States (Year, Month, Payment, Sent Status)
+    // 필터 상태 관리 (연도, 월, 결제 상태, 발송 상태)
     const currentYear = new Date().getFullYear();
     const [selectedYear, setSelectedYear] = useState(
         location.state?.year ? Number(location.state.year) : currentYear,
@@ -86,6 +86,10 @@ export default function CourseList() {
     );
     const [paymentFilter, setPaymentFilter] = useState("ALL");
     const [isAllUnpaidMode, setIsAllUnpaidMode] = useState(false);
+    
+    // Sent status filter for Invoices
+    // 영수증 발송 여부 필터
+    const [sentFilter, setSentFilter] = useState("ALL");
 
     // Search State
     // 검색 상태 관리
@@ -109,10 +113,22 @@ export default function CourseList() {
 
     // --- Effect: Navigation State Handling ---
     // 네비게이션 상태 감지 및 필터 자동 적용
+    // Triggered when location state changes (notification click)
+    // 알림 클릭 등으로 location state가 변경될 때 트리거됨
     useEffect(() => {
-        if (location.state?.view === "unpaid_all") {
+        if (location.state?.view === "unpaid") {
+
+            // Handle 'Unpaid Courses' notification click
+            // '수강료 미납' 알림 클릭 처리
+            setActiveTab("courses");
             setPaymentFilter("UNPAID");
             setIsAllUnpaidMode(true);
+        } else if (location.state?.view === "unsent") {
+
+            // Handle 'Unsent Invoices' notification click
+            // '영수증 미발송' 알림 클릭 처리
+            setActiveTab("receipts");
+            setSentFilter("UNSENT");
         }
     }, [location]);
 
@@ -199,11 +215,15 @@ export default function CourseList() {
         );
 
         try {
-        await api.patch(`/api/invoices/${invoice.id}/`, { is_sent: newStatus });
+            await api.patch(`/api/invoices/${invoice.id}/`, { is_sent: newStatus });
+            
+            // Dispatch event to update notification count in Layout
+            // 레이아웃의 알림 개수를 업데이트하기 위해 이벤트 발송
+            window.dispatchEvent(new Event("notificationUpdated"));
         } catch (err) {
-        console.error("Failed to update sent status", err);
-        setInvoices(originalInvoices);
-        alert("상태 변경에 실패했습니다.");
+            console.error("Failed to update sent status", err);
+            setInvoices(originalInvoices);
+            alert("상태 변경에 실패했습니다.");
         }
     };
 
@@ -291,13 +311,20 @@ export default function CourseList() {
             appliedSearch === "" ||
             studentName.includes(appliedSearch.toLowerCase());
 
-            return matchesYear && matchesMonth && matchesSearch;
+            // Add Sent Status Filter Logic
+            // 발송 상태 필터 로직 추가
+            const matchesSent = 
+                sentFilter === "ALL" ||
+                (sentFilter === "SENT" && invoice.is_sent) ||
+                (sentFilter === "UNSENT" && !invoice.is_sent);
+
+            return matchesYear && matchesMonth && matchesSearch && matchesSent;
         })
         .sort(
             (a, b) =>
             new Date(b.date || b.created_at) - new Date(a.date || a.created_at),
         );
-    }, [invoices, selectedYear, selectedMonth, appliedSearch, getStudentName]);
+    }, [invoices, selectedYear, selectedMonth, appliedSearch, getStudentName, sentFilter]);
 
     // Scroll detection effect
     // 스크롤 감지 이펙트
@@ -364,6 +391,13 @@ export default function CourseList() {
         : 0;
 
     // --- Handlers ---
+    // Dispatch event on success to update notification count in Layout
+    // 성공 시 레이아웃의 알림 개수를 업데이트하기 위해 이벤트 발송
+    const handleSuccess = () => {
+        setRefreshTrigger((prev) => prev + 1);
+        window.dispatchEvent(new Event("notificationUpdated"));
+    };
+
     const openCreateModal = () => {
         setSelectedCourse(null);
         setIsModalOpen(true);
@@ -377,8 +411,6 @@ export default function CourseList() {
     const openInvoiceModal = () => {
         setIsInvoiceModalOpen(true);
     };
-
-    const handleSuccess = () => setRefreshTrigger((prev) => prev + 1);
 
     const handleYearChange = (e) => {
         setSelectedYear(Number(e.target.value));
@@ -425,14 +457,29 @@ export default function CourseList() {
                         <TabsTrigger
                         value="courses"
                         activeValue={activeTab}
-                        onClick={() => setActiveTab("courses")}
+                        onClick={() => {
+                                setActiveTab("courses");
+                                setSelectedYear(currentYear);
+                                setSelectedMonth(0);
+                                setPaymentFilter("ALL");
+                                setSearchQuery("");
+                                setAppliedSearch("");
+                                setIsAllUnpaidMode(false);
+                            }}
                         >
                         수강권
                         </TabsTrigger>
                         <TabsTrigger
                         value="receipts"
                         activeValue={activeTab}
-                        onClick={() => setActiveTab("receipts")}
+                        onClick={() => {
+                                setActiveTab("receipts");
+                                setSelectedYear(currentYear);
+                                setSelectedMonth(0);
+                                setSentFilter("ALL");
+                                setSearchQuery("");
+                                setAppliedSearch("");
+                            }}
                         >
                         영수증
                         </TabsTrigger>
@@ -486,6 +533,23 @@ export default function CourseList() {
                                 <option value="ALL">전체(결제)</option>
                                 <option value="PAID">완납</option>
                                 <option value="UNPAID">미납</option>
+                            </select>
+                            <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        </div>
+                        )}
+
+                        {/* Sent Status Filter (Visible only on Receipts tab) */}
+                        {/* 발송 상태 필터 (영수증 탭에서만 표시) */}
+                        {activeTab === "receipts" && (
+                        <div className="relative w-full sm:w-auto">
+                            <select
+                            value={sentFilter}
+                            onChange={(e) => setSentFilter(e.target.value)}
+                            className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                            >
+                                <option value="ALL">전체(발송)</option>
+                                <option value="SENT">발송</option>
+                                <option value="UNSENT">미발송</option>
                             </select>
                             <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                         </div>
@@ -816,7 +880,7 @@ export default function CourseList() {
                                         납부기한
                                         </th>
                                         <th className="px-4 py-3 font-semibold text-center select-none w-[26%]">
-                                        수강기간
+                                        수강 기간
                                         </th>
                                         <th className="px-4 py-3 font-semibold text-center select-none w-[10%]">
                                         발송
@@ -874,7 +938,14 @@ export default function CourseList() {
                                 filteredCourses.map((course) => (
                                     <tr
                                     key={course.id}
-                                    className="hover:bg-slate-50 dark:hover:bg-muted/50 transition-colors cursor-pointer group"
+                                    // Apply visual emphasis for unpaid courses (Left border + Light Red Background)
+                                    // 미납 수강권 시각적 강조 적용 (좌측 테두리 + 연한 붉은 배경)
+                                    className={cn(
+                                        "transition-colors border-l-4 cursor-pointer group",
+                                        !course.is_paid
+                                        ? "border-l-4 border-l-destructive bg-destructive/5 dark:bg-destructive/10 hover:bg-destructive/10"
+                                        : "border-transparent hover:border-l-slate-50 dark:hover:border-l-muted/50 hover:bg-slate-50 dark:hover:bg-muted/50",
+                                    )}
                                     onClick={() => openEditModal(course)}
                                     >
                                         <td className="px-4 py-4 text-center text-slate-800 dark:text-foreground truncate w-[18%] group-hover:text-primary">
@@ -883,7 +954,7 @@ export default function CourseList() {
                                             </span>
                                         </td>
                                         <td className="px-4 py-4 text-center w-[22%]">
-                                            <div className="text-slate-500 dark:text-muted-foreground flex items-center justify-center gap-1.5 text-xs sm:text-sm">
+                                            <div className="text-slate-500 dark:text-muted-foreground flex items-center justify-center gap-1.5">
                                             {formatDate(course.start_date)} ~{" "}
                                             {formatDate(course.end_date)}
                                             </div>
@@ -947,9 +1018,14 @@ export default function CourseList() {
                                 filteredInvoices.map((invoice) => (
                                     <tr
                                         key={invoice.id}
-                                        className="hover:bg-slate-50 dark:hover:bg-muted/50 transition-colors cursor-pointer group"
+                                        className={cn(
+                                        "transition-colors border-l-4 border-l-card",
+                                        !invoice.is_sent
+                                        ? "border-l-4 border-l-destructive bg-destructive/5 dark:bg-destructive/10"
+                                        : "",
+                                    )}
                                     >
-                                        <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-foreground w-[15%] group-hover:text-primary">
+                                        <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-foreground w-[15%]">
                                         {invoice.full_invoice_code || invoice.invoice_number}
                                         </td>
                                         <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-foreground w-[15%]">
@@ -986,9 +1062,9 @@ export default function CourseList() {
                                         </td>
                                         <td className="px-2 py-2 text-center w-[10%]">
                                         <Button
-                                            variant="ghost"
+                                            variant=""
                                             size="icon"
-                                            className="h-8 w-8 transition-colors cursor-pointer text-primary/50 hover:text-primary hover:bg-card"
+                                            className="h-8 w-8 transition-colors cursor-pointer text-primary/50 hover:text-primary"
                                             onClick={(e) => handleDownloadPdf(e, invoice.id)}
                                         >
                                             <LucideIcons.FileText className="w-5 h-5" />
