@@ -1058,10 +1058,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
                 recipient_no = student.customer_number
 
-                if student.gender == "M":
-                    recipient_salutation = "Herr"
-                elif student.gender == "F":
-                    recipient_salutation = "Frau"
             except Student.DoesNotExist:
                 pass
 
