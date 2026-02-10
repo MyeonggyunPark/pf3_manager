@@ -291,27 +291,32 @@ EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
 ANYMAIL = {
     "BREVO_API_KEY": os.environ.get("BREVO_API_KEY"),
 }
-DEFAULT_FROM_EMAIL = "audrbs92@gmail.com"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@ms-planer.de")
+SERVER_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@ms-planer.de")
 
 # Login/Logout redirects
 # 로그인/로그아웃 리다이렉트
 LOGIN_REDIRECT_URL = "/api/social/callback/"
 ACCOUNT_LOGOUT_REDIRECT_URL = f"{FRONTEND_BASE_URL}/login"
 
+# Session cookie settings for development (adjusted for local testing)
+# 개발을 위한 세션 쿠키 설정 (로컬 테스트에 맞게 조정)
+cookie_domain = os.environ.get("SESSION_COOKIE_DOMAIN", None)
+
 # JWT configuration (dj-rest-auth)
 REST_AUTH = {
     "USE_JWT": True,
-    "JWT_AUTH_COOKIE": "my-app-auth",
-    "JWT_AUTH_REFRESH_COOKIE": "my-app-refresh-token",
+    "JWT_AUTH_COOKIE": "ms-planer-auth",
+    "JWT_AUTH_REFRESH_COOKIE": "ms-planer-refresh-token",
     
     # Secure adjustments for development
     # 개발 환경 보안 조정
     # Changed: Set HTTPONLY to True to prevent XSS attacks
     # 변경사항: XSS 공격 방지를 위해 HTTPONLY를 True로 설정
-    "JWT_AUTH_SECURE": True,
+    "JWT_AUTH_SECURE": not DEBUG,
     "JWT_AUTH_HTTPONLY": True,
-    "JWT_AUTH_SAMESITE": "None",
-    "JWT_AUTH_COOKIE_DOMAIN": None,
+    "JWT_AUTH_SAMESITE": "Lax",
+    "JWT_AUTH_COOKIE_DOMAIN": cookie_domain,
     
     # Disable CSRF check for cookie-based auth in this setup
     # 현재 설정에서 쿠키 기반 인증을 위한 CSRF 체크 비활성화
@@ -388,31 +393,22 @@ SOCIALACCOUNT_PROVIDERS = {
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
-# Define base allowed origins for development and production
-# 개발 및 배포를 위한 기본 허용 출처 정의
-base_origins = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-    "https://ms-planer.up.railway.app",  
-    "https://ms-planer-backend.up.railway.app",
-]
-
 # Load allowed origins from environment variable or use defaults
 # 환경변수에서 허용 출처 로드 또는 기본값 사용
 cors_origins_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
 if cors_origins_env:
-
-    extra_origins = [origin.strip() for origin in cors_origins_env.split(",")]
-    CORS_ALLOWED_ORIGINS = base_origins + extra_origins
-    CSRF_TRUSTED_ORIGINS = base_origins + extra_origins
+    origins_list = [origin.strip() for origin in cors_origins_env.split(",")]
+    CORS_ALLOWED_ORIGINS = origins_list
+    CSRF_TRUSTED_ORIGINS = origins_list
 else:
-
-    # Default local development origins
-    # 기본 로컬 개발 출처
-    CORS_ALLOWED_ORIGINS = base_origins
-    CSRF_TRUSTED_ORIGINS = base_origins
+    local_origins = [
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ]
+    CORS_ALLOWED_ORIGINS = local_origins
+    CSRF_TRUSTED_ORIGINS = local_origins
 
 # Social Login HTTPS Setting (Crucial for Production!)
 # 소셜 로그인 시 HTTPS 프로토콜 강제 (이게 없으면 소셜 로그인 에러 남)
@@ -440,9 +436,9 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SAMESITE = "None"
-    CSRF_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_HTTPONLY = True
     CSRF_COOKIE_HTTPONLY = False
-    SESSION_COOKIE_DOMAIN = None
-    CSRF_COOKIE_DOMAIN = None
+    SESSION_COOKIE_DOMAIN = cookie_domain
+    CSRF_COOKIE_DOMAIN = cookie_domain
