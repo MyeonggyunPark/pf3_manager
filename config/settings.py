@@ -290,9 +290,12 @@ SOCIALACCOUNT_ADAPTER = "tutor.adapters.CustomSocialAccountAdapter"
 EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
 ANYMAIL = {
     "BREVO_API_KEY": os.environ.get("BREVO_API_KEY"),
+    "SEND_DEFAULTS": {
+        "from_email": "noreply@ms-planer.de",
+    },
 }
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@ms-planer.de")
-SERVER_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@ms-planer.de")
+DEFAULT_FROM_EMAIL = "noreply@ms-planer.de"
+SERVER_EMAIL = "noreply@ms-planer.de"
 
 # Login/Logout redirects
 # 로그인/로그아웃 리다이렉트
