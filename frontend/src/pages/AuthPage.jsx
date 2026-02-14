@@ -4,6 +4,11 @@ import * as LucideIcons from "lucide-react";
 import api from "../api";
 import Button from "../components/ui/Button";
 
+// Import Social Login SDKs
+// 소셜 로그인 SDK 임포트
+import { useGoogleLogin } from "@react-oauth/google";
+import KakaoLogin from "react-kakao-login";
+
 // Reusable Floating Input Component
 // 재사용 가능한 플로팅 입력 컴포넌트
 const FloatingInput = ({
@@ -195,22 +200,54 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
   );
 };
 
-// Social Login Button Group
-// 소셜 로그인 버튼 그룹
+// Social Login Button Group (SDK Integrated)
+// 소셜 로그인 버튼 그룹 (SDK 연동됨 - REST API 방식)
 const SocialLoginButtons = () => {
-  const handleSocialLogin = (provider) => {
-    // Redirect to backend social login endpoint
-    // 백엔드 소셜 로그인 엔드포인트로 리다이렉트
-    const baseUrl =
-      import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-    window.location.href = `${baseUrl}/accounts/${provider}/login/`;
+  const kakaoClientId = import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY;
+
+  // Google Login Handler (using SDK)
+  // 구글 로그인 핸들러 (SDK 사용)
+  const loginGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        // Send access token to backend API
+        // 액세스 토큰을 백엔드 API로 전송
+        await api.post("/api/auth/google/", {
+          access_token: tokenResponse.access_token,
+        });
+        // On success, redirect to success page
+        // 성공 시 성공 페이지로 이동
+        window.location.href = "/social/success";
+      } catch (error) {
+        console.error("Google Login Error:", error);
+        alert("구글 로그인에 실패했습니다. 다시 시도해주세요.");
+      }
+    },
+    onError: () => console.error("Google Login Failed"),
+  });
+
+  // Kakao Login Success Handler
+  // 카카오 로그인 성공 핸들러
+  const handleKakaoSuccess = async (response) => {
+    try {
+      // Send access token to backend API
+      // 액세스 토큰을 백엔드 API로 전송
+      await api.post("/api/auth/kakao/", {
+        access_token: response.response.access_token,
+      });
+      window.location.href = "/social/success";
+    } catch (error) {
+      console.error("Kakao Login Error:", error);
+      alert("카카오 로그인에 실패했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (
     <div className="flex gap-3 w-full mt-6">
+      {/* Google Button */}
       <button
         type="button"
-        onClick={() => handleSocialLogin("google")}
+        onClick={() => loginGoogle()}
         className="flex-1 flex items-center justify-center gap-2 h-10 border-2 border-muted-foreground/30 rounded-lg transition-all bg-white dark:bg-card shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-105 cursor-pointer"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -235,23 +272,67 @@ const SocialLoginButtons = () => {
           Google
         </span>
       </button>
-      <button
-        type="button"
-        onClick={() => handleSocialLogin("kakao")}
-        className="flex-1 flex items-center justify-center gap-2 h-10 rounded-lg transition-all border-2 border-yellow-300 bg-[#FEE500] shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-105 cursor-pointer  "
-      >
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#000000">
-          <path d="M12 3C5.9 3 1 6.9 1 11.8c0 3.3 2.2 6.2 5.6 7.6-.1.6-.4 2.3-.5 2.6 0 0-.1.2.1.3.1.1.3.1.5 0 .3-.2 3.1-2.1 4.3-2.9.3 0 .7.1 1 .1 6.1 0 11-3.9 11-8.8C23 6.9 18.1 3 12 3z" />
-        </svg>
-        <span className="text-sm font-medium text-slate-800">Kakao</span>
-      </button>
+
+      {/* Kakao Button (Wrapper Component) */}
+      <KakaoLogin
+        token={kakaoClientId}
+        onSuccess={handleKakaoSuccess}
+        onFail={(err) => console.error("Kakao Login Failed", err)}
+        render={({ onClick }) => (
+          <button
+            type="button"
+            onClick={onClick}
+            className="flex-1 flex items-center justify-center gap-2 h-10 rounded-lg transition-all border-2 border-yellow-300 bg-[#FEE500] shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-105 cursor-pointer"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#000000">
+              <path d="M12 3C5.9 3 1 6.9 1 11.8c0 3.3 2.2 6.2 5.6 7.6-.1.6-.4 2.3-.5 2.6 0 0-.1.2.1.3.1.1.3.1.5 0 .3-.2 3.1-2.1 4.3-2.9.3 0 .7.1 1 .1 6.1 0 11-3.9 11-8.8C23 6.9 18.1 3 12 3z" />
+            </svg>
+            <span className="text-sm font-medium text-slate-800">Kakao</span>
+          </button>
+        )}
+      />
     </div>
   );
+};
+
+// Custom Hook to check for screen size
+// 화면 크기를 확인하기 위한 커스텀 훅 (최적화 버전)
+const useMediaQuery = (query) => {
+  const [matches, setMatches] = useState(() => {
+    // 1. Initialize with correct value to avoid effect updates on mount
+    // 1. 마운트 시 불필요한 업데이트를 방지하기 위해 초기값을 정확하게 설정
+    if (typeof window !== "undefined") {
+      return window.matchMedia(query).matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+
+    // 2. Define listener
+    // 2. 리스너 정의
+    const listener = (event) => setMatches(event.matches);
+
+    // 3. Register event (Use 'change' instead of 'resize' for performance)
+    // 3. 이벤트 등록 (성능을 위해 'resize' 대신 'change' 사용)
+    media.addEventListener("change", listener);
+
+    // 4. Cleanup
+    // 4. 클린업
+    return () => media.removeEventListener("change", listener);
+  }, [query]);
+
+  return matches;
 };
 
 // Main Auth Page Component (Login + Signup)
 // 메인 인증 페이지 컴포넌트 (로그인 + 회원가입)
 const AuthPage = ({ onLogin }) => {
+  // Check if device is desktop (min-width: 768px)
+  // 데스크탑 장치 확인 (최소 너비: 768px)
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
   // State for Flip Animation (True = Signup, False = Login)
   // 플립 애니메이션 상태 (True = 회원가입, False = 로그인)
   const [isFlipped, setIsFlipped] = useState(false);
@@ -468,8 +549,21 @@ const AuthPage = ({ onLogin }) => {
     setSignupData({ email: "", password: "", passwordConfirm: "" });
   };
 
+  // Determine transform style based on device and flip state
+  // 장치 및 플립 상태에 따른 transform 스타일 결정
+  const getTransformStyle = () => {
+    if (isDesktop) {
+      // Desktop: Flip on Y axis (Left/Right)
+      // 데스크탑: Y축 기준 플립 (좌/우)
+      return isFlipped ? "rotateY(-180deg)" : "rotateY(0deg)";
+    }
+    // Mobile: Flip on X axis (Top/Bottom)
+    // 모바일: X축 기준 플립 (상/하)
+    return isFlipped ? "rotateX(180deg)" : "rotateX(0deg)";
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden font-sans transition-colors duration-300">
+    <div className="flex min-h-screen items-center justify-center bg-background p-0 md:p-4 overflow-hidden font-sans transition-colors duration-300">
       <ForgotPasswordModal
         isOpen={showForgotModal}
         onClose={() => setShowForgotModal(false)}
@@ -504,22 +598,28 @@ const AuthPage = ({ onLogin }) => {
       {/* 3D Flip Card Container */}
       {/* 3D 플립 카드 컨테이너 */}
       <div
-        className="relative w-full max-w-210 h-155 flex bg-white dark:bg-card rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full h-screen md:h-155 md:w-full md:max-w-210 flex flex-col md:flex-row bg-white dark:bg-card rounded-none md:rounded-2xl shadow-none md:shadow-2xl overflow-hidden"
         style={{ perspective: "2000px" }}
       >
         {/* [Front Side] Login Form Section */}
         {/* [앞면] 로그인 폼 섹션 */}
-        <div className="flex-1 p-10 pt-16 flex flex-col items-center relative z-0">
-          <div className="absolute top-6 left-8 flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg flex justify-center items-center border-3 border-muted-foreground/10 dark:bg-slate-200">
-              <img src="/logo.svg" alt="Logo" className="w-11 h-11" />
+        <div className="flex-1 w-full h-1/2 md:h-full md:w-1/2 p-6 md:p-10 flex flex-col items-center justify-center md:pt-16 relative z-0">
+          <div className="absolute top-4 left-6 md:top-6 md:left-8 flex items-center gap-2">
+            <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg flex justify-center items-center border-3 border-muted-foreground/10 dark:bg-slate-200">
+              <img
+                src="/logo.svg"
+                alt="Logo"
+                className="w-9 h-9 md:w-11 md:h-11"
+              />
             </div>
-            <h1 className="text-xl font-bold text-primary">MS Planer</h1>
+            <h1 className="text-lg md:text-xl font-bold text-primary">
+              MS Planer
+            </h1>
           </div>
 
-          <div className="w-full max-w-sm mt-8">
-            <div className="mb-8 text-center">
-              <h2 className="text-4xl font-black text-primary tracking-tight uppercase">
+          <div className="w-full max-w-sm mt-4 md:mt-8 scale-90 md:scale-100 origin-top">
+            <div className="mb-4 md:mb-8 text-center">
+              <h2 className="text-3xl text-end sm:text-center md:text-4xl font-black text-primary tracking-tight uppercase">
                 log in
               </h2>
             </div>
@@ -588,7 +688,7 @@ const AuthPage = ({ onLogin }) => {
 
               <Button
                 type="submit"
-                className="w-full h-12 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
+                className="w-full h-11 md:h-12 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
                 variant="primary"
                 isLoading={loginLoading}
               >
@@ -612,26 +712,28 @@ const AuthPage = ({ onLogin }) => {
 
         {/* [Back Side] Signup Form Section */}
         {/* [뒷면] 회원가입 폼 섹션 */}
-        <div className="flex-1 p-10 pt-16 flex flex-col items-center relative z-0 bg-[#f9fafb] dark:bg-card/50">
-          <div className="absolute top-6 right-8 flex items-center gap-2">
-            <h1 className="text-xl font-bold text-accent">MS Planer</h1>
-            <div className="w-9 h-9 rounded-lg flex justify-center items-center border-3 border-muted-foreground/10 dark:bg-slate-200">
+        <div className="flex-1 w-full h-1/2 md:h-full md:w-1/2 p-6 md:p-10 flex flex-col items-center justify-center md:pt-16 relative z-0 bg-[#f9fafb] dark:bg-card/50">
+          <div className="absolute top-4 right-6 md:top-6 md:right-8 flex items-center gap-2">
+            <h1 className="text-lg md:text-xl font-bold text-accent">
+              MS Planer
+            </h1>
+            <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg flex justify-center items-center border-3 border-muted-foreground/10 dark:bg-slate-200">
               <img
                 src="/logo.svg"
                 alt="Logo"
-                className="w-11 h-11"
+                className="w-9 h-9 md:w-11 md:h-11"
                 onError={(e) => {
                   e.target.style.display = "none";
                   e.target.nextSibling.style.display = "block";
                 }}
               />
-              <LucideIcons.UserPlus className="w-6 h-6 hidden text-accent" />
+              <LucideIcons.UserPlus className="w-5 h-5 md:w-6 md:h-6 hidden text-accent" />
             </div>
           </div>
 
-          <div className="w-full max-w-sm mt-8">
-            <div className="mb-8 text-center">
-              <h2 className="text-4xl font-black text-accent tracking-tight uppercase">
+          <div className="w-full max-w-sm mt-4 md:mt-8 scale-90 md:scale-100 origin-top">
+            <div className="mb-4 md:mb-8 text-center">
+              <h2 className="text-3xl text-start sm:text-center md:text-4xl font-black text-accent tracking-tight uppercase">
                 sign up
               </h2>
             </div>
@@ -681,7 +783,7 @@ const AuthPage = ({ onLogin }) => {
               <Button
                 type="submit"
                 variant="default"
-                className="w-full h-12 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
+                className="w-full h-11 md:h-12 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
                 isLoading={signupLoading}
               >
                 회원가입
@@ -705,31 +807,31 @@ const AuthPage = ({ onLogin }) => {
         {/* Animated Overlay for Mode Switching */}
         {/* 모드 전환을 위한 애니메이션 오버레이 */}
         <div
-          className={`absolute right-0 top-0 w-1/2 h-full z-50 transition-transform duration-1000 ease-in-out`}
+          className={`absolute bottom-0 md:top-0 md:right-0 w-full h-1/2 md:w-1/2 md:h-full z-50 transition-transform duration-1000 ease-in-out`}
           style={{
-            transformOrigin: "left",
+            transformOrigin: isDesktop ? "left" : "top", // Desktop: left edge, Mobile: top edge
             transformStyle: "preserve-3d",
-            transform: isFlipped ? "rotateY(-180deg)" : "rotateY(0deg)",
+            transform: getTransformStyle(),
           }}
         >
           {/* Overlay: Signup Promo (Shows when Login form is active) */}
           {/* 로그인 폼이 활성화될 때 표시되는 오버레이: 회원가입 프로모션 */}
           <div
-            className="absolute inset-0 bg-accent dark:bg-secondary flex flex-col items-center justify-center p-12 text-white backface-hidden shadow-[-10px_0_30px_rgba(0,0,0,0.2)]"
+            className="absolute inset-0 bg-accent dark:bg-secondary flex flex-col items-center justify-center p-6 md:p-12 text-white backface-hidden shadow-[0_-10px_30px_rgba(0,0,0,0.2)] md:shadow-[-10px_0_30px_rgba(0,0,0,0.2)]"
             style={{ backfaceVisibility: "hidden" }}
           >
-            <LucideIcons.UserPlus className="w-20 h-20 mb-6 opacity-80 dark:text-accent" />
-            <h2 className="text-4xl font-black mb-4 tracking-tighter uppercase">
+            <LucideIcons.UserPlus className="w-12 h-12 md:w-20 md:h-20 mb-4 md:mb-6 opacity-80 dark:text-accent" />
+            <h2 className="text-2xl md:text-4xl font-black mb-2 md:mb-4 tracking-tighter uppercase">
               new here?
             </h2>
-            <p className="text-center mb-12 opacity-90 leading-relaxed font-medium">
+            <p className="text-center mb-6 md:mb-12 opacity-90 leading-relaxed font-medium text-sm md:text-base">
               아직 계정이 없으신가요?
-              <br />
+              <br className="hidden md:block" />
               지금 가입하고 체계적인 학생 관리를 시작하세요.
             </p>
             <Button
               onClick={handleSwitchToSignup}
-              className="bg-card dark:bg-card text-accent border-3 hover:text-card hover:scale-105 w-48 h-14 text-lg rounded-full shadow-2xl uppercase cursor-pointer"
+              className="bg-card dark:bg-card text-accent border-3 hover:text-card hover:scale-105 w-36 h-11 md:w-48 md:h-14 text-sm md:text-lg rounded-full shadow-2xl uppercase cursor-pointer"
             >
               sign up
             </Button>
@@ -738,30 +840,30 @@ const AuthPage = ({ onLogin }) => {
           {/* Overlay: Login Promo (Shows when Signup form is active) */}
           {/* 회원가입 폼이 활성화될 때 표시되는 오버레이: 로그인 프로모션 */}
           <div
-            className="absolute inset-0 bg-primary dark:bg-muted flex flex-col items-center justify-center p-12 text-white shadow-[10px_0_30px_rgba(0,0,0,0.2)]"
+            className="absolute inset-0 bg-primary dark:bg-muted flex flex-col items-center justify-center p-6 md:p-12 text-white shadow-[0_10px_30px_rgba(0,0,0,0.2)] md:shadow-[10px_0_30px_rgba(0,0,0,0.2)]"
             style={{
               backfaceVisibility: "hidden",
-              transform: "rotateY(180deg)",
+              transform: isDesktop ? "rotateY(180deg)" : "rotateX(180deg)",
             }}
           >
-            <LucideIcons.LogIn className="w-20 h-20 mb-6 opacity-80 dark:text-primary" />
-            <h2 className="text-4xl font-black mb-4 tracking-tighter uppercase">
+            <LucideIcons.LogIn className="w-12 h-12 md:w-20 md:h-20 mb-4 md:mb-6 opacity-80 dark:text-primary" />
+            <h2 className="text-2xl md:text-4xl font-black mb-2 md:mb-4 tracking-tighter uppercase">
               welcome back!
             </h2>
-            <p className="text-center mb-12 opacity-90 leading-relaxed font-medium">
+            <p className="text-center mb-6 md:mb-12 opacity-90 leading-relaxed font-medium text-sm md:text-base">
               이미 회원이신가요?
-              <br />
+              <br className="hidden md:block" />
               계정에 접속하여 학생 관리를 이어나가세요.
             </p>
             <Button
               onClick={handleSwitchToLogin}
-              className="bg-card dark:bg-card text-primary border-3 hover:bg-primary hover:text-card hover:scale-105 w-48 h-14 font-bold text-lg rounded-full shadow-2xl transition-all uppercase cursor-pointer"
+              className="bg-card dark:bg-card text-primary border-3 hover:bg-primary hover:text-card hover:scale-105 w-36 h-11 md:w-48 md:h-14 font-bold text-sm md:text-lg rounded-full shadow-2xl transition-all uppercase cursor-pointer"
             >
               log in
             </Button>
           </div>
         </div>
-        <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-linear-to-r from-black/10 via-transparent to-black/10 z-60"></div>
+        <div className="absolute hidden md:block left-1/2 top-0 bottom-0 w-1 bg-linear-to-r from-black/10 via-transparent to-black/10 z-60"></div>
       </div>
     </div>
   );
