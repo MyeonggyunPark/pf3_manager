@@ -12,6 +12,10 @@ from django.db import transaction
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.kakao.views import KakaoOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -24,7 +28,11 @@ from rest_framework.decorators import (
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from dj_rest_auth.views import UserDetailsView, LoginView
-from dj_rest_auth.registration.views import RegisterView, VerifyEmailView
+from dj_rest_auth.registration.views import (
+    RegisterView,
+    VerifyEmailView,
+    SocialLoginView,
+)
 
 from weasyprint import HTML
 
@@ -1443,3 +1451,34 @@ def social_login_callback(request):
     )
 
     return response
+
+
+class GoogleLogin(SocialLoginView):
+    """
+    Google Social Login View for REST API.
+    Receives 'access_token' or 'code' from Frontend SDK and issues JWT.
+
+    REST API를 위한 구글 소셜 로그인 뷰.
+    프론트엔드 SDK로부터 'access_token' 또는 'code'를 받아 JWT를 발급합니다.
+    """
+
+    adapter_class = GoogleOAuth2Adapter
+    client_class = OAuth2Client
+
+    # Callback URL must match the Redirect URI in Google Console
+    # Code Flow 사용 시 Google Console에 등록된 리다이렉트 URI와 정확히 일치해야 함
+    # Implicit Flow(access_token) 사용 시에는 검증이 덜 엄격할 수 있음
+    callback_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+
+
+class KakaoLogin(SocialLoginView):
+    """
+    Kakao Social Login View for REST API.
+    Receives 'access_token' or 'code' from Frontend SDK and issues JWT.
+
+    REST API를 위한 카카오 소셜 로그인 뷰.
+    """
+
+    adapter_class = KakaoOAuth2Adapter
+    client_class = OAuth2Client
+    callback_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
