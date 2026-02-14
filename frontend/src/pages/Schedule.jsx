@@ -8,6 +8,11 @@ import {
     getMonthCalendar,
 } from "../lib/dateUtils";
 import {
+    RESPONSIVE_TEXT,
+    RESPONSIVE_PADDING,
+    RESPONSIVE_GAP,
+} from "../lib/responsiveStyles";
+import {
     Card,
     CardHeader,
     CardContent,
@@ -292,258 +297,458 @@ export default function Schedule() {
                 todoData={selectedTodo}
             />
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <TabsList className="grid w-full sm:w-55 grid-cols-2 bg-muted dark:bg-muted/50">
-                    <TabsTrigger
-                        value="weekly"
-                        activeValue={viewMode}
-                        onClick={() => {
-                        setViewMode("weekly");
-                        setCurrentDate(new Date());
-                        }}
-                    >
-                        이번 주
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="monthly"
-                        activeValue={viewMode}
-                        onClick={() => {
-                        setViewMode("monthly");
-                        setCurrentDate(new Date());
-                        }}
-                    >
-                        이번 달
-                    </TabsTrigger>
-                </TabsList>
+            <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                    <TabsList className="grid w-full sm:w-55 grid-cols-2">
+                        <TabsTrigger
+                            value="weekly"
+                            activeValue={viewMode}
+                            onClick={() => {
+                            setViewMode("weekly");
+                            setCurrentDate(new Date());
+                            }}
+                        >
+                            이번 주
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="monthly"
+                            activeValue={viewMode}
+                            onClick={() => {
+                            setViewMode("monthly");
+                            setCurrentDate(new Date());
+                            }}
+                        >
+                            이번 달
+                        </TabsTrigger>
+                    </TabsList>
+                    
+                    <div className="flex flex-col items-center sm:flex-row w-full sm:w-auto gap-3 sm:gap-5">
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="flex items-center gap-2 text-primary font-bold bg-card px-3 py-1.5 rounded-lg border border-border shadow-sm flex-1 sm:flex-none justify-between sm:justify-start">
+                        <div className={cn(
+                            "flex items-center gap-1 sm:gap-2 font-bold bg-card px-2 sm:px-3 py-1.5 rounded-lg border border-border shadow-sm w-full sm:w-auto justify-between sm:justify-start",
+                            RESPONSIVE_TEXT.sm
+                        )}>
+                            <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 cursor-pointer hover:bg-muted"
+                            onClick={() => moveDate(-1)}
+                            >
+                                <LucideIcons.ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                            </Button>
+                            <span className="text-xs sm:text-sm mx-1 sm:mx-2 min-w-24 sm:min-w-32 text-center text-foreground">
+                                {getDateRangeText()}
+                            </span>
+                            <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 cursor-pointer hover:bg-muted"
+                            onClick={() => moveDate(1)}
+                            >
+                                <LucideIcons.ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                            </Button>
+                        </div>
                         <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 cursor-pointer hover:bg-muted"
-                        onClick={() => moveDate(-1)}
+                            variant="default"
+                            className={cn(
+                                "h-9 px-3 sm:px-4 shadow-md bg-primary hover:bg-primary/90 text-white cursor-pointer whitespace-nowrap w-full sm:w-auto",
+                                RESPONSIVE_TEXT.xs
+                            )}
+                            onClick={openCreateModal}
                         >
-                            <LucideIcons.ArrowLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm mx-2 min-w-32 text-center text-foreground">
-                            {getDateRangeText()}
-                        </span>
-                        <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 cursor-pointer hover:bg-muted"
-                        onClick={() => moveDate(1)}
-                        >
-                            <LucideIcons.ArrowRight className="h-4 w-4" />
+                            <LucideIcons.CalendarPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> 
+                            수업 추가
                         </Button>
                     </div>
-                    <Button
-                        variant="default"
-                        className="h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-white cursor-pointer whitespace-nowrap"
-                        onClick={openCreateModal}
-                    >
-                        <LucideIcons.CalendarPlus className="w-4 h-4 mr-2" /> 수업 추가
-                    </Button>
                 </div>
             </div>
 
         {viewMode === "weekly" ? (
-            <div className="grid grid-cols-7 gap-3 min-w-200 lg:min-w-0">
-                {getWeekDays(currentDate).map((dateObj, idx) => {
-                    const dateStr = getFormattedDate(dateObj);
-                    const isToday = dateStr === todayStr;
-                    const dayLessons = getLessonsForDate(dateObj);
-                    const dayName = dateObj.toLocaleDateString("de-DE", {
-                        weekday: "short",
-                    });
-                    const dayNum = dateObj.getDate();
-                    const isSunday = dateObj.getDay() === 0;
+            <>
+                {/* Mobile Agenda View - lg 미만에서만 표시 */}
+                <div className="lg:hidden space-y-4">
+                    {getWeekDays(currentDate).map((dateObj, idx) => {
+                        const dateStr = getFormattedDate(dateObj);
+                        const isToday = dateStr === todayStr;
+                        const dayLessons = getLessonsForDate(dateObj);
+                        const isSunday = dateObj.getDay() === 0;
+                        const dateLabel = dateObj.toLocaleDateString("de-DE", { 
+                            weekday: "short", 
+                            day: "numeric", 
+                            month: "numeric" 
+                        });
 
-                    return (
-                        <Card
-                            key={idx}
-                            className={cn(
-                            "h-86 border-t-4 shadow-sm flex flex-col bg-card",
-                            isToday
-                                ? "border-t-accent ring-1 ring-accent/20"
-                                : "border-t-transparent dark:bg-card/50 bg-slate-50/50",
-                            )}
-                        >
-                            <div className="p-3 border-b border-border text-center shrink-0 relative">
-                                {dayLessons.length > 0 && (
-                                    <Badge
-                                        variant="secondary"
-                                        className="absolute right-2 top-2 text-[10px] h-4 px-1 bg-primary/10 text-primary"
-                                    >
-                                        {dayLessons.length}
-                                    </Badge>
-                                )}
-                                <p
-                                    className={cn(
-                                        "text-xs font-bold uppercase",
-                                        isSunday
-                                        ? "text-destructive"
-                                        : "text-muted-foreground",
-                                    )}
-                                >
-                                    {dayName}
-                                </p>
-                                <p className={cn(
-                                    "text-lg font-bold",
-                                    isSunday
-                                    ? "text-destructive"
-                                    : "text-card-foreground",
+                        return (
+                            <Card key={idx} className={cn(
+                                "overflow-hidden",
+                                isToday && "border-accent/50 ring-1 ring-accent/20"
+                            )}>
+                                <CardHeader className={cn(
+                                    "pb-3 border-b",
+                                    isToday ? "bg-accent/5 border-accent/20" : "border-border"
                                 )}>
-                                    {dayNum}
-                                </p>
-                            </div>
-                            <div className="p-2 space-y-2 custom-scrollbar flex-1">
-                                {dayLessons.map((l) => (
-                                    <div
-                                    key={l.id}
-                                    onClick={() => openEditModal(l)}
-                                    className={cn(
-                                        "rounded-lg border p-2 text-xs shadow-sm transition-all cursor-pointer group relative overflow-hidden",
-                                        statusStyles[l.status] || statusStyles.SCHEDULED,
-                                    )}
-                                    >
-                                        <div className="flex items-center gap-1.5 font-bold text-muted-foreground mb-1">
-                                            <LucideIcons.Clock className="w-3 h-3" />
-                                            {l.start_time.slice(0, 5)}
-                                        </div>
-                                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                                            <span className="font-bold text-[15px] text-card-foreground group-hover:text-primary transition-colors truncate ml-1">
-                                                {l.student_name}
-                                            </span>
-                                            {l.student_level && (
-                                                <Badge 
-                                                    variant="outline" 
-                                                    className="text-[9px] h-4 px-1 rounded-md border-primary/30 text-primary bg-card font-semibold shrink-0"
+                                    <div className="flex items-center justify-between">
+                                        <h3 className={cn(
+                                            "font-bold",
+                                            RESPONSIVE_TEXT.base,
+                                            isToday ? "text-accent" : isSunday ? "text-destructive" : "text-foreground"
+                                        )}>
+                                            {dateLabel}
+                                        </h3>
+                                        {dayLessons.length > 0 && (
+                                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                                                {dayLessons.length}개 수업
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </CardHeader>
+                                <CardContent className={cn("p-4", RESPONSIVE_GAP.sm)}>
+                                    {dayLessons.length === 0 ? (
+                                        <p className={cn("text-muted-foreground", RESPONSIVE_TEXT.sm)}>
+                                            예정된 수업이 없습니다
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {dayLessons.map((l) => (
+                                                <div
+                                                    key={l.id}
+                                                    onClick={() => openEditModal(l)}
+                                                    className={cn(
+                                                        "rounded-lg border p-3 shadow-sm transition-all cursor-pointer",
+                                                        statusStyles[l.status] || statusStyles.SCHEDULED,
+                                                    )}
                                                 >
-                                                    {l.student_level}
-                                                </Badge>
-                                            )}
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <div className="flex items-center gap-1.5 text-muted-foreground font-bold">
+                                                            <LucideIcons.Clock className="w-4 h-4" />
+                                                            <span className={RESPONSIVE_TEXT.sm}>{l.start_time.slice(0, 5)}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className={cn("font-bold text-card-foreground", RESPONSIVE_TEXT.base)}>
+                                                            {l.student_name}
+                                                        </span>
+                                                        {l.student_level && (
+                                                            <Badge 
+                                                                variant="outline" 
+                                                                className="text-xs px-2 border-primary/30 text-primary bg-card font-semibold"
+                                                            >
+                                                                {l.student_level}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    {l.topic && (
+                                                        <div className={cn(
+                                                            "text-muted-foreground bg-muted dark:bg-muted/50 px-2 py-1 rounded w-fit",
+                                                            RESPONSIVE_TEXT.xs
+                                                        )}>
+                                                            {l.topic}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
-                                        {l.topic && (
-                                            <div className="text-[10px] text-muted-foreground bg-muted dark:bg-muted/50 px-1.5 py-0.5 rounded w-fit truncate max-w-full">
-                                            {l.topic}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                    );
-                })}
-            </div>
-        ) : (
-            <Card className="p-6 bg-card text-card-foreground">
-                <div className="grid grid-cols-7 text-center mb-4 border-b border-border pb-2">
-                    {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
-                    <div
-                        key={d}
-                        className={cn(
-                        "text-sm font-bold uppercase",
-                        d === "So"
-                            ? "text-destructive"
-                            : "text-muted-foreground",
-                        )}
-                    >
-                        {d}
-                    </div>
-                    ))}
-                </div>
-                <div className="grid grid-cols-7 gap-2 h-160 auto-rows-fr">
-                    {getMonthCalendar(currentDate).map((dateObj, i) => {
-                    if (!dateObj) return <div key={i} className="bg-transparent" />;
-                    const dateStr = getFormattedDate(dateObj);
-                    const isToday = dateStr === todayStr;
-                    const dayLessons = getLessonsForDate(dateObj);
-                    const isSunday = dateObj.getDay() === 0;
-
-                    return (
-                        <div
-                        key={i}
-                        className={cn(
-                            "relative rounded-md border border-border p-2 flex flex-col text-sm group cursor-default h-full overflow-hidden transition-colors",
-                            isToday
-                            ? "bg-accent/5 border-accent ring-1 ring-accent/20"
-                            : "bg-card",
-                        )}
-                        >
-                            <div className="flex justify-between items-start mb-1 shrink-0">
-                                <span
-                                className={cn(
-                                    "font-bold",
-                                    isToday
-                                    ? "text-accent"
-                                    : isSunday
-                                    ? "text-destructive"
-                                    : "text-foreground",
-                                )}
-                                >
-                                    {dateObj.getDate()}
-                                </span>
-                                {dayLessons.length > 0 && (
-                                    <Badge
-                                        variant="secondary"
-                                        className="text-[10px] h-4 px-1 bg-primary/10 text-primary"
-                                    >
-                                        {dayLessons.length}
-                                    </Badge>
-                                )}
-                            </div>
-                            <div className="space-y-1.5 custom-scrollbar pr-1 flex-1">
-                                {dayLessons.map((l) => (
-                                    <div
-                                        key={l.id}
-                                        onClick={(e) => {
-                                        e.stopPropagation();
-                                        openEditModal(l);
-                                        }}
-                                        className={cn(
-                                        "text-[10px] truncate rounded px-3 py-1 cursor-pointer shadow-sm flex items-center gap-3 transition-all hover:ring-1 hover:ring-primary/30",
-                                        statusStyles[l.status]
-                                        )}
-                                    >
-                                        <span className="font-bold">
-                                            {l.start_time.slice(0, 5)}
-                                        </span>
-                                        <span className="truncate">
-                                            {l.student_name}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
+                                    )}
+                                </CardContent>
+                            </Card>
+                        );
                     })}
                 </div>
-            </Card>
+
+
+
+                {/* Desktop Grid View - lg 이상에서만 표시 */}
+                <div className="hidden lg:grid lg:grid-cols-7 gap-3">
+                    {getWeekDays(currentDate).map((dateObj, idx) => {
+                        const dateStr = getFormattedDate(dateObj);
+                        const isToday = dateStr === todayStr;
+                        const dayLessons = getLessonsForDate(dateObj);
+                        const dayName = dateObj.toLocaleDateString("de-DE", {
+                            weekday: "short",
+                        });
+                        const dayNum = dateObj.getDate();
+                        const isSunday = dateObj.getDay() === 0;
+
+                        return (
+                            <Card
+                                key={idx}
+                                className={cn(
+                                "h-86 border-t-4 shadow-sm flex flex-col bg-card",
+                                isToday
+                                    ? "border-t-accent ring-1 ring-accent/20"
+                                    : "border-t-transparent dark:bg-card/50 bg-slate-50/50",
+                                )}
+                            >
+                                <div className="p-3 border-b border-border text-center shrink-0 relative">
+                                    {dayLessons.length > 0 && (
+                                        <Badge
+                                            variant="secondary"
+                                            className="absolute right-2 top-2 text-[10px] h-4 px-1 bg-primary/10 text-primary"
+                                        >
+                                            {dayLessons.length}
+                                        </Badge>
+                                    )}
+                                    <p
+                                        className={cn(
+                                            "text-xs font-bold uppercase",
+                                            isSunday
+                                            ? "text-destructive"
+                                            : "text-muted-foreground",
+                                        )}
+                                    >
+                                        {dayName}
+                                    </p>
+                                    <p className={cn(
+                                        "text-lg font-bold",
+                                        isSunday
+                                        ? "text-destructive"
+                                        : "text-card-foreground",
+                                    )}>
+                                        {dayNum}
+                                    </p>
+                                </div>
+                                <div className="p-2 space-y-2 custom-scrollbar flex-1">
+                                    {dayLessons.map((l) => (
+                                        <div
+                                        key={l.id}
+                                        onClick={() => openEditModal(l)}
+                                        className={cn(
+                                            "rounded-lg border p-2 text-xs shadow-sm transition-all cursor-pointer group relative overflow-hidden",
+                                            statusStyles[l.status] || statusStyles.SCHEDULED,
+                                        )}
+                                        >
+                                            <div className="flex items-center gap-1.5 font-bold text-muted-foreground mb-1">
+                                                <LucideIcons.Clock className="w-3 h-3" />
+                                                {l.start_time.slice(0, 5)}
+                                            </div>
+                                            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                                                <span className="font-bold text-[15px] text-card-foreground group-hover:text-primary transition-colors truncate ml-1">
+                                                    {l.student_name}
+                                                </span>
+                                                {l.student_level && (
+                                                    <Badge 
+                                                        variant="outline" 
+                                                        className="text-[9px] h-4 px-1 rounded-md border-primary/30 text-primary bg-card font-semibold shrink-0"
+                                                    >
+                                                        {l.student_level}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            {l.topic && (
+                                                <div className="text-[10px] text-muted-foreground bg-muted dark:bg-muted/50 px-1.5 py-0.5 rounded w-fit truncate max-w-full">
+                                                {l.topic}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        );
+                    })}
+                </div>
+            </>
+        ) : (
+            <>
+                {/* Mobile Monthly List View - lg 미만에서만 표시 */}
+                <div className="lg:hidden space-y-3">
+                    {getMonthCalendar(currentDate)
+                        .filter(dateObj => dateObj && getLessonsForDate(dateObj).length > 0)
+                        .map((dateObj, i) => {
+                            const dateStr = getFormattedDate(dateObj);
+                            const isToday = dateStr === todayStr;
+                            const dayLessons = getLessonsForDate(dateObj);
+                            const isSunday = dateObj.getDay() === 0;
+                            const dateLabel = dateObj.toLocaleDateString("de-DE", { 
+                                weekday: "short", 
+                                day: "numeric", 
+                                month: "numeric" 
+                            });
+
+                            return (
+                                <Card key={i} className={cn(
+                                    "overflow-hidden",
+                                    isToday && "border-accent/50 ring-1 ring-accent/20"
+                                )}>
+                                    <CardHeader className={cn(
+                                        "pb-3 border-b",
+                                        isToday ? "bg-accent/5 border-accent/20" : "border-border"
+                                    )}>
+                                        <div className="flex items-center justify-between">
+                                            <h3 className={cn(
+                                                "font-bold",
+                                                RESPONSIVE_TEXT.base,
+                                                isToday ? "text-accent" : isSunday ? "text-destructive" : "text-foreground"
+                                            )}>
+                                                {dateLabel}
+                                            </h3>
+                                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                                                {dayLessons.length}개 수업
+                                            </Badge>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className={cn("p-4", RESPONSIVE_GAP.sm)}>
+                                        <div className="space-y-3">
+                                            {dayLessons.map((l) => (
+                                                <div
+                                                    key={l.id}
+                                                    onClick={() => openEditModal(l)}
+                                                    className={cn(
+                                                        "rounded-lg border p-3 shadow-sm transition-all cursor-pointer",
+                                                        statusStyles[l.status] || statusStyles.SCHEDULED,
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <div className="flex items-center gap-1.5 text-muted-foreground font-bold">
+                                                            <LucideIcons.Clock className="w-4 h-4" />
+                                                            <span className={RESPONSIVE_TEXT.sm}>{l.start_time.slice(0, 5)}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className={cn("font-bold text-card-foreground", RESPONSIVE_TEXT.base)}>
+                                                            {l.student_name}
+                                                        </span>
+                                                        {l.student_level && (
+                                                            <Badge 
+                                                                variant="outline" 
+                                                                className="text-xs px-2 border-primary/30 text-primary bg-card font-semibold"
+                                                            >
+                                                                {l.student_level}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    {l.topic && (
+                                                        <div className={cn(
+                                                            "text-muted-foreground bg-muted dark:bg-muted/50 px-2 py-1 rounded w-fit",
+                                                            RESPONSIVE_TEXT.xs
+                                                        )}>
+                                                            {l.topic}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })
+                    }
+                </div>
+
+                {/* Desktop Calendar Grid - lg 이상에서만 표시 */}
+                <Card className="hidden lg:block p-4 md:p-6 bg-card text-card-foreground">
+                    <div className="grid grid-cols-7 text-center mb-4 border-b border-border pb-2">
+                        {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
+                        <div
+                            key={d}
+                            className={cn(
+                            "text-sm font-bold uppercase",
+                            d === "So"
+                                ? "text-destructive"
+                                : "text-muted-foreground",
+                            )}
+                        >
+                            {d}
+                        </div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-2 h-160 auto-rows-fr">
+                        {getMonthCalendar(currentDate).map((dateObj, i) => {
+                        if (!dateObj) return <div key={i} className="bg-transparent" />;
+                        const dateStr = getFormattedDate(dateObj);
+                        const isToday = dateStr === todayStr;
+                        const dayLessons = getLessonsForDate(dateObj);
+                        const isSunday = dateObj.getDay() === 0;
+
+                        return (
+                            <div
+                            key={i}
+                            className={cn(
+                                "relative rounded-md border border-border p-2 flex flex-col text-sm group cursor-default h-full overflow-hidden transition-colors",
+                                isToday
+                                ? "bg-accent/5 border-accent ring-1 ring-accent/20"
+                                : "bg-card",
+                            )}
+                            >
+                                <div className="flex justify-between items-start mb-1 shrink-0">
+                                    <span
+                                    className={cn(
+                                        "font-bold",
+                                        isToday
+                                        ? "text-accent"
+                                        : isSunday
+                                        ? "text-destructive"
+                                        : "text-foreground",
+                                    )}
+                                    >
+                                        {dateObj.getDate()}
+                                    </span>
+                                    {dayLessons.length > 0 && (
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-[10px] h-4 px-1 bg-primary/10 text-primary"
+                                        >
+                                            {dayLessons.length}
+                                        </Badge>
+                                    )}
+                                </div>
+                                <div className="space-y-1.5 custom-scrollbar pr-1 flex-1">
+                                    {dayLessons.map((l) => (
+                                        <div
+                                            key={l.id}
+                                            onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditModal(l);
+                                            }}
+                                            className={cn(
+                                            "text-[10px] truncate rounded px-3 py-1 cursor-pointer shadow-sm flex items-center gap-3 transition-all hover:ring-1 hover:ring-primary/30",
+                                            statusStyles[l.status]
+                                            )}
+                                        >
+                                            <span className="font-bold">
+                                                {l.start_time.slice(0, 5)}
+                                            </span>
+                                            <span className="truncate">
+                                                {l.student_name}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                        })}
+                    </div>
+                </Card>
+            </>
         )}
 
-        <div className="mt-8">
+        <div className="mt-6 sm:mt-8">
             <Card className="shadow-lg border-none bg-card text-card-foreground">
-                <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
-                    <TabsList className="bg-muted dark:bg-muted/50">
-                        <TabsTrigger className="cursor-default text-md py-1">
+                <CardHeader className={cn(
+                    "pb-3 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
+                    RESPONSIVE_PADDING.sm
+                )}>
+                    <TabsList className="w-auto">
+                        <TabsTrigger className={cn("cursor-default py-1", RESPONSIVE_TEXT.sm)}>
                             할 일
                         </TabsTrigger>
                     </TabsList>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
                         <Button
                             variant="default"
                             onClick={openCreateTodoModal}
-                            className="h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-white cursor-pointer whitespace-nowrap"
+                            className={cn(
+                                "h-9 px-3 sm:px-4 shadow-md bg-primary hover:bg-primary/90 text-white cursor-pointer whitespace-nowrap w-full sm:w-auto",
+                                RESPONSIVE_TEXT.xs
+                            )}
                         >
-                            <LucideIcons.ListPlus className="w-4 h-4 mr-2" /> 업무 추가
+                            <LucideIcons.ListPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> 
+                            업무 추가
                         </Button>
                     </div>
                 </CardHeader>
 
-                <CardContent className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
+                <CardContent className={cn(RESPONSIVE_PADDING.sm, "py-4 sm:py-6")}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 items-start">
                         {TODO_CATEGORIES.map((category) => {
                             const categoryTodos = todos.filter(
                                 (t) => t.category === category.id,
@@ -553,21 +758,21 @@ export default function Schedule() {
                             return (
                                 <div
                                     key={category.id}
-                                    className="flex flex-col gap-4 min-w-0"
+                                    className="flex flex-col gap-3 sm:gap-4 min-w-0"
                                 >
                                     <div className="flex items-center gap-2 pb-2 border-b-2 border-border">
                                         <div className={cn("p-1.5 rounded-md", category.color)}>
-                                            <Icon className="w-4 h-4" />
+                                            <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
                                         </div>
-                                        <span className="font-bold text-card-foreground text-sm">
+                                        <span className={cn("font-bold text-card-foreground", RESPONSIVE_TEXT.sm)}>
                                             {category.label}
                                         </span>
                                     </div>
 
-                                    <div className="flex flex-col gap-3 h-80 custom-scrollbar p-1 pr-2">
+                                    <div className="flex flex-col gap-2 sm:gap-3 h-80 custom-scrollbar p-1 pr-2">
                                         {categoryTodos.length === 0 ? (
                                             <div className="text-center py-8 border-2 border-dashed border-border rounded-xl bg-muted/30">
-                                                <p className="text-xs text-muted-foreground">비어 있음</p>
+                                                <p className={cn("text-muted-foreground", RESPONSIVE_TEXT.xs)}>비어 있음</p>
                                             </div>
                                         ) : (
                                             categoryTodos.map((todo) => {
@@ -579,7 +784,7 @@ export default function Schedule() {
                                                     key={todo.id}
                                                     onClick={() => openEditTodoModal(todo)}
                                                     className={cn(
-                                                        "group relative flex flex-col p-3 rounded-xl border bg-card transition-all hover:shadow-md cursor-pointer",
+                                                        "group relative flex flex-col p-2.5 sm:p-3 rounded-xl border bg-card transition-all hover:shadow-md cursor-pointer",
                                                         isOverdue ? "border-destructive border-dashed bg-destructive/10" : (priorityBorderColors[todo.priority] || "border-l-border"),
                                                         todo.is_completed
                                                         ? "border-accent bg-accent/20 opacity-80"
@@ -622,7 +827,7 @@ export default function Schedule() {
 
                                                         </div>
 
-                                                        <div className="flex items-center gap-3 mt-4">
+                                                        <div className="flex items-center gap-2 sm:gap-3 mt-3 sm:mt-4">
                                                             <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -643,10 +848,11 @@ export default function Schedule() {
                                                             <div className="flex-1 min-w-0">
                                                                 <p
                                                                     className={cn(
-                                                                        "text-[15px] font-medium wrap-break-word leading-tight",
+                                                                        "wrap-break-word leading-tight",
+                                                                        RESPONSIVE_TEXT.sm,
                                                                         todo.is_completed
                                                                         ? "text-muted-foreground line-through"
-                                                                        : "text-card-foreground group-hover:text-primary transition-colors",
+                                                                        : "text-card-foreground font-medium group-hover:text-primary transition-colors",
                                                                     )}
                                                                 >
                                                                     {todo.content}

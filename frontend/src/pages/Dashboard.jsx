@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
 import api from "../api";
 import { cn } from "../lib/utils";
+import { 
+    RESPONSIVE_GAP, 
+    RESPONSIVE_GRID, 
+    RESPONSIVE_TEXT,
+} from "../lib/responsiveStyles";
 import {
     Card,
     CardHeader,
@@ -319,7 +324,7 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="space-y-6 animate-in">
+        <div className={cn("space-y-4 md:space-y-6 animate-in")}>
             
             {/* Edit Official Exam Modal */}
             {/* 정규 시험 수정 모달 */}
@@ -367,11 +372,11 @@ export default function Dashboard() {
             {/* Upcoming Exams Section */}
             {/* 다가오는 시험 일정 섹션 */}
             {upcomingExams.length > 0 ? (
-            <div className="space-y-3">
+            <div className={cn(RESPONSIVE_GAP.sm, "space-y-3")}>
 
                 {/* Header with Total Count */}
                 {/* 전체 개수가 포함된 헤더 */}
-                <div className="flex items-center justify-between px-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 px-1">
                     <div className="flex items-center gap-2">
                         <TabsList className="text-sm font-bold flex items-center dark:bg-muted/50">
                             <TabsTrigger className="cursor-default" value="upcoming" activeValue="upcoming">
@@ -389,7 +394,7 @@ export default function Dashboard() {
                         <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 text-xs rounded-full px-3 text-muted-foreground/70 cursor-pointer hover:bg-muted"
+                            className="h-7 sm:h-8 text-xs rounded-full px-2.5 sm:px-3 text-muted-foreground/70 cursor-pointer hover:bg-muted"
                             onClick={() => navigate("/exams", { state: { tab: "official" } })}
                         >
                             전체 보기
@@ -397,7 +402,7 @@ export default function Dashboard() {
                     )}
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className={cn(RESPONSIVE_GRID.cols3)}>
                     {upcomingExams.map((exam) => {
                         const { day, month } = getExamDateBox(exam.exam_date);
                         const dDayStr = getDDay(exam.exam_date);
@@ -437,13 +442,13 @@ export default function Dashboard() {
                             <div
                                 key={exam.id}
                                 onClick={() => openExamModal(exam)}
-                                className="relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-card border border-slate-100 dark:border-border shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-muted/50 transition-all cursor-pointer group"
+                                className="relative flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-white dark:bg-card border border-slate-100 dark:border-border shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-muted/50 transition-all cursor-pointer group"
                                 >
                                 {/* Left: Date Box */}
                                 {/* 좌측: 날짜 박스 */}
                                 <div
                                     className={cn(
-                                    "flex flex-col items-center justify-center min-w-12.5 h-12.5 rounded-lg border",
+                                    "flex flex-col items-center justify-center min-w-11 sm:min-w-12.5 h-11 sm:h-12.5 rounded-lg border",
                                     boxColorClass,
                                     )}
                                 >
@@ -460,7 +465,7 @@ export default function Dashboard() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-1">
                                         <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
-                                            <p className="text-sm font-bold text-slate-800 dark:text-foreground truncate group-hover:text-primary transition-colors">
+                                            <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-foreground truncate group-hover:text-primary transition-colors">
                                                 {exam.student_name}
                                             </p>
                                             {exam.student_level && (
@@ -512,11 +517,11 @@ export default function Dashboard() {
 
             {/* Main Content Area */}
             {/* 메인 콘텐츠 영역 */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-12">
+            <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-12">
                 
                 {/* Left Content*/}
                 {/* 좌측 콘텐츠: 오늘/내일 수업 탭 */ }
-                <Card className="col-span-12 lg:col-span-6 border-none shadow-sm flex flex-col h-full bg-white dark:bg-card">
+                <Card className="col-span-1 md:col-span-2 lg:col-span-6 border-none shadow-sm flex flex-col h-full bg-white dark:bg-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                         <div className="flex items-center">
                             <TabsList className="dark:bg-muted/50">
@@ -593,7 +598,7 @@ export default function Dashboard() {
                 
                 {/* Middle Content */}
                 { /* 중간 콘텐츠: 중요 할 일 */ }
-                <Card className="col-span-12 lg:col-span-3 border-none shadow-sm flex flex-col h-full bg-white dark:bg-card">
+                <Card className="col-span-1 md:col-span-1 lg:col-span-3 border-none shadow-sm flex flex-col h-full bg-white dark:bg-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 px-4">
                         <TabsList className="dark:bg-muted/50">
                             <TabsTrigger className="cursor-default flex gap-2" value="urgent" activeValue="urgent">
@@ -606,7 +611,7 @@ export default function Dashboard() {
                         <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 text-xs rounded-full px-3 text-muted-foreground/70 cursor-pointer hover:bg-muted"
+                            className="h-7 sm:h-8 text-xs rounded-full px-2.5 sm:px-3 text-muted-foreground/70 cursor-pointer hover:bg-muted"
                             onClick={() => navigate("/schedule")}
                         >
                             전체 보기
@@ -710,15 +715,15 @@ export default function Dashboard() {
                 
                 {/* Right Content */}
                 {/* 우측 콘텐츠: 통계카드 및 빠른 실행 버튼 */}
-                <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 h-full">
+                <div className="col-span-1 md:col-span-1 lg:col-span-3 flex flex-col gap-4 md:gap-6 h-full">
 
                     <div 
                         onClick={() => navigate("/courses", { 
                             state: { year: currentYear, month: currentMonth } 
                         })}
-                        className="flex-1 flex flex-col justify-between bg-white dark:bg-card border-2 border-primary p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-primary/5 transition-all hover:shadow-md"
+                        className="flex-1 flex flex-col justify-between bg-white dark:bg-card border-2 border-primary p-4 md:p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-primary/5 transition-all hover:shadow-md"
                     >
-                        <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
+                        <p className={cn(RESPONSIVE_TEXT.xs, "font-semibold text-primary uppercase tracking-wider mb-2")}>
                             이번 달 예상 수익
                         </p>
                         <div className="flex justify-between items-center">
@@ -736,7 +741,7 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             </div>
-                            <h3 className="text-2xl font-extrabold text-primary tracking-tight">
+                            <h3 className={cn(RESPONSIVE_TEXT.xl, "font-extrabold text-primary tracking-tight")}>
                                 {formatEuro(stats?.estimated_revenue)}
                             </h3>
                         </div>
@@ -746,9 +751,9 @@ export default function Dashboard() {
                         onClick={() => navigate("/students", { 
                             state: { status: "ACTIVE" } 
                         })}
-                        className="flex-1 flex flex-col justify-between bg-white dark:bg-card border-2 border-accent p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-accent/5 transition-all hover:shadow-md"
+                        className="flex-1 flex flex-col justify-between bg-white dark:bg-card border-2 border-accent p-4 md:p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-accent/5 transition-all hover:shadow-md"
                     >
-                        <p className="text-sm font-semibold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider mb-2">
+                        <p className={cn(RESPONSIVE_TEXT.xs, "font-semibold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider mb-2")}>
                             현재 수강중 학생 
                         </p>
                         <div className="flex justify-between items-center">
@@ -761,31 +766,31 @@ export default function Dashboard() {
                                 </span>
                             </div>
 
-                            <h3 className="text-2xl font-extrabold text-[#4a7a78] dark:text-accent-foreground">
+                            <h3 className={cn(RESPONSIVE_TEXT.xl, "font-extrabold text-[#4a7a78] dark:text-accent-foreground")}>
                                 총 {stats?.active_students || 0}명
                             </h3>
                         </div>
                     </div>
 
                     <Card className="bg-linear-to-br from-[#4C72A9] to-[#3b5b8a] text-white border-none shadow-lg shrink-0 overflow-hidden">
-                        <CardContent className="p-5 space-y-3">
+                        <CardContent className="p-4 md:p-5 space-y-2.5 md:space-y-3">
                             <Button
                                 variant="secondary"
-                                className="w-full justify-center bg-white text-primary hover:bg-white/90 h-11 gap-2 cursor-pointer shadow-md"
+                                className={cn("w-full justify-center bg-white text-primary hover:bg-white/90 gap-2 cursor-pointer shadow-md", RESPONSIVE_TEXT.sm, "h-10 md:h-11")}
                                 onClick={() => setIsStudentModalOpen(true)}
                             >
                                 <LucideIcons.UserPlus className="mr-1 h-5 w-5" /> 학생 등록
                             </Button>
                             <Button
                                 variant="secondary"
-                                className="w-full justify-center h-11 gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
+                                className={cn("w-full justify-center gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm", RESPONSIVE_TEXT.sm, "h-10 md:h-11")}
                                 onClick={openCreateModal}
                             >
                                 <LucideIcons.CalendarPlus className="mr-1 h-5 w-5" /> 수업 추가
                             </Button>
                             <Button
                                 variant="secondary"
-                                className="w-full justify-center h-11 gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
+                                className={cn("w-full justify-center gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm", RESPONSIVE_TEXT.sm, "h-10 md:h-11")}
                                 onClick={openCreateTodoModal}
                             >
                                 <LucideIcons.ListPlus className="mr-1 h-5 w-5" /> 업무 추가

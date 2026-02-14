@@ -433,7 +433,7 @@ export default function CourseList() {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-200px)] space-y-4 animate-in overflow-hidden">
+        <div className="flex flex-col min-h-screen space-y-4 animate-in overflow-y-auto">
             <AddCourseModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -449,11 +449,11 @@ export default function CourseList() {
 
             {/* --- Top Control Bar --- */}
             {/* 상단 컨트롤 바: 연도/월 선택 및 결제 필터 */}
-            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 shrink-0">
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 shrink-0">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3 w-full xl:w-auto flex-wrap">
                     {/* Tab Selection */}
                     {/* 탭 선택 영역 (Schedule/ExamResult 페이지 스타일 통일) */}
-                    <TabsList className="bg-muted dark:bg-muted/50 w-full sm:w-auto grid grid-cols-2">
+                    <TabsList className="bg-muted dark:bg-muted/50 w-full md:w-auto grid grid-cols-2">
                         <TabsTrigger
                         value="courses"
                         activeValue={activeTab}
@@ -485,14 +485,14 @@ export default function CourseList() {
                         </TabsTrigger>
                     </TabsList>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
                         {/* Year Selector */}
                         {/* 연도 선택 드롭다운 */}
-                        <div className="relative w-full sm:w-auto">
+                        <div className="relative w-full md:w-auto">
                             <select
                                 value={selectedYear}
                                 onChange={handleYearChange}
-                                className="h-10 w-full sm:w-28 appearance-none rounded-xl border border-border bg-white dark:bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                                className="h-10 w-full md:w-28 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
                             >
                                 {availableYears.map((year) => (
                                 <option key={year} value={year}>
@@ -505,11 +505,11 @@ export default function CourseList() {
 
                         {/* Month Selector */}
                         {/* 월 선택 드롭다운 */}
-                        <div className="relative w-full sm:w-auto">
+                        <div className="relative w-full md:w-auto">
                             <select
                                 value={selectedMonth}
                                 onChange={handleMonthChange}
-                                className="h-10 w-full sm:w-26 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                                className="h-10 w-full md:w-26 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
                             >
                                 <option value={0}>전체(월)</option>
                                 {Array.from({ length: 12 }, (_, i) => (
@@ -524,11 +524,11 @@ export default function CourseList() {
                         {/* Payment Filter (Visible only on Courses tab) */}
                         {/* 결제 상태 필터 (수강권 탭에서만 표시) */}
                         {activeTab === "courses" && (
-                        <div className="relative w-full sm:w-auto">
+                        <div className="relative w-full md:w-auto">
                             <select
                             value={paymentFilter}
                             onChange={(e) => setPaymentFilter(e.target.value)}
-                            className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                            className="h-10 w-full md:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
                             >
                                 <option value="ALL">전체(결제)</option>
                                 <option value="PAID">완납</option>
@@ -541,11 +541,11 @@ export default function CourseList() {
                         {/* Sent Status Filter (Visible only on Receipts tab) */}
                         {/* 발송 상태 필터 (영수증 탭에서만 표시) */}
                         {activeTab === "receipts" && (
-                        <div className="relative w-full sm:w-auto">
+                        <div className="relative w-full md:w-auto">
                             <select
                             value={sentFilter}
                             onChange={(e) => setSentFilter(e.target.value)}
-                            className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                            className="h-10 w-full md:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
                             >
                                 <option value="ALL">전체(발송)</option>
                                 <option value="SENT">발송</option>
@@ -558,21 +558,21 @@ export default function CourseList() {
 
                     {/* Search Input */}
                     {/* 검색 입력 */}
-                    <div className="flex items-center w-full sm:w-auto gap-2 group">
-                        <div className="relative flex-1 sm:w-48">
+                    <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-2 group">
+                        <div className="relative flex-1 w-full md:w-48">
                             <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors dark:text-muted-foreground" />
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-md"
+                                className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm md:text-md"
                                 placeholder="학생 이름 검색"
                             />
                         </div>
                         <Button
                         variant="default"
                         onClick={handleSearchClick}
-                        className="w-full xl:w-auto h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer"
+                        className="w-full md:w-auto h-9 px-3 md:px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer text-sm md:text-base"
                         >
                         검색
                         </Button>
@@ -585,7 +585,7 @@ export default function CourseList() {
                     {activeTab === "courses" ? (
                         <Button
                         variant="default"
-                        className="w-full xl:w-auto h-10 px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full xl:w-auto h-10 px-4 md:px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2 text-sm md:text-base"
                         onClick={openCreateModal}
                         >
                         <LucideIcons.BookPlus className="w-4 h-4" /> 수강권 등록
@@ -593,7 +593,7 @@ export default function CourseList() {
                     ) : (
                         <Button
                         variant="default"
-                        className="w-full xl:w-auto h-10 px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full xl:w-auto h-10 px-4 md:px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2 text-sm md:text-base"
                         onClick={openInvoiceModal}
                         >
                         <LucideIcons.Receipt className="w-4 h-4" /> 영수증 작성
@@ -603,41 +603,41 @@ export default function CourseList() {
             </div>
 
             {/* --- Analytics & KPI Section --- */}
-            {/* 통계 및 KPI 섹션 (기존 코드 유지) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
-                {/* KPI Cards (Left) */}
-                <div className="lg:col-span-4 flex flex-col gap-2.5">
+            {/* 통계 및 KPI 섹션 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 md:gap-4 shrink-0">
+                {/* KPI Cards - Responsive Layout */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-4 flex flex-col gap-2 md:gap-3">
                     {/* 1. 총 수익 (Revenue) */}
-                    <div className="flex-1 bg-white dark:bg-card border-2 border-primary px-5 py-3 rounded-xl shadow-sm">
-                        <p className="text-md font-semibold text-primary uppercase tracking-wider mb-1">
+                    <div className="flex-1 bg-white dark:bg-card border-2 border-primary px-3 md:px-5 py-1.5 md:py-3 rounded-xl shadow-sm">
+                        <p className="text-[11px] md:text-sm lg:text-md font-semibold text-primary uppercase tracking-wider mb-0.5 md:mb-1">
                             {selectedMonth === 0
                                 ? `${selectedYear}년 총 수익`
                                 : `${selectedMonth}월 수익`}
                         </p>
-                        <div className="flex justify-around mt-3">
-                            <div className="flex gap-1 items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                                <LucideIcons.CreditCard className="w-4 h-4" />총 수강{" "}
-                                {filteredCourses.length}건
+                        <div className="flex justify-around md:justify-between md:items-end gap-2 md:gap-3 mt-2 md:mt-3">
+                            <div className="flex gap-1 items-center bg-primary/10 text-primary px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-medium w-fit">
+                                <LucideIcons.CreditCard className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
+                                <span className="whitespace-nowrap">총 수강 {filteredCourses.length}건</span>
                             </div>
-                            <h3 className="text-2xl font-bold text-primary tracking-tight">
+                            <h3 className="text-base md:text-2xl font-bold text-primary tracking-tight">
                                 {formatCurrency(totalRevenue)}
                             </h3>
                         </div>
                     </div>
 
                     {/* 총 수업 시간 (Total Hours) */}
-                    <div className="flex-1 bg-white dark:bg-card border-2 border-accent px-5 py-3 rounded-xl shadow-sm">
-                        <p className="text-md font-semibold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider mb-1">
+                    <div className="flex-1 bg-white dark:bg-card border-2 border-accent px-3 md:px-5 py-1.5 md:py-3 rounded-xl shadow-sm">
+                        <p className="text-[11px] md:text-sm lg:text-md font-semibold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider mb-0.5 md:mb-1">
                             {selectedMonth === 0
                                 ? `${selectedYear}년 총 수업 시간`
                                 : `${selectedMonth}월 수업 시간`}
                         </p>
-                        <div className="flex justify-around mt-3">
-                            <div className="flex gap-1 items-center bg-accent/20 text-[#4a7a78] dark:text-accent-foreground px-3 py-1 rounded-full text-sm font-medium">
-                                <LucideIcons.BarChart className="w-4 h-4 text-[#4a7a78] dark:text-accent-foreground" />
-                                <span>건당 평균 {avgHoursPerCourse}시간</span>
+                        <div className="flex justify-around md:justify-between md:items-end gap-2 md:gap-3 mt-2 md:mt-3">
+                            <div className="flex gap-1 items-center bg-accent/20 text-[#4a7a78] dark:text-accent-foreground px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-medium w-fit">
+                                <LucideIcons.BarChart className="w-3 h-3 md:w-4 md:h-4 shrink-0 text-[#4a7a78] dark:text-accent-foreground" />
+                                <span className="whitespace-nowrap">건당 평균 {avgHoursPerCourse}시간</span>
                             </div>
-                            <h3 className="text-2xl font-bold text-[#4a7a78] dark:text-accent-foreground tracking-tight">
+                            <h3 className="text-base md:text-2xl font-bold text-[#4a7a78] dark:text-accent-foreground tracking-tight">
                                 {Number.isInteger(totalHours)
                                 ? totalHours
                                 : totalHours.toFixed(1)}
@@ -647,18 +647,18 @@ export default function CourseList() {
                     </div>
 
                     {/* 평균 시간당 수익 (Hourly Rate) */}
-                    <div className="flex-1 bg-white dark:bg-card border-2 border-warning px-5 py-3 rounded-xl shadow-sm">
-                        <p className="text-md font-semibold text-[#b8a05e] dark:text-warning uppercase tracking-wider mb-1">
+                    <div className="flex-1 bg-white dark:bg-card border-2 border-warning px-3 md:px-5 py-1.5 md:py-3 rounded-xl shadow-sm">
+                        <p className="text-[11px] md:text-sm lg:text-md font-semibold text-[#b8a05e] dark:text-warning uppercase tracking-wider mb-0.5 md:mb-1">
                             {selectedMonth === 0
                                 ? `${selectedYear}년 평균 시간당 수익`
                                 : `${selectedMonth}월 평균 시간당 수익`}
                         </p>
-                        <div className="flex justify-around mt-3">
-                            <div className="flex gap-1 items-center bg-warning/20 text-[#b8a05e] dark:text-warning px-3 py-1 rounded-full text-sm font-medium">
-                                <LucideIcons.Coins className="w-4 h-4 text-[#b8a05e] dark:text-warning" />
-                                <span>최고 시급 {formatCurrency(maxHourlyRate)}</span>
+                        <div className="flex justify-around md:justify-between md:items-end gap-2 md:gap-3 mt-2 md:mt-3">
+                            <div className="flex gap-1 items-center bg-warning/20 text-[#b8a05e] dark:text-warning px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-medium w-fit">
+                                <LucideIcons.Coins className="w-3 h-3 md:w-4 md:h-4 shrink-0 text-[#b8a05e] dark:text-warning" />
+                                <span className="whitespace-nowrap">최고 시급 {formatCurrency(maxHourlyRate)}</span>
                             </div>
-                            <h3 className="text-2xl font-bold text-[#b8a05e] dark:text-warning tracking-tight">
+                            <h3 className="text-base md:text-2xl font-bold text-[#b8a05e] dark:text-warning tracking-tight">
                                 {formatCurrency(avgHourlyRate)}/h
                             </h3>
                         </div>
@@ -666,21 +666,21 @@ export default function CourseList() {
                 </div>
 
                 {/* Chart (Right) */}
-                {/* 차트 영역 (우측) */}
-                <div className="lg:col-span-8 bg-white dark:bg-card p-5 rounded-xl border border-border shadow-sm flex flex-col">
-                    <div className="flex justify-between items-center mb-4 pl-1">
-                        <h3 className="text-sm font-bold text-slate-800 dark:text-foreground flex items-center gap-2">
-                            <LucideIcons.BarChart3 className="w-4 h-4 text-primary" />
+                {/* 차트 영역 */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-8 bg-white dark:bg-card p-3 md:p-5 rounded-xl border border-border shadow-sm flex flex-col">
+                    <div className="flex justify-between items-center gap-2 sm:gap-3 mb-3 md:mb-4 pl-1">
+                        <h3 className="text-xs md:text-sm font-bold text-slate-800 dark:text-foreground flex items-center gap-2">
+                            <LucideIcons.BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                             {selectedYear}년 현황
                         </h3>
 
                         {/* Chart Toggle Buttons */}
-                        {/* 차트 모드 전환 버튼 (수익 / 수강생) */}
-                        <div className="flex bg-muted dark:bg-muted/60 p-1 rounded-lg">
+                        {/* 차트 모드 전환 버튼 */}
+                        <div className="flex bg-muted dark:bg-muted/60 p-1 rounded-lg w-23 sm:w-auto">
                             <button
                                 onClick={() => setChartMode("REVENUE")}
                                 className={cn(
-                                "text-[13px] px-3 py-1 rounded-md transition-all cursor-pointer",
+                                "text-[11px] md:text-[13px] px-2 md:px-3 py-0.5 md:py-1 rounded-md transition-all cursor-pointer",
                                 chartMode === "REVENUE"
                                     ? "bg-white dark:bg-card text-primary font-semibold shadow-sm"
                                     : "text-slate-500 dark:text-muted-foreground hover:bg-card/40 hover:font-semibold hover:text-primary dark:hover:bg-secondary/50 dark:hover:text-foreground",
@@ -691,7 +691,7 @@ export default function CourseList() {
                             <button
                                 onClick={() => setChartMode("COUNT")}
                                 className={cn(
-                                "text-[13px] px-3 py-1 rounded-md transition-all cursor-pointer",
+                                "text-[11px] md:text-[13px] px-2 md:px-3 py-0.5 md:py-1 rounded-md transition-all cursor-pointer",
                                 chartMode === "COUNT"
                                     ? "bg-white dark:bg-card text-primary font-semibold shadow-sm"
                                     : "text-slate-500 dark:text-muted-foreground hover:bg-card/40 hover:font-semibold hover:text-primary dark:hover:bg-secondary/50 dark:hover:text-foreground",
@@ -702,10 +702,10 @@ export default function CourseList() {
                         </div>
                     </div>
 
-                    <div className="flex-1 min-h-45">
+                    <div className="flex-1 min-h-32 md:min-h-40">
                         <ResponsiveContainer width="100%" height="100%">
                             {/* Conditional Rendering for Chart Type */}
-                            {/* 차트 모드에 따른 조건부 렌더링 (BarChart vs LineChart) */}
+                            {/* 차트 모드에 따른 조건부 렌더링 */}
                             {chartMode === "REVENUE" ? (
                                 <BarChart
                                 data={chartData}
@@ -723,7 +723,7 @@ export default function CourseList() {
                                     tickLine={false}
                                     tick={{
                                     fill: "var(--color-muted-foreground)",
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     }}
                                     dy={5}
                                 />
@@ -732,11 +732,12 @@ export default function CourseList() {
                                     tickLine={false}
                                     tick={{
                                     fill: "var(--color-muted-foreground)",
-                                    fontSize: 11,
+                                    fontSize: 9,
                                     }}
                                     tickFormatter={(value) =>
                                     `€${value.toLocaleString("de-DE")}`
                                     }
+                                    width={45}
                                 />
                                 <Tooltip
                                     cursor={{ fill: "var(--color-muted)", opacity: 0.15 }}
@@ -746,11 +747,11 @@ export default function CourseList() {
                                     backgroundColor: "var(--color-card)",
                                     color: "var(--color-card-foreground)",
                                     boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                                    fontSize: "12px",
+                                    fontSize: "11px",
                                     }}
                                     formatter={(value) => [formatCurrency(value), "수익"]}
                                 />
-                                <Bar dataKey="revenue" radius={[4, 4, 0, 0]} barSize={24}>
+                                <Bar dataKey="revenue" radius={[4, 4, 0, 0]} barSize={20}>
                                     {chartData.map((entry, index) => (
                                     <Cell
                                         key={`cell-${index}`}
@@ -768,7 +769,7 @@ export default function CourseList() {
                             ) : (
                                 <LineChart
                                 data={chartData}
-                                margin={{ top: 5, right: 20, left: -20, bottom: 0 }}
+                                margin={{ top: 5, right: 20, left: -15, bottom: 0 }}
                                 >
                                 <CartesianGrid
                                     strokeDasharray="3 3"
@@ -782,7 +783,7 @@ export default function CourseList() {
                                     tickLine={false}
                                     tick={{
                                     fill: "var(--color-muted-foreground)",
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     }}
                                     dy={5}
                                 />
@@ -791,10 +792,11 @@ export default function CourseList() {
                                     tickLine={false}
                                     tick={{
                                     fill: "var(--color-muted-foreground)",
-                                    fontSize: 11,
+                                    fontSize: 9,
                                     }}
                                     allowDecimals={false}
                                     domain={[0, (dataMax) => (dataMax < 5 ? 5 : dataMax)]}
+                                    width={35}
                                 />
                                 <Tooltip
                                     contentStyle={{
@@ -803,7 +805,7 @@ export default function CourseList() {
                                     backgroundColor: "var(--color-card)",
                                     color: "var(--color-card-foreground)",
                                     boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                                    fontSize: "12px",
+                                    fontSize: "11px",
                                     }}
                                     formatter={(value) => [`${value}명`, "수강생"]}
                                 />
@@ -829,63 +831,63 @@ export default function CourseList() {
 
             {/* --- Detailed List Section --- */}
             {/* 상세 리스트 섹션 (테이블) - 탭에 따라 테이블 내용 변경 */}
-            <div className="flex-1 h-full bg-white dark:bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col min-h-0 mt-3">
+            <div className="bg-white dark:bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col mt-2 md:mt-3">
                 <div
                 className={cn(
-                    "bg-slate-50 dark:bg-muted/30 border-b border-border",
-                    hasScroll ? "pr-2" : "",
+                    "bg-slate-50 dark:bg-muted/30 border-b border-border overflow-x-auto custom-scrollbar",
+                    hasScroll ? "pr-2.75" : "",
                 )}
                 >
-                    <table className="w-full text-md table-fixed">
-                        <thead className="text-md text-slate-500 dark:text-muted-foreground uppercase">
+                    <table className="w-full text-md table-fixed min-w-150">
+                        <thead className="text-[10px] md:text-base text-slate-500 dark:text-muted-foreground uppercase">
                             <tr>
                                 {activeTab === "courses" ? (
                                     <>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[18%]">
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[18%]">
                                         학생
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[22%]">
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[22%]">
                                         수강 기간
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[8%]">
-                                        총 시간
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[8%]">
+                                        시간
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[12%]">
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
                                         시간당 금액
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[14%]">
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[14%]">
                                         금액
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[13%]">
-                                        수강 상태
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[13%]">
+                                        상태
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[13%]">
-                                        결제 여부
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[13%]">
+                                        결제
                                         </th>
                                     </>
                                 ) : (
                                     // Invoice Table Headers
                                     // 영수증 테이블 헤더
                                     <>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[15%]">
-                                        영수증 번호
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
+                                        번호
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[15%]">
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                         학생
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[12%]">
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
                                         발행일
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[12%]">
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
                                         납부기한
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[26%]">
-                                        수강 기간
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[26%]">
+                                        기간
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[10%]">
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
                                         발송
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-center select-none w-[10%]">
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
                                         파일
                                         </th>
                                     </>
@@ -897,11 +899,11 @@ export default function CourseList() {
 
                 <div
                 ref={tableBodyRef}
-                className="flex-1 overflow-y-auto custom-scrollbar"
+                className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
                 >
                     <table
                         className={cn(
-                        "w-full text-md table-fixed",
+                        "w-full text-sm table-fixed min-w-150",
                         (activeTab === "courses" ? filteredCourses : filteredInvoices)
                             .length === 0
                             ? "h-full"
@@ -921,14 +923,14 @@ export default function CourseList() {
                                 // Course List
                                 // 수강권 목록
                                 filteredCourses.length === 0 ? (
-                                <tr className="h-full">
+                                <tr>
                                     <td
                                     colSpan="7"
-                                    className="px-6 text-center align-middle text-slate-400 dark:text-muted-foreground/70"
+                                    className="px-6 py-12 text-center text-slate-400 text-sm"
                                     >
                                         <div className="flex flex-col justify-center items-center gap-2">
-                                            <LucideIcons.SearchX className="w-8 h-8 opacity-50" />
-                                            <p className="font-semibold text-sm">
+                                            <LucideIcons.SearchX className="w-6 h-6 opacity-50" />
+                                            <p className="font-semibold">
                                             해당 기간에 등록된 데이터가 없습니다.
                                             </p>
                                         </div>
@@ -948,31 +950,29 @@ export default function CourseList() {
                                     )}
                                     onClick={() => openEditModal(course)}
                                     >
-                                        <td className="px-4 py-4 text-center text-slate-800 dark:text-foreground truncate w-[18%] group-hover:text-primary">
-                                            <span className="font-bold text-base">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-800 dark:text-foreground truncate w-[18%] group-hover:text-primary text-xs md:text-sm">
+                                            <span className="font-bold">
                                             {getStudentName(course.student)}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-4 text-center w-[22%]">
-                                            <div className="text-slate-500 dark:text-muted-foreground flex items-center justify-center gap-1.5">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[22%] text-xs md:text-sm">
                                             {formatDate(course.start_date)} ~{" "}
                                             {formatDate(course.end_date)}
-                                            </div>
                                         </td>
-                                        <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[8%]">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[8%] text-xs md:text-sm">
                                             {Number(course.total_hours)}h
                                         </td>
-                                        <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%]">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%] text-xs md:text-sm">
                                             {formatCurrency(course.hourly_rate)}
                                         </td>
-                                        <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-card-foreground w-[14%]">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center font-bold text-slate-800 dark:text-card-foreground w-[14%] text-xs md:text-sm">
                                             {formatCurrency(course.total_fee)}
                                         </td>
-                                        <td className="px-1 py-4 text-center w-[13%]">
-                                            <div className="flex justify-center">
+                                        <td className="px-1 py-3 md:py-4 text-center w-[13%]">
+                                            <div className="flex justify-center items-center w-full">
                                                 <Badge
                                                     className={cn(
-                                                    "text-[12px] px-2 py-0.5 border font-medium shadow-none justify-center min-w-12.5",
+                                                    "text-[11px] px-2 py-0.5 border font-medium shadow-none justify-center min-w-12.5",
                                                     statusStyles[course.status],
                                                     )}
                                                 >
@@ -980,16 +980,17 @@ export default function CourseList() {
                                                 </Badge>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 text-center w-[13%]">
-                                            <div className="flex justify-center">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center w-[13%]">
+                                            <div className="flex justify-center items-center w-full">
                                                 {course.is_paid ? (
-                                                    <span className="inline-flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-xl border bg-accent/20 text-[#4a7a78] dark:text-accent-foreground border-accent/50">
-                                                    <LucideIcons.CheckCircle2 className="w-3 h-3" />{" "}
+                                                    <span className="inline-flex items-center gap-0.5 md:gap-1 text-[9px] md:text-[11px] font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded-xl border bg-accent/20 text-[#4a7a78] dark:text-accent-foreground border-accent/50">
+                                                    <LucideIcons.CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
                                                     완납
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 text-[12px] font-bold text-destructive bg-destructive/10 px-2 py-1 rounded-xl border border-destructive/20">
-                                                    <LucideIcons.XCircle className="w-3 h-3" /> 미납
+                                                    <span className="inline-flex items-center gap-0.5 md:gap-1 text-[9px] md:text-[11px] font-bold text-destructive bg-destructive/10 px-1.5 md:px-2 py-0.5 rounded-xl border border-destructive/20">
+                                                    <LucideIcons.XCircle className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
+                                                    미납
                                                     </span>
                                                 )}
                                             </div>
@@ -1001,14 +1002,14 @@ export default function CourseList() {
                             // Invoice List
                             // 영수증 목록
                             filteredInvoices.length === 0 ? (
-                                <tr className="h-full">
+                                <tr>
                                     <td
                                         colSpan="7"
-                                        className="px-6 text-center align-middle text-slate-400 dark:text-muted-foreground/70"
+                                        className="px-6 py-12 text-center text-slate-400 text-sm"
                                     >
                                         <div className="flex flex-col justify-center items-center gap-2">
-                                            <LucideIcons.SearchX className="w-8 h-8 opacity-50" />
-                                            <p className="font-semibold text-sm">
+                                            <LucideIcons.SearchX className="w-6 h-6 opacity-50" />
+                                            <p className="font-semibold">
                                                 해당 기간에 발행된 영수증이 없습니다.
                                             </p>
                                         </div>
@@ -1025,49 +1026,49 @@ export default function CourseList() {
                                         : "",
                                     )}
                                     >
-                                        <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-foreground w-[15%]">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center font-bold text-slate-800 dark:text-foreground w-[15%] text-xs md:text-sm">
                                         {invoice.full_invoice_code || invoice.invoice_number}
                                         </td>
-                                        <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-foreground w-[15%]">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center font-bold text-slate-800 dark:text-foreground w-[15%] text-xs md:text-sm">
                                         {getStudentName(invoice.student)}
                                         </td>
-                                        <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%]">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%] text-xs md:text-sm">
                                         {formatDate(invoice.date || invoice.created_at)}
                                         </td>
-                                        <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%]">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%] text-xs md:text-sm">
                                         {formatDate(invoice.due_date)}
                                         </td>
-                                        <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[26%]">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[26%] text-xs md:text-sm">
                                         {formatDate(invoice.delivery_date_start)}
                                         {invoice.delivery_date_end
                                             ? ` ~ ${formatDate(invoice.delivery_date_end)}`
                                             : ""}
                                         </td>
-                                        <td className="px-4 py-4 text-center w-[10%]">
-                                        <div className="flex justify-center">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center w-[10%]">
+                                        <div className="flex justify-center items-center w-full">
                                             <button
                                             onClick={(e) => handleToggleSent(e, invoice)}
                                             className={cn(
-                                                "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
+                                                "w-4 md:w-5 h-4 md:h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
                                                 invoice.is_sent
                                                 ? "bg-accent border-accent text-white"
                                                 : "border-border bg-card hover:border-accent hover:bg-accent/10",
                                             )}
                                             >
                                             {invoice.is_sent && (
-                                                <LucideIcons.Check className="w-3.5 h-3.5 stroke-[3px]" />
+                                                <LucideIcons.Check className="w-3 md:w-3.5 h-3 md:h-3.5 stroke-[3px]" />
                                             )}
                                             </button>
                                         </div>
                                         </td>
-                                        <td className="px-2 py-2 text-center w-[10%]">
+                                        <td className="px-2 md:px-4 py-3 md:py-4 text-center w-[10%]">
                                         <Button
                                             variant=""
                                             size="icon"
-                                            className="h-8 w-8 transition-colors cursor-pointer text-primary/50 hover:text-primary"
+                                            className="h-7 md:h-8 w-7 md:w-8 transition-colors cursor-pointer text-primary/50 hover:text-primary"
                                             onClick={(e) => handleDownloadPdf(e, invoice.id)}
                                         >
-                                            <LucideIcons.FileText className="w-5 h-5" />
+                                            <LucideIcons.FileText className="w-4 md:w-5 h-4 md:h-5" />
                                         </Button>
                                         </td>
                                     </tr>

@@ -4,6 +4,10 @@ import { useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
 import api from "../api";
 import { cn } from "../lib/utils";
+import {
+  RESPONSIVE_PADDING,
+  RESPONSIVE_TEXT,
+} from "../lib/responsiveStyles";
 import { Card } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
@@ -67,8 +71,7 @@ const examResultStyles = {
     "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
   FAILED:
     "bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10",
-  WAITING:
-    "bg-muted/50 text-muted-foreground border-border hover:bg-muted/50",
+  WAITING: "bg-muted/50 text-muted-foreground border-border hover:bg-muted/50",
 };
 
 const EXAM_MODE_LABELS = {
@@ -79,20 +82,37 @@ const EXAM_MODE_LABELS = {
 
 const LEVEL_OPTIONS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
-// FilePopover Component
-// 파일 팝오버 컴포넌트
+// FilePopover Component - Responsive (Modal on Mobile, Popover on Desktop)
+// 파일 팝오버 컴포넌트 - 반응형 (모바일: 모달, 데스크톱: 팝오버)
 const FilePopover = ({ attachments }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 648);
   const buttonRef = useRef(null);
+
+  // Detect mobile view on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 648);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const togglePopover = (e) => {
     e.stopPropagation();
-    if (!isOpen && buttonRef.current) {
+    if (!isOpen && buttonRef.current && !isMobile) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const popoverWidth = 256;
+      const padding = 16;
+      const minLeft = padding + popoverWidth / 2;
+      const maxLeft = window.innerWidth - padding - popoverWidth / 2;
+      const desiredLeft = rect.left + rect.width / 2;
+      const clampedLeft = Math.min(Math.max(desiredLeft, minLeft), maxLeft);
       setCoords({
         top: rect.top + window.scrollY - 8,
-        left: rect.left + window.scrollX + rect.width / 2,
+        left: clampedLeft + window.scrollX,
       });
     }
     setIsOpen(!isOpen);
@@ -134,9 +154,69 @@ const FilePopover = ({ attachments }) => {
       </button>
 
       {isOpen &&
+        isMobile &&
+        createPortal(
+          <>
+            {/* Mobile Modal - Overlay */}
+            <div
+              className="fixed inset-0 bg-black/50 z-9998 animate-in fade-in duration-200"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
+            />
+            {/* Mobile Modal - Content */}
+            <div
+              className="fixed inset-x-0 bottom-0 z-9999 p-4 animate-in slide-in-from-bottom duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 max-w-full mx-auto">
+                <div className="p-1 flex flex-col max-h-60 overflow-y-auto custom-scrollbar">
+                  <div className="px-3 py-2 text-xs font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-700 mb-1">
+                    첨부파일 목록 ({attachments.length})
+                  </div>
+                  {attachments.map((file, index) => {
+                    let fileName = "파일";
+                    if (file.original_name) fileName = file.original_name;
+                    else if (file.file) {
+                      try {
+                        fileName = decodeURIComponent(
+                          file.file.split("/").pop().split("?")[0],
+                        );
+                      } catch (e) {
+                        console.log("Error decoding file name:", e);
+                        fileName = "Unknown File";
+                      }
+                    }
+
+                    return (
+                      <a
+                        key={file.id || index}
+                        href={file.file}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-md transition-colors group"
+                        title={fileName}
+                      >
+                        <LucideIcons.FileText className="w-4.5 h-4.5 text-slate-400 group-hover:text-primary shrink-0" />
+                        <span className="truncate flex-1 text-left text-xs">
+                          {fileName}
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>,
+          document.body,
+        )}
+
+      {isOpen &&
+        !isMobile &&
         createPortal(
           <div
-            className="fixed z-9999 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200"
+            className="fixed z-9999 w-64 max-w-[calc(100vw-32px)] bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200"
             style={{
               top: coords.top,
               left: coords.left,
@@ -215,6 +295,7 @@ export default function StudentList() {
   // Ref and State for scroll detection
   // 스크롤 감지를 위한 Ref와 State
   const tableBodyRef = useRef(null);
+  const studentInfoRef = useRef(null);
   const [hasScroll, setHasScroll] = useState(false);
 
   // State for student list and refresh mechanism
@@ -235,6 +316,10 @@ export default function StudentList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [activeStudentId, setActiveStudentId] = useState(null);
+
+  // Mobile detail view state
+  // 모바일 상세 정보 뷰 상태 (모바일에서 학생 상세정보 표시 여부)
+  const [isMobileDetailView, setIsMobileDetailView] = useState(false);
 
   // States for Course and Exam Modals
   // 수강권 및 시험 수정 모달 상태
@@ -396,12 +481,24 @@ export default function StudentList() {
     }
   };
 
+  const resetDetailViewState = () => {
+    setActiveTab("courses");
+    requestAnimationFrame(() => {
+      if (studentInfoRef.current) {
+        studentInfoRef.current.scrollTop = 0;
+      }
+      if (tableBodyRef.current) {
+        tableBodyRef.current.scrollTop = 0;
+      }
+    });
+  };
+
   // Derived state for easier access to current student object
   // 현재 학생 객체에 쉽게 접근하기 위한 파생 상태
   const activeStudent = students.find((s) => s.id === activeStudentId) || null;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-200px)] space-y-4 animate-in overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-200px)] space-y-3 md:space-y-4 animate-in overflow-hidden">
       <AddStudentModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -432,18 +529,25 @@ export default function StudentList() {
 
       {/* Filter and Search Bar Section */}
       {/* 필터 및 검색 바 섹션 */}
-      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 shrink-0">
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+      <div
+        className={cn(
+          "flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 shrink-0",
+          isMobileDetailView ? "hidden lg:flex" : "flex",
+        )}
+      >
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3 w-full xl:w-auto">
           {/* Filters */}
           {/* 필터들 */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto flex-wrap">
             <div className="relative">
               {/* Status Filter Dropdown */}
               {/* 상태 필터 드롭다운 */}
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-4 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                className={cn(
+                  "h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                )}
               >
                 <option value="">전체(상태)</option>
                 <option value="ACTIVE">수강중</option>
@@ -459,7 +563,9 @@ export default function StudentList() {
               <select
                 value={levelFilter}
                 onChange={(e) => setLevelFilter(e.target.value)}
-                className="h-10 w-full sm:w-29 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                className={cn(
+                  "h-10 w-full sm:w-29 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                )}
               >
                 <option value="">전체(레벨)</option>
                 {LEVEL_OPTIONS.map((level) => (
@@ -473,20 +579,26 @@ export default function StudentList() {
 
             {/* Search Input */}
             {/* 검색 입력 */}
-            <div className="flex items-center w-full sm:w-auto gap-2 group">
-              <div className="relative flex-1 sm:w-48">
+            <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto gap-2 group">
+              <div className="relative w-full sm:w-40 md:w-48">
                 <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors dark:text-muted-foreground" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-md"
+                  className={cn(
+                    "flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400",
+                    RESPONSIVE_TEXT.sm,
+                  )}
                   placeholder="학생 이름 입력"
                 />
               </div>
               <Button
                 variant="default"
-                className="w-full xl:w-auto h-9 px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer"
+                className={cn(
+                  "w-full sm:w-auto h-9 px-3 md:px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer",
+                  RESPONSIVE_TEXT.sm,
+                )}
                 onClick={handleSearchClick}
               >
                 검색
@@ -497,18 +609,26 @@ export default function StudentList() {
 
         <Button
           variant="default"
-          className="w-full xl:w-auto h-10 px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
+          className={cn(
+            "w-full xl:w-auto h-10 px-4 md:px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2",
+            RESPONSIVE_TEXT.sm,
+          )}
           onClick={openCreateModal}
         >
           <LucideIcons.UserPlus className="w-4 h-4" /> 학생 등록
         </Button>
       </div>
 
-      <div className="flex gap-4 flex-1 min-h-0">
-        {/* Left Panel: Student List */}
-        {/* 좌측 패널: 학생 목록 */}
-        <Card className="w-1/3 min-w-[320px] h-full bg-white dark:bg-card border-none shadow-sm rounded-2xl overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+      <div className="flex flex-col lg:flex-row gap-3 md:gap-4 flex-1 min-h-0">
+        {/* Left Panel: Student List - Hidden on mobile when detail view is active */}
+        {/* 좌측 패널: 학생 목록 - 모바일에서 상세 뷰 활성화 시 숨김 */}
+        <Card
+          className={cn(
+            "w-full lg:w-1/3 lg:min-w-[320px] h-full bg-white dark:bg-card border-none shadow-sm rounded-2xl overflow-hidden flex-col",
+            isMobileDetailView ? "hidden lg:flex" : "flex",
+          )}
+        >
+          <div className="flex-1 overflow-y-auto p-1 md:p-2 space-y-1 custom-scrollbar">
             {students.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground/70 gap-2">
                 <LucideIcons.SearchX className="w-8 h-8" />
@@ -518,9 +638,15 @@ export default function StudentList() {
               students.map((s) => (
                 <div
                   key={s.id}
-                  onClick={() => setActiveStudentId(s.id)}
+                  onClick={() => {
+                    resetDetailViewState();
+                    setActiveStudentId(s.id);
+                    // On mobile, switch to detail view
+                    // 모바일에서는 상세 뷰로 전환
+                    setIsMobileDetailView(true);
+                  }}
                   className={cn(
-                    "px-5 py-4 rounded-xl cursor-pointer transition-all border border-transparent flex items-center gap-3",
+                    "px-3 md:px-5 py-3 md:py-4 rounded-xl cursor-pointer transition-all border border-transparent flex items-center gap-2 md:gap-3",
                     activeStudentId === s.id
                       ? "bg-primary/10 border-primary/20 shadow-sm"
                       : "hover:bg-slate-50 dark:hover:bg-muted/50 group",
@@ -566,161 +692,230 @@ export default function StudentList() {
           </div>
         </Card>
 
-        {/* Right Panel: Student Details */}
-        {/* 우측 패널: 학생 상세 정보 */}
-        <Card className="flex-1 h-full bg-white dark:bg-card border-none shadow-sm rounded-2xl overflow-hidden flex flex-col relative">
+        {/* Right Panel: Student Details - Shown on mobile when detail view is active */}
+        {/* 우측 패널: 학생 상세 정보 - 모바일에서 상세 뷰 활성화 시 표시 */}
+        <Card
+          className={cn(
+            "flex flex-1 h-full min-h-0 bg-white dark:bg-card border-none shadow-sm rounded-2xl overflow-hidden flex-col relative",
+            isMobileDetailView ? "flex" : "hidden lg:flex",
+          )}
+        >
           {activeStudent ? (
-            <div className="flex-1 flex flex-col h-full">
-              {/* Student Header Info */}
-              <div className="p-8 pb-6 border-b border-slate-100 dark:border-border bg-linear-to-b from-white to-slate-50/50 dark:from-card dark:to-muted/10">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-6">
-                    <div
-                      className={cn(
-                        "h-15 w-15 rounded-full flex items-center justify-center border shadow-sm shrink-0 bg-white dark:bg-card",
-                        activeStudent.gender === "M"
-                          ? "border-primary/20 bg-primary/10"
-                          : "border-destructive/20 bg-destructive/10",
-                      )}
-                    >
-                      {activeStudent.gender === "M" ? (
-                        <MaleIcon className="w-9 h-9 text-primary" />
-                      ) : (
-                        <FemaleIcon className="w-9 h-9 text-destructive" />
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-5">
-                        <h1 className="text-3xl font-bold text-slate-800 dark:text-foreground tracking-tight">
-                          {activeStudent.name}
-                        </h1>
-                        <Badge
+            <div className="flex flex-col h-full min-h-0">
+              {/* Mobile Back Button - Sticky at top */}
+              {/* 모바일 뒤로가기 버튼 - 상단 고정 */}
+              <div className="lg:hidden flex items-center gap-3 p-4 border-b border-slate-100 dark:border-border sticky top-0 z-20 bg-white dark:bg-card shrink-0">
+                <button
+                  onClick={() => {
+                    resetDetailViewState();
+                    setActiveStudentId(null);
+                    setIsMobileDetailView(false);
+                  }}
+                  className="flex items-center gap-2 text-slate-600 dark:text-muted-foreground hover:text-primary dark:hover:text-primary transition-colors cursor-pointer"
+                >
+                  <LucideIcons.ChevronLeft className="w-5 h-5" />
+                  <span className="font-semibold text-sm">학생 목록으로</span>
+                </button>
+              </div>
+
+              {/* Student Info Area */}
+              {/* 학생 정보 영역 */}
+              <div
+                ref={studentInfoRef}
+                className="shrink-0 max-h-[45%] overflow-y-auto custom-scrollbar"
+              >
+                {/* Student Header Info */}
+                <div
+                  className={cn(
+                    "border-b border-slate-100 dark:border-border bg-linear-to-b from-white to-slate-50/50 dark:from-card dark:to-muted/10",
+                    RESPONSIVE_PADDING.md,
+                    "py-4 md:py-6 lg:py-8",
+                  )}
+                >
+                  <div className="flex flex-col lg:flex-row justify-between items-start gap-4 lg:gap-0">
+                    <div className="flex items-center gap-4 md:gap-6">
+                      <div
+                        className={cn(
+                          "h-12 w-12 md:h-15 md:w-15 rounded-full flex items-center justify-center border shadow-sm shrink-0 bg-white dark:bg-card",
+                          activeStudent.gender === "M"
+                            ? "border-primary/20 bg-primary/10"
+                            : "border-destructive/20 bg-destructive/10",
+                        )}
+                      >
+                        {activeStudent.gender === "M" ? (
+                          <MaleIcon className="w-6 h-6 md:w-9 md:h-9 text-primary" />
+                        ) : (
+                          <FemaleIcon className="w-6 h-6 md:w-9 md:h-9 text-destructive" />
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5">
+                          <h1
+                            className={cn(
+                              RESPONSIVE_TEXT.xl,
+                              "font-bold text-slate-800 dark:text-foreground tracking-tight",
+                            )}
+                          >
+                            {activeStudent.name}
+                          </h1>
+                          <Badge
+                            className={cn(
+                              "flex justify-center border sm:text-sm px-1 sm:px-2.5 py-0.5 font-medium rounded-full w-13.75 sm:w-auto",
+                              statusStyles[activeStudent.status],
+                            )}
+                          >
+                            {STATUS_LABELS[activeStudent.status]}
+                          </Badge>
+                        </div>
+                        <div
                           className={cn(
-                            "border text-sm px-2.5 py-0.5 font-medium rounded-full",
-                            statusStyles[activeStudent.status],
+                            "flex flex-wrap items-center gap-1.5 md:gap-2 font-medium pl-0.5 md:pl-1",
+                            RESPONSIVE_TEXT.xs,
                           )}
                         >
-                          {STATUS_LABELS[activeStudent.status]}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium pl-1">
-                        {activeStudent.age && (
-                          <>
-                            <span>{activeStudent.age}세</span>
-                            <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-border" />
-                          </>
-                        )}
-                        <span>
-                          등록일 - {formatDate(activeStudent.created_at)}
-                        </span>
+                          {activeStudent.age && (
+                            <>
+                              <span>{activeStudent.age}세</span>
+                              <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-border" />
+                            </>
+                          )}
+                          <span>
+                            등록일 - {formatDate(activeStudent.created_at)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <Button
-                    variant="default"
-                    onClick={() => openEditModal(activeStudent)}
-                    className="w-full xl:w-auto h-10 px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <LucideIcons.Edit3 className="w-4 h-4 mr-2" /> 정보 수정
-                  </Button>
-                </div>
-
-                {/* Stat Cards */}
-                <div className="flex gap-6 mt-8">
-                  <div className="flex-1 bg-white dark:bg-card border border-slate-200 dark:border-border rounded-xl p-4 shadow-sm">
-                    <div className="w-full">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                        현재 레벨
-                      </p>
-                      <p className="text-[22px] font-bold text-slate-800 dark:text-foreground text-right pr-12">
-                        {activeStudent.current_level}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 bg-primary/5 border border-primary/10 rounded-xl p-4 shadow-sm">
-                    <div className="w-full">
-                      <p className="text-xs font-semibold text-primary/70 uppercase tracking-wider mb-1">
-                        목표 레벨
-                      </p>
-                      <p className="text-[22px] font-bold text-primary text-right pr-12">
-                        {activeStudent.target_level}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 bg-primary/5 border border-primary/10 rounded-xl p-4 shadow-sm">
-                    <div className="w-full">
-                      <p className="text-xs font-semibold text-primary/70 uppercase tracking-wider mb-1">
-                        목표 시험
-                      </p>
-                      <p className="text-[22px] font-bold text-primary text-right pr-9">
-                        {EXAM_MODE_LABELS[activeStudent.target_exam_mode] ||
-                          activeStudent.target_exam_mode}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Memo and Billing Info Row */}
-                {/* 메모 및 청구 정보 행 */}
-                <div className="mt-6 flex flex-col xl:flex-row gap-4">
-                  {/* Memo Section (Left) */}
-                  {/* 메모 섹션 (좌측) */}
-                  <div className="flex-1 flex gap-3 items-start bg-slate-50 dark:bg-muted/10 p-4 rounded-xl border border-slate-200 dark:border-border/50 min-h-20">
-                    <LucideIcons.StickyNote className="w-4 h-4 text-secondary-foreground mt-0.5 shrink-0" />
-                    <p
+                    <Button
+                      variant="default"
+                      onClick={() => openEditModal(activeStudent)}
                       className={cn(
-                        "text-sm font-medium leading-relaxed whitespace-pre-wrap",
-                        activeStudent.memo
-                          ? "text-slate-800 dark:text-card-foreground"
-                          : "text-muted-foreground",
+                        "w-full lg:w-auto h-9 md:h-10 px-3 md:px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5 md:gap-2",
+                        RESPONSIVE_TEXT.sm,
                       )}
                     >
-                      {activeStudent.memo || "추가사항 / 특이사항"}
-                    </p>
+                      <LucideIcons.Edit3 className="w-4 h-4 mr-2" /> 정보 수정
+                    </Button>
                   </div>
 
-                  {/* Billing Info Card (Right) */}
-                  {/* 청구 정보 카드 (우측) */}
-                  <div className="flex-1 flex gap-3 items-start bg-slate-50 dark:bg-muted/10 p-4 rounded-xl border border-slate-200 dark:border-border/50 min-h-20">
-                    <LucideIcons.Landmark className="w-4 h-4 text-secondary-foreground mt-0.5 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      {activeStudent.street ? (
-                        <div className="flex flex-col mt-0.5">
-                          <div className="">
-                            <p className="text-sm font-bold text-slate-800 dark:text-foreground">
-                              {activeStudent.billing_name || activeStudent.name}
-                            </p>
-                            <p className="text-sm text-slate-600 dark:text-muted-foreground truncate">
-                              {activeStudent.street}, {activeStudent.postcode}{" "}
-                              {activeStudent.city}, {activeStudent.country}
-                            </p>
+                  {/* Stat Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mt-4 md:mt-8">
+                    <div className="flex-1 bg-white dark:bg-card border border-slate-200 dark:border-border rounded-xl p-3 md:p-4 shadow-sm">
+                      <div className="w-full">
+                        <p
+                          className={cn(
+                            "font-semibold text-muted-foreground uppercase tracking-wider mb-1",
+                            "text-[10px] md:text-xs",
+                          )}
+                        >
+                          현재 레벨
+                        </p>
+                        <p className="text-lg md:text-[22px] font-bold text-slate-800 dark:text-foreground text-right pr-8 md:pr-12">
+                          {activeStudent.current_level}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 bg-primary/5 border border-primary/10 rounded-xl p-4 shadow-sm">
+                      <div className="w-full">
+                        <p className="text-xs font-semibold text-primary/70 uppercase tracking-wider mb-1">
+                          목표 레벨
+                        </p>
+                        <p className="text-lg md:text-[22px] font-bold text-primary text-right pr-8 md:pr-12">
+                          {activeStudent.target_level}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 bg-primary/5 border border-primary/10 rounded-xl p-4 shadow-sm">
+                      <div className="w-full">
+                        <p className="text-xs font-semibold text-primary/70 uppercase tracking-wider mb-1">
+                          목표 시험
+                        </p>
+                        <p className="text-lg md:text-[22px] font-bold text-primary text-right pr-6 md:pr-9">
+                          {EXAM_MODE_LABELS[activeStudent.target_exam_mode] ||
+                            activeStudent.target_exam_mode}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Memo and Billing Info Row */}
+                  {/* 메모 및 청구 정보 행 */}
+                  <div className="mt-4 md:mt-6 flex flex-col lg:flex-row gap-3 md:gap-4">
+                    {/* Memo Section (Left) */}
+                    {/* 메모 섹션 (좌측) */}
+                    <div className="flex-1 flex gap-2 md:gap-3 items-start bg-slate-50 dark:bg-muted/10 p-3 md:p-4 rounded-xl border border-slate-200 dark:border-border/50 min-h-16 md:min-h-20">
+                      <LucideIcons.StickyNote className="w-3.5 h-3.5 md:w-4 md:h-4 text-secondary-foreground mt-0.5 shrink-0" />
+                      <p
+                        className={cn(
+                          "font-medium leading-relaxed whitespace-pre-wrap",
+                          RESPONSIVE_TEXT.xs,
+                          activeStudent.memo
+                            ? "text-slate-800 dark:text-card-foreground"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {activeStudent.memo || "추가사항 / 특이사항"}
+                      </p>
+                    </div>
+
+                    {/* Billing Info Card (Right) */}
+                    {/* 청구 정보 카드 (우측) */}
+                    <div className="flex-1 flex gap-2 md:gap-3 items-start bg-slate-50 dark:bg-muted/10 p-3 md:p-4 rounded-xl border border-slate-200 dark:border-border/50 min-h-16 md:min-h-20">
+                      <LucideIcons.Landmark className="w-3.5 h-3.5 md:w-4 md:h-4 text-secondary-foreground mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        {activeStudent.street ? (
+                          <div className="flex flex-col mt-0.5">
+                            <div className="">
+                              <p
+                                className={cn(
+                                  "font-bold text-slate-800 dark:text-foreground",
+                                  RESPONSIVE_TEXT.xs,
+                                )}
+                              >
+                                {activeStudent.billing_name ||
+                                  activeStudent.name}
+                              </p>
+                              <p className="text-sm text-slate-600 dark:text-muted-foreground truncate">
+                                {activeStudent.street}, {activeStudent.postcode}{" "}
+                                {activeStudent.city}, {activeStudent.country}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <span className="text-sm font-medium text-muted-foreground flex items-center">
-                          등록된 영수증 정보가 없습니다.
-                        </span>
-                      )}
+                        ) : (
+                          <span className="text-sm font-medium text-muted-foreground flex items-center">
+                            등록된 영수증 정보가 없습니다.
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Tab Navigation and Content Area */}
-              <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-muted/5">
-                <div className="flex items-center px-8 pt-4 border-b border-slate-100 dark:border-border bg-white dark:bg-card sticky top-0 z-10 gap-8">
+              {/* Tab Navigation and Content Area - Fixed Height */}
+              {/* 탭 네비게이션 및 컨텐츠 영역 - 고정 높이 */}
+              <div className="flex-1 flex flex-col bg-slate-50/50 dark:bg-muted/5 overflow-hidden min-h-0">
+                <div
+                  className={cn(
+                    "flex items-center border-b border-slate-100 dark:border-border bg-white dark:bg-card sticky top-0 z-10 overflow-x-auto custom-scrollbar",
+                    RESPONSIVE_PADDING.md,
+                    "pt-3 md:pt-4 gap-4 md:gap-8",
+                  )}
+                >
                   <button
                     onClick={() => setActiveTab("courses")}
                     className={cn(
-                      "pb-3 text-sm font-bold flex items-center gap-2 transition-all border-b-2 cursor-pointer",
+                      "pb-2.5 md:pb-3 flex items-center gap-1.5 md:gap-2 transition-all border-b-2 cursor-pointer whitespace-nowrap",
+                      RESPONSIVE_TEXT.xs,
+                      "font-bold",
                       activeTab === "courses"
                         ? "text-primary border-primary"
                         : "text-slate-400 dark:text-muted-foreground border-transparent hover:text-primary",
                     )}
                   >
-                    <LucideIcons.CreditCard className="w-4 h-4" /> 수강 이력
+                    <LucideIcons.CreditCard className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
+                    수강 이력
                     <Badge
                       variant="secondary"
                       className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-slate-100 dark:bg-secondary/50 text-slate-500 dark:text-muted-foreground"
@@ -732,13 +927,16 @@ export default function StudentList() {
                   <button
                     onClick={() => setActiveTab("mock-exams")}
                     className={cn(
-                      "pb-3 text-sm font-bold flex items-center gap-2 transition-all border-b-2 cursor-pointer",
+                      "pb-2.5 md:pb-3 flex items-center gap-1.5 md:gap-2 transition-all border-b-2 cursor-pointer whitespace-nowrap",
+                      RESPONSIVE_TEXT.xs,
+                      "font-bold",
                       activeTab === "mock-exams"
                         ? "text-primary border-primary"
                         : "text-slate-400 dark:text-muted-foreground border-transparent hover:text-primary",
                     )}
                   >
-                    <LucideIcons.FileEdit className="w-4 h-4" /> 모의고사
+                    <LucideIcons.FileEdit className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
+                    모의고사
                     <Badge
                       variant="secondary"
                       className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-slate-100 dark:bg-secondary/50 text-slate-500 dark:text-muted-foreground"
@@ -750,13 +948,16 @@ export default function StudentList() {
                   <button
                     onClick={() => setActiveTab("exams")}
                     className={cn(
-                      "pb-3 text-sm font-bold flex items-center gap-2 transition-all border-b-2 cursor-pointer",
+                      "pb-2.5 md:pb-3 flex items-center gap-1.5 md:gap-2 transition-all border-b-2 cursor-pointer whitespace-nowrap",
+                      RESPONSIVE_TEXT.xs,
+                      "font-bold",
                       activeTab === "exams"
                         ? "text-primary border-primary"
                         : "text-slate-400 dark:text-muted-foreground border-transparent hover:text-primary",
                     )}
                   >
-                    <LucideIcons.GraduationCap className="w-4 h-4" /> 정규 시험
+                    <LucideIcons.GraduationCap className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
+                    정규 시험
                     <Badge
                       variant="secondary"
                       className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-slate-100 dark:bg-secondary/50 text-slate-500 dark:text-muted-foreground"
@@ -766,7 +967,13 @@ export default function StudentList() {
                   </button>
                 </div>
 
-                <div className="flex-1 flex flex-col overflow-hidden p-6">
+                <div
+                  className={cn(
+                    "flex-1 flex flex-col overflow-hidden min-h-0",
+                    RESPONSIVE_PADDING.sm,
+                    "py-3 md:py-6",
+                  )}
+                >
                   {isDetailsLoading ? (
                     <div className="h-full flex items-center justify-center">
                       <LucideIcons.Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -775,32 +982,32 @@ export default function StudentList() {
                     <>
                       {/* 수강 이력 */}
                       {activeTab === "courses" && (
-                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col flex-1 min-h-0">
                           <div
                             className={cn(
-                              "bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border",
+                              "bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border overflow-x-auto custom-scrollbar",
                               hasScroll ? "pr-2.75" : "",
                             )}
                           >
-                            <table className="w-full text-sm table-fixed">
-                              <thead className="text-xs text-slate-500 dark:text-muted-foreground uppercase">
+                            <table className="w-full text-sm table-fixed min-w-150">
+                              <thead className="text-[10px] md:text-xs text-slate-500 dark:text-muted-foreground uppercase">
                                 <tr>
-                                  <th className="px-4 py-3 font-semibold text-center w-[29%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[29%]">
                                     기간
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[14%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[14%]">
                                     총 시간
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                     시간당 금액
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                     총 금액
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[12%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
                                     수강 상태
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                     결제
                                   </th>
                                 </tr>
@@ -810,9 +1017,9 @@ export default function StudentList() {
 
                           <div
                             ref={tableBodyRef}
-                            className="flex-1 overflow-y-auto custom-scrollbar"
+                            className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
                           >
-                            <table className="w-full text-sm table-fixed">
+                            <table className="w-full text-sm table-fixed min-w-150">
                               <tbody className="divide-y divide-slate-50 dark:divide-border/50">
                                 {studentCourses.length > 0 ? (
                                   studentCourses.map((course) => (
@@ -823,20 +1030,20 @@ export default function StudentList() {
                                       }
                                       className="hover:bg-slate-50 dark:hover:bg-muted/10 transition-colors cursor-pointer"
                                     >
-                                      <td className="px-4 py-4 text-center text-slate-700 dark:text-card-foreground truncate w-[29%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-700 dark:text-card-foreground truncate w-[29%] text-xs md:text-sm">
                                         {formatDate(course.start_date)} ~{" "}
                                         {formatDate(course.end_date)}
                                       </td>
-                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[14%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[14%] text-xs md:text-sm">
                                         {Number(course.total_hours)}h
                                       </td>
-                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%] text-xs md:text-sm">
                                         {formatCurrency(course.hourly_rate)}
                                       </td>
-                                      <td className="px-4 py-4 text-center font-bold text-slate-800 dark:text-card-foreground w-[15%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center font-bold text-slate-800 dark:text-card-foreground w-[15%] text-xs md:text-sm">
                                         {formatCurrency(course.total_fee)}
                                       </td>
-                                      <td className="px-1 py-4 text-center w-[12%]">
+                                      <td className="px-1 py-3 md:py-4 text-center w-[12%]">
                                         <div className="flex justify-center items-center w-full">
                                           <Badge
                                             className={cn(
@@ -848,16 +1055,16 @@ export default function StudentList() {
                                           </Badge>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4 text-center w-[15%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center w-[15%]">
                                         <div className="flex justify-center items-center w-full">
                                           {course.is_paid ? (
-                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-xl border bg-accent/20 text-[#4a7a78] dark:text-accent-foreground border-accent/50">
-                                              <LucideIcons.CheckCircle2 className="w-3 h-3" />{" "}
+                                            <span className="inline-flex items-center gap-0.5 md:gap-1 text-[9px] md:text-[11px] font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded-xl border bg-accent/20 text-[#4a7a78] dark:text-accent-foreground border-accent/50">
+                                              <LucideIcons.CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
                                               완납
                                             </span>
                                           ) : (
-                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-xl border border-destructive/20">
-                                              <LucideIcons.XCircle className="w-3 h-3" />{" "}
+                                            <span className="inline-flex items-center gap-0.5 md:gap-1 text-[9px] md:text-[11px] font-bold text-destructive bg-destructive/10 px-1.5 md:px-2 py-0.5 rounded-xl border border-destructive/20">
+                                              <LucideIcons.XCircle className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
                                               미납
                                             </span>
                                           )}
@@ -883,32 +1090,32 @@ export default function StudentList() {
 
                       {/* 모의고사 */}
                       {activeTab === "mock-exams" && (
-                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col flex-1 min-h-0">
                           <div
                             className={cn(
-                              "bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border",
+                              "bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border overflow-x-auto custom-scrollbar",
                               hasScroll ? "pr-2.75" : "",
                             )}
                           >
-                            <table className="w-full text-sm table-fixed">
-                              <thead className="text-xs text-slate-500 dark:text-muted-foreground uppercase">
+                            <table className="w-full text-sm table-fixed min-w-150">
+                              <thead className="text-[10px] md:text-xs text-slate-500 dark:text-muted-foreground uppercase">
                                 <tr>
-                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                     응시일
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[30%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[30%]">
                                     시험명
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                     응시 유형
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                     점수
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                     등급
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[10%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
                                     파일
                                   </th>
                                 </tr>
@@ -917,9 +1124,9 @@ export default function StudentList() {
                           </div>
                           <div
                             ref={tableBodyRef}
-                            className="flex-1 overflow-y-auto custom-scrollbar"
+                            className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
                           >
-                            <table className="w-full text-sm table-fixed">
+                            <table className="w-full text-sm table-fixed min-w-150">
                               <tbody className="divide-y divide-slate-50 dark:divide-border/50">
                                 {studentMockExams.length > 0 ? (
                                   studentMockExams.map((exam) => (
@@ -930,22 +1137,22 @@ export default function StudentList() {
                                       }
                                       className="hover:bg-slate-50 dark:hover:bg-muted/10 transition-colors cursor-pointer"
                                     >
-                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%] text-xs md:text-sm">
                                         {formatDate(exam.exam_date)}
                                       </td>
-                                      <td className="px-2 py-4 text-center w-[30%] align-middle">
+                                      <td className="px-2 py-3 md:py-4 text-center w-[30%] align-middle">
                                         <div className="flex flex-col items-center justify-center">
-                                          <span className="font-bold text-slate-800 dark:text-card-foreground truncate max-w-full">
+                                          <span className="font-bold text-slate-800 dark:text-card-foreground truncate max-w-full text-xs md:text-sm">
                                             {exam.exam_name}
                                           </span>
                                           {exam.source && (
-                                            <span className="text-[12px] text-muted-foreground font-medium truncate max-w-full mt-0.5">
+                                            <span className="text-[10px] md:text-[12px] text-muted-foreground font-medium truncate max-w-full mt-0.5">
                                               ({exam.source})
                                             </span>
                                           )}
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4 text-center w-[15%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center w-[15%]">
                                         <div className="flex justify-center items-center w-full">
                                           <Badge
                                             variant="default"
@@ -956,7 +1163,7 @@ export default function StudentList() {
                                           </Badge>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%] text-xs md:text-sm">
                                         <span
                                           className={cn(
                                             "font-bold",
@@ -972,23 +1179,20 @@ export default function StudentList() {
                                         <span className="mx-1">/</span>
                                         <span>{exam.max_score || "-"}</span>
                                       </td>
-                                      <td className="px-4 py-4 text-center w-[15%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center w-[15%]">
                                         <div className="flex justify-center items-center w-full">
                                           {exam.grade ? (
-                                            <Badge
-                                              variant="default"
-                                              className="text-[11px] text-slate-800 rounded-md dark:text-card-foreground border border-slate-200 dark:border-border bg-muted/30 dark:bg-card px-2 py-0.5 justify-center hover:bg-muted/30"
-                                            >
+                                            <Badge className="text-[11px] text-slate-800 rounded-md dark:text-card-foreground border border-slate-200 dark:border-border bg-muted/30 dark:bg-card px-2 py-0.5 justify-center hover:bg-muted/30">
                                               {exam.grade}
                                             </Badge>
                                           ) : (
-                                            <span className="font-bold text-slate-400">
+                                            <span className="font-bold text-slate-400 text-xs md:text-sm">
                                               -
                                             </span>
                                           )}
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4 text-center w-[10%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center w-[10%]">
                                         <div className="flex justify-center w-full">
                                           <FilePopover
                                             attachments={exam.attachments}
@@ -1015,32 +1219,32 @@ export default function StudentList() {
 
                       {/* 정규 시험 */}
                       {activeTab === "exams" && (
-                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col h-full">
+                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col flex-1 min-h-0">
                           <div
                             className={cn(
-                              "bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border",
+                              "bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border overflow-x-auto custom-scrollbar",
                               hasScroll ? "pr-2.75" : "",
                             )}
                           >
-                            <table className="w-full text-sm table-fixed">
-                              <thead className="text-xs text-slate-500 dark:text-muted-foreground uppercase">
+                            <table className="w-full text-sm table-fixed min-w-150">
+                              <thead className="text-[10px] md:text-xs text-slate-500 dark:text-muted-foreground uppercase">
                                 <tr>
-                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                     응시일
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[30%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[30%]">
                                     시험명
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[15%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
                                     응시 유형
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[14%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[14%]">
                                     점수
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[14%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[14%]">
                                     등급
                                   </th>
-                                  <th className="px-4 py-3 font-semibold text-center w-[12%]">
+                                  <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
                                     결과
                                   </th>
                                 </tr>
@@ -1049,9 +1253,9 @@ export default function StudentList() {
                           </div>
                           <div
                             ref={tableBodyRef}
-                            className="flex-1 overflow-y-auto custom-scrollbar"
+                            className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
                           >
-                            <table className="w-full text-sm table-fixed">
+                            <table className="w-full text-sm table-fixed min-w-150">
                               <tbody className="divide-y divide-slate-50 dark:divide-border/50">
                                 {studentExams.length > 0 ? (
                                   studentExams.map((exam) => (
@@ -1060,14 +1264,14 @@ export default function StudentList() {
                                       onClick={() => openEditExamModal(exam)}
                                       className="hover:bg-slate-50 dark:hover:bg-muted/10 transition-colors cursor-pointer"
                                     >
-                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%] text-xs md:text-sm">
                                         {formatDate(exam.exam_date)}
                                       </td>
-                                      <td className="px-2 py-4 text-center font-bold text-slate-800 dark:text-card-foreground truncate w-[30%]">
+                                      <td className="px-2 py-3 md:py-4 text-center font-bold text-slate-800 dark:text-card-foreground truncate w-[30%] text-xs md:text-sm">
                                         {exam.exam_standard_name ||
                                           exam.exam_name_manual}
                                       </td>
-                                      <td className="px-4 py-4 w-[15%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 w-[15%]">
                                         <div className="flex justify-center items-center w-full">
                                           <Badge
                                             variant="default"
@@ -1078,7 +1282,7 @@ export default function StudentList() {
                                           </Badge>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4 text-center text-slate-500 dark:text-muted-foreground w-[14%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[14%] text-xs md:text-sm">
                                         <span
                                           className={cn(
                                             "font-bold",
@@ -1096,23 +1300,20 @@ export default function StudentList() {
                                           </>
                                         )}
                                       </td>
-                                      <td className="px-4 py-4 w-[14%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 w-[14%]">
                                         <div className="flex justify-center items-center w-full">
                                           {exam.grade ? (
-                                            <Badge
-                                              variant="default"
-                                              className="text-[11px] text-slate-800 rounded-md dark:text-card-foreground border border-slate-200 dark:border-border bg-muted/30 dark:bg-card px-2 py-0.5 justify-center hover:bg-muted/30 dark:hover:bg-card"
-                                            >
+                                            <Badge className="text-[11px] text-slate-800 rounded-md dark:text-card-foreground border border-slate-200 dark:border-border bg-muted/30 dark:bg-card px-2 py-0.5 justify-center hover:bg-muted/30">
                                               {exam.grade}
                                             </Badge>
                                           ) : (
-                                            <span className="font-bold text-slate-400">
+                                            <span className="font-bold text-slate-400 text-xs md:text-sm">
                                               -
                                             </span>
                                           )}
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4 w-[12%]">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 w-[12%]">
                                         <div className="flex justify-center items-center w-full">
                                           <Badge
                                             className={cn(

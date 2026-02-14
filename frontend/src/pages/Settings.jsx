@@ -260,27 +260,27 @@ export default function Settings() {
       {/* Profile Overview */}
       {/* 프로필 개요 */}
       <Card className="overflow-hidden border-none shadow-md bg-white dark:bg-card">
-        <CardHeader className="flex-row items-center gap-6 space-y-0 relative z-10 py-7">
-          <div className="h-20 w-20 rounded-2xl bg-white flex items-center justify-center text-primary shadow-lg border-4 border-muted dark:border-accent overflow-hidden dark:bg-slate-200">
+        <CardHeader className="flex-col lg:flex-row items-center lg:items-center gap-3 lg:gap-6 space-y-0 py-4 lg:py-7">
+          <div className="h-16 lg:h-20 w-16 lg:w-20 rounded-2xl bg-white flex items-center justify-center text-primary shadow-lg border-4 border-muted dark:border-accent overflow-hidden dark:bg-slate-200 shrink-0">
             <img
               src="/icons/tutor-icon.png"
               alt="선생님 프로필 아이콘"
-              className="w-13 h-13 object-contain"
+              className="w-10 lg:w-13 h-10 lg:h-13 object-contain"
             />
           </div>
 
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-2xl font-bold text-slate-800 dark:text-foreground">
+          <div className="flex-1 text-center lg:text-left">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-2 justify-center lg:justify-start">
+              <CardTitle className="text-lg lg:text-2xl font-bold text-slate-800 dark:text-foreground">
                 {user.name}
               </CardTitle>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${badgeInfo.className}`}
+                className={`text-[9px] lg:text-[10px] px-2 py-0.5 rounded-full font-bold border ${badgeInfo.className} w-fit mx-auto lg:mx-0`}
               >
                 {badgeInfo.label}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground/90 font-medium">
+            <p className="text-xs lg:text-sm text-muted-foreground/90 font-medium mt-1">
               {user.email}
             </p>
           </div>
@@ -288,9 +288,10 @@ export default function Settings() {
           <Button
             onClick={() => setIsProfileModalOpen(true)}
             variant="default"
-            className="w-full xl:w-auto h-10 px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
+            className="w-full lg:w-auto h-9 lg:h-10 px-3 lg:px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2 text-xs lg:text-sm"
           >
-            <LucideIcons.Edit3 className="w-4 h-4 mr-2" /> 정보 수정
+            <LucideIcons.Edit3 className="w-3.5 lg:w-4 h-3.5 lg:h-4 mr-1" />{" "}
+            정보 수정
           </Button>
         </CardHeader>
       </Card>
@@ -308,11 +309,11 @@ export default function Settings() {
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
               <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
                 정보 관리
               </div>
-              <div className="text-xs text-muted-foreground hidden sm:block">
+              <div className="text-xs text-muted-foreground">
                 (영수증 발행을 위한 사업자 정보를 설정하세요.)
               </div>
             </div>
@@ -339,7 +340,7 @@ export default function Settings() {
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
               <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
                 화면 모드
               </div>
@@ -396,11 +397,11 @@ export default function Settings() {
           {/* 비소셜 로그인 사용자의 비밀번호 변경 */}
           {isEmailUser && (
             <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
                 <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
                   비밀번호 변경
                 </div>
-                <div className="text-xs text-muted-foreground hidden sm:block">
+                <div className="text-xs text-muted-foreground">
                   (보안을 위해 주기적으로 변경하세요.)
                 </div>
               </div>
@@ -416,11 +417,11 @@ export default function Settings() {
           {/* account deletion */}
           {/* 계정 삭제 */}
           <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
               <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
                 계정 삭제
               </div>
-              <div className="text-xs text-muted-foreground hidden sm:block">
+              <div className="text-xs text-muted-foreground">
                 (모든 데이터가 영구적으로 삭제됩니다.)
               </div>
             </div>
