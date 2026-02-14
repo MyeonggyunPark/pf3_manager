@@ -1468,7 +1468,7 @@ class GoogleLogin(SocialLoginView):
     # Callback URL must match the Redirect URI in Google Console
     # Code Flow 사용 시 Google Console에 등록된 리다이렉트 URI와 정확히 일치해야 함
     # Implicit Flow(access_token) 사용 시에는 검증이 덜 엄격할 수 있음
-    callback_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+    callback_url = "https://www.ms-planer.de"
 
 
 class KakaoLogin(SocialLoginView):
@@ -1481,4 +1481,4 @@ class KakaoLogin(SocialLoginView):
 
     adapter_class = KakaoOAuth2Adapter
     client_class = OAuth2Client
-    callback_url = getattr(settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173")
+    callback_url = "https://www.ms-planer.de/social/success"
