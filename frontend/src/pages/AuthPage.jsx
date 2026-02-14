@@ -4,11 +4,6 @@ import * as LucideIcons from "lucide-react";
 import api from "../api";
 import Button from "../components/ui/Button";
 
-// Import Social Login SDKs
-// 소셜 로그인 SDK 임포트
-import { useGoogleLogin } from "@react-oauth/google";
-import KakaoLogin from "react-kakao-login";
-
 // Reusable Floating Input Component
 // 재사용 가능한 플로팅 입력 컴포넌트
 const FloatingInput = ({
@@ -200,54 +195,22 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
   );
 };
 
-// Social Login Button Group (SDK Integrated)
-// 소셜 로그인 버튼 그룹 (SDK 연동됨 - REST API 방식)
+// Social Login Button Group
+// 소셜 로그인 버튼 그룹
 const SocialLoginButtons = () => {
-  const kakaoClientId = import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY;
-
-  // Google Login Handler (using SDK)
-  // 구글 로그인 핸들러 (SDK 사용)
-  const loginGoogle = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        // Send access token to backend API
-        // 액세스 토큰을 백엔드 API로 전송
-        await api.post("/api/auth/google/", {
-          access_token: tokenResponse.access_token,
-        });
-        // On success, redirect to success page
-        // 성공 시 성공 페이지로 이동
-        window.location.href = "/social/success";
-      } catch (error) {
-        console.error("Google Login Error:", error);
-        alert("구글 로그인에 실패했습니다. 다시 시도해주세요.");
-      }
-    },
-    onError: () => console.error("Google Login Failed"),
-  });
-
-  // Kakao Login Success Handler
-  // 카카오 로그인 성공 핸들러
-  const handleKakaoSuccess = async (response) => {
-    try {
-      // Send access token to backend API
-      // 액세스 토큰을 백엔드 API로 전송
-      await api.post("/api/auth/kakao/", {
-        access_token: response.response.access_token,
-      });
-      window.location.href = "/social/success";
-    } catch (error) {
-      console.error("Kakao Login Error:", error);
-      alert("카카오 로그인에 실패했습니다. 다시 시도해주세요.");
-    }
+  const handleSocialLogin = (provider) => {
+    // Redirect to backend social login endpoint
+    // 백엔드 소셜 로그인 엔드포인트로 리다이렉트
+    const baseUrl =
+      import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+    window.location.href = `${baseUrl}/accounts/${provider}/login/`;
   };
 
   return (
     <div className="flex gap-3 w-full mt-6">
-      {/* Google Button */}
       <button
         type="button"
-        onClick={() => loginGoogle()}
+        onClick={() => handleSocialLogin("google")}
         className="flex-1 flex items-center justify-center gap-2 h-10 border-2 border-muted-foreground/30 rounded-lg transition-all bg-white dark:bg-card shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-105 cursor-pointer"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -272,35 +235,24 @@ const SocialLoginButtons = () => {
           Google
         </span>
       </button>
-
-      {/* Kakao Button (Wrapper Component) */}
-      <KakaoLogin
-        token={kakaoClientId}
-        onSuccess={handleKakaoSuccess}
-        onFail={(err) => console.error("Kakao Login Failed", err)}
-        render={({ onClick }) => (
-          <button
-            type="button"
-            onClick={onClick}
-            className="flex-1 flex items-center justify-center gap-2 h-10 rounded-lg transition-all border-2 border-yellow-300 bg-[#FEE500] shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-105 cursor-pointer"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#000000">
-              <path d="M12 3C5.9 3 1 6.9 1 11.8c0 3.3 2.2 6.2 5.6 7.6-.1.6-.4 2.3-.5 2.6 0 0-.1.2.1.3.1.1.3.1.5 0 .3-.2 3.1-2.1 4.3-2.9.3 0 .7.1 1 .1 6.1 0 11-3.9 11-8.8C23 6.9 18.1 3 12 3z" />
-            </svg>
-            <span className="text-sm font-medium text-slate-800">Kakao</span>
-          </button>
-        )}
-      />
+      <button
+        type="button"
+        onClick={() => handleSocialLogin("kakao")}
+        className="flex-1 flex items-center justify-center gap-2 h-10 rounded-lg transition-all border-2 border-yellow-300 bg-[#FEE500] shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-105 cursor-pointer   "
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#000000">
+          <path d="M12 3C5.9 3 1 6.9 1 11.8c0 3.3 2.2 6.2 5.6 7.6-.1.6-.4 2.3-.5 2.6 0 0-.1.2.1.3.1.1.3.1.5 0 .3-.2 3.1-2.1 4.3-2.9.3 0 .7.1 1 .1 6.1 0 11-3.9 11-8.8C23 6.9 18.1 3 12 3z" />
+        </svg>
+        <span className="text-sm font-medium text-slate-800">Kakao</span>
+      </button>
     </div>
   );
 };
 
 // Custom Hook to check for screen size
-// 화면 크기를 확인하기 위한 커스텀 훅 (최적화 버전)
+// 화면 크기를 확인하기 위한 커스텀 훅
 const useMediaQuery = (query) => {
   const [matches, setMatches] = useState(() => {
-    // 1. Initialize with correct value to avoid effect updates on mount
-    // 1. 마운트 시 불필요한 업데이트를 방지하기 위해 초기값을 정확하게 설정
     if (typeof window !== "undefined") {
       return window.matchMedia(query).matches;
     }
@@ -309,17 +261,10 @@ const useMediaQuery = (query) => {
 
   useEffect(() => {
     const media = window.matchMedia(query);
-
-    // 2. Define listener
-    // 2. 리스너 정의
     const listener = (event) => setMatches(event.matches);
 
-    // 3. Register event (Use 'change' instead of 'resize' for performance)
-    // 3. 이벤트 등록 (성능을 위해 'resize' 대신 'change' 사용)
     media.addEventListener("change", listener);
 
-    // 4. Cleanup
-    // 4. 클린업
     return () => media.removeEventListener("change", listener);
   }, [query]);
 

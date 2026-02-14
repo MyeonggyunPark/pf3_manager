@@ -20,8 +20,6 @@ from .views import (
     social_login_callback,
     BusinessProfileDetailView,
     InvoiceViewSet,
-    GoogleLogin,
-    KakaoLogin,
 )
 
 # Initialize DefaultRouter to automatically generate URLs for ViewSets
@@ -91,11 +89,6 @@ urlpatterns = [
     # Custom Login Endpoint
     # 커스텀 로그인 엔드포인트
     path("auth/login/", CustomLoginView.as_view(), name="rest_login"),
-    
-    # Social Login Endpoints for Google and Kakao
-    # 구글과 카카오 소셜 로그인 엔드포인트
-    path("auth/google/", GoogleLogin.as_view(), name="google_rest_login"),
-    path("auth/kakao/", KakaoLogin.as_view(), name="kakao_rest_login"),
     
     # Custom User Details Endpoint
     # 사용자 상세 정보 엔드포인트

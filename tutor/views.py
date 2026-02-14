@@ -1451,34 +1451,3 @@ def social_login_callback(request):
     )
 
     return response
-
-
-class GoogleLogin(SocialLoginView):
-    """
-    Google Social Login View for REST API.
-    Receives 'access_token' or 'code' from Frontend SDK and issues JWT.
-
-    REST API를 위한 구글 소셜 로그인 뷰.
-    프론트엔드 SDK로부터 'access_token' 또는 'code'를 받아 JWT를 발급합니다.
-    """
-
-    adapter_class = GoogleOAuth2Adapter
-    client_class = OAuth2Client
-
-    # Callback URL must match the Redirect URI in Google Console
-    # Code Flow 사용 시 Google Console에 등록된 리다이렉트 URI와 정확히 일치해야 함
-    # Implicit Flow(access_token) 사용 시에는 검증이 덜 엄격할 수 있음
-    callback_url = "https://www.ms-planer.de"
-
-
-class KakaoLogin(SocialLoginView):
-    """
-    Kakao Social Login View for REST API.
-    Receives 'access_token' or 'code' from Frontend SDK and issues JWT.
-
-    REST API를 위한 카카오 소셜 로그인 뷰.
-    """
-
-    adapter_class = KakaoOAuth2Adapter
-    client_class = OAuth2Client
-    callback_url = "https://www.ms-planer.de/social/success"
