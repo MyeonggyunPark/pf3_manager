@@ -1,5 +1,6 @@
 import os
 
+from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.tokens import default_token_generator
@@ -501,7 +502,7 @@ class LessonSerializer(serializers.ModelSerializer):
         # 로직: 종료 시간은 반드시 시작 시간보다 뒤여야 함
         if start and end and start >= end:
             raise serializers.ValidationError(
-                "종료 시간은 시작 시간보다 늦어야 합니다."
+                _("Die Endzeit muss nach der Startzeit liegen.")
             )
         return data
 
@@ -552,7 +553,7 @@ class CustomPasswordChangeSerializer(PasswordChangeSerializer):
         """
         user = self.context["request"].user
         if not user.check_password(value):
-            raise serializers.ValidationError("현재 비밀번호와 일치하지 않습니다.")
+            raise serializers.ValidationError(_("Das alte Passwort ist nicht korrekt."))
         return value
 
 
@@ -629,12 +630,12 @@ class CustomPasswordResetConfirmSerializer(PasswordResetConfirmSerializer):
             User = get_user_model()
             self.user = User.objects.get(pk=decoded_pk)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            raise ValidationError({"uid": ["유효하지 않은 유저 ID입니다."]})
+            raise ValidationError({"uid": [_("Ungültige Benutzer-ID.")]})
 
         # Check if token is valid for the specific user
         # 해당 사용자에 대한 토큰이 유효한지 검증
         if not default_token_generator.check_token(self.user, token):
-            raise ValidationError({"token": ["유효하지 않거나 만료된 토큰입니다."]})
+            raise ValidationError({"token": [_("Ungültiges oder abgelaufenes Token.")]})
 
         return attrs
 

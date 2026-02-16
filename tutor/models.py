@@ -19,13 +19,13 @@ class Tutor(AbstractUser):
     """
 
     class ProviderChoices(models.TextChoices):
-        EMAIL = "email", _("Email")
+        EMAIL = "email", _("E-mail")
         GOOGLE = "google", _("Google")
         KAKAO = "kakao", _("Kakao")
 
     # Use email as the unique identifier
     # 이메일을 고유 식별자로 사용
-    email = models.EmailField(_("email address"), unique=True)
+    email = models.EmailField(_("E-mail-Adresse"), unique=True)
     name = models.CharField(_("Name"), max_length=50)
     provider = models.CharField(
         max_length=20, choices=ProviderChoices.choices, default=ProviderChoices.EMAIL
@@ -60,10 +60,10 @@ class BusinessProfile(models.Model):
     # Allgemein (General Info)
     # 일반 정보
     company_name = models.CharField(
-        _("Firma"), max_length=100, blank=True, help_text="업체명 (없으면 비워둠)"
+        _("Firma"), max_length=100, blank=True, help_text=_("Firmenname (falls vorhanden)")
     )
     manager_name = models.CharField(
-        _("Geschäftsführer/-in"), max_length=100, blank=True, help_text="대표자 이름"
+        _("Geschäftsführer/-in"), max_length=100, blank=True, help_text=_("Name des Vertreters")
     )
 
     street = models.CharField(_("Straße & Hausnummer"), max_length=100, blank=True)
@@ -78,7 +78,7 @@ class BusinessProfile(models.Model):
     # Buchhaltung & Steuer (Accounting & Tax)
     # 회계 및 세무 정보
     vat_id = models.CharField(
-        _("Umsatzsteuer-ID"), max_length=50, blank=True, help_text="z.B. DE123456789"
+        _("Umsatzsteuer-ID"), max_length=50, blank=True, help_text=_("z.B. DE123456789")
     )
     tax_number = models.CharField(_("Steuernummer"), max_length=50, blank=True)
 
@@ -87,7 +87,7 @@ class BusinessProfile(models.Model):
     is_small_business = models.BooleanField(
         _("Kleinunternehmer"),
         default=False,
-        help_text="체크 시 부가세(USt) 0% 적용 및 법적 면세 문구 자동 삽입",
+        help_text=_("Wenn aktiviert: 0% USt und automatischer Hinweis auf §19 UStG"),
     )
 
     # Price Input Setting (Netto vs Brutto)
@@ -96,15 +96,13 @@ class BusinessProfile(models.Model):
         max_length=10,
         choices=PriceInputChoices.choices,
         default=PriceInputChoices.BRUTTO,
-        help_text="상품 가격을 입력할 때 부가세를 포함한 가격인지 선택",
+        help_text=_("Wählen Sie, ob die eingegebenen Preise inklusive (Brutto) oder exklusive (Netto) USt sind.")
     )
 
     # Bankverbindung (Bank Details)
     # 은행 정보 (송장에 출력될 계좌 정보)
     bank_name = models.CharField(_("Bankname"), max_length=100, blank=True)
-    account_holder = models.CharField(
-        _("Kontoinhaber"), max_length=100, blank=True
-    )  # Usually same as manager_name
+    account_holder = models.CharField(_("Kontoinhaber"), max_length=100, blank=True) 
     iban = models.CharField(_("IBAN"), max_length=34, blank=True)
     bic = models.CharField(_("BIC"), max_length=11, blank=True)
 
@@ -136,7 +134,7 @@ class BusinessProfile(models.Model):
     next_invoice_number = models.PositiveIntegerField(
         _("Nächste Rechnungsnummer"),
         default=1000,
-        help_text="다음 발행될 영수증 번호 (자동 증가)",
+        help_text=_("Nummer der nächsten Rechnung (wird automatisch erhöht)"),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -181,15 +179,15 @@ class Student(models.Model):
         max_length=20,
         blank=True,
         unique=True,
-        help_text="학생 고유 식별 번호 (예: KD-1001)",
+        help_text=_("Eindeutige Kundennummer (z.B. KD-1001)"),
     )
 
     gender = models.CharField(
         max_length=10, choices=GenderChoices.choices, blank=True, null=True
     )
     age = models.PositiveIntegerField(null=True, blank=True)
-    current_level = models.CharField(max_length=10, help_text="z.B. A2, B1")
-    target_level = models.CharField(max_length=10, help_text="z.B. B2, C1")
+    current_level = models.CharField(max_length=10, help_text=_("z.B. A2, B1"))
+    target_level = models.CharField(max_length=10, help_text=_("z.B. B2, C1"))
 
     # Billing Information
     # 청구서 수신자 정보
@@ -197,7 +195,7 @@ class Student(models.Model):
         _("Rechnungsempfänger"),
         max_length=100,
         blank=True,
-        help_text="비워두면 학생 이름 사용 (학부모 이름 등)",
+        help_text=_("Falls abweichend vom Schülernamen (z.B. Elternteil)")
     )
     street = models.CharField(_("Straße & Hausnummer"), max_length=100, blank=True)
     postcode = models.CharField(_("PLZ"), max_length=10, blank=True)
@@ -214,7 +212,7 @@ class Student(models.Model):
         max_length=10,
         choices=StatusChoices.choices,
         default=StatusChoices.ACTIVE,
-        help_text="학생의 현재 수강 상태",
+        help_text=_("Aktueller Status des Schülers")
     )
 
     memo = models.TextField(blank=True, null=True)
@@ -222,8 +220,8 @@ class Student(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Student"
-        verbose_name_plural = "Students"
+        verbose_name = _("Schüler")
+        verbose_name_plural = _("Schüler")
 
     def save(self, *args, **kwargs):
         # Auto-generate Customer Number if not present
@@ -273,7 +271,7 @@ class CourseRegistration(models.Model):
     # Use DecimalField for financial accuracy
     # 금융 데이터 정확성을 위해 DecimalField 사용
     hourly_rate = models.DecimalField(
-        max_digits=6, decimal_places=2, help_text="시간당 유로(€)"
+        max_digits=6, decimal_places=2, help_text=_("Stundensatz in Euro (€)")
     )
     total_hours = models.DecimalField(max_digits=5, decimal_places=1)
     total_fee = models.DecimalField(
@@ -281,14 +279,14 @@ class CourseRegistration(models.Model):
     )
     is_paid = models.BooleanField(default=False)
 
-    memo = models.TextField(blank=True, null=True, help_text="계약 관련 특이사항")
+    memo = models.TextField(blank=True, null=True, help_text=_("Anmerkungen zum Vertrag"))
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Kursregistrierung"
-        verbose_name_plural = "Kursregistrierungen"
+        verbose_name = _("Kursregistrierung")
+        verbose_name_plural = _("Kursregistrierungen")
 
     def save(self, *args, **kwargs):
         # Auto-calculate total fee before saving
@@ -363,10 +361,10 @@ class ExamSection(models.Model):
     )
 
     category = models.CharField(
-        max_length=50, help_text="z.B. Leseverstehen, Hörverstehen"
+        max_length=50, help_text=_("z.B. Leseverstehen, Hörverstehen")
     )
 
-    name = models.CharField(max_length=50, help_text="z.B. Hören Teil1, Lesen Teil2")
+    name = models.CharField(max_length=50, help_text=_("z.B. Hören Teil1, Lesen Teil2"))
 
     # UI logic: Checkbox (True) vs Input (False)
     # UI 로직: 체크박스형(True) vs 점수 입력형(False)
@@ -376,7 +374,7 @@ class ExamSection(models.Model):
     # 부분 점수 허용 여부 플래그 (예: C1 Hörverstehen Teil 3)
     allow_partial_score = models.BooleanField(
         default=False,
-        help_text="문항별 부분 점수 허용 여부 (True일 경우 O/X 대신 점수 입력)",
+        help_text=_("Teilpunkte pro Frage erlauben (True: Punkteingabe, False: Richtig/Falsch)")
     )
 
     question_start_num = models.PositiveIntegerField(null=True, blank=True)
@@ -429,10 +427,7 @@ class ExamRecord(models.Model):
     exam_mode = models.CharField(max_length=20, choices=ExamModeChoices.choices)
 
     source = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        help_text="모의고사 출처",
+        max_length=100, blank=True, null=True, help_text=_("Quelle der Probeprüfung")
     )
 
     total_score = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
@@ -510,7 +505,7 @@ class ExamDetailResult(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="획득 점수 (부분 점수 포함)",
+        help_text=_("Erreichte Punktzahl (inkl. Teilpunkte)"),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -587,7 +582,7 @@ class OfficialExamResult(models.Model):
         max_length=100,
         blank=True,
         null=True,
-        help_text="선택지 없는 경우 직접 입력",
+        help_text=_("Eigene Eingabe (falls nicht in der Liste)"),
     )
 
     exam_date = models.DateField(_("Exam Date"))
@@ -600,7 +595,7 @@ class OfficialExamResult(models.Model):
         max_length=20,
         choices=ExamModeChoices.choices,
         default=ExamModeChoices.FULL,
-        help_text="응시 유형 (전체/필기/구술)",
+        help_text=_("Prüfungsart (Gesamt/Schriftlich/Mündlich)"),
     )
 
     # Pass/Fail status is the primary metric
@@ -618,21 +613,21 @@ class OfficialExamResult(models.Model):
         decimal_places=2,
         blank=True,
         null=True,
-        help_text="점수를 아는 경우 입력",
+        help_text=_("Punktzahl (falls bekannt)")
     )
 
     grade = models.CharField(
-        max_length=20, blank=True, null=True, help_text="등급을 아는 경우 입력"
+        max_length=20, blank=True, null=True, help_text=_("Note (falls bekannt)")
     )
 
-    memo = models.TextField(blank=True, null=True, help_text="특이사항 메모")
+    memo = models.TextField(blank=True, null=True, help_text=_("Anmerkungen"))
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Offizielles Prüfungsergebnis"
-        verbose_name_plural = "Offizielle Prüfungsergebnisse"
+        verbose_name = _("Offizielles Prüfungsergebnis")
+        verbose_name_plural = _("Offizielle Prüfungsergebnisse")
         ordering = ["-exam_date"]
 
     def __str__(self):
@@ -681,9 +676,9 @@ class Lesson(models.Model):
     end_time = models.TimeField()
 
     topic = models.CharField(
-        max_length=200, blank=True, help_text="수업 주제 (예: Chapter 5)"
+        max_length=200, blank=True, help_text=_("Thema (z.B. Kapitel 5)")
     )
-    memo = models.TextField(blank=True, help_text="수업 피드백 또는 숙제")
+    memo = models.TextField(blank=True, help_text=_("Feedback oder Hausaufgaben"))
 
     status = models.CharField(
         max_length=20, choices=StatusChoices.choices, default=StatusChoices.SCHEDULED
@@ -693,8 +688,8 @@ class Lesson(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Unterrichtsstunde"
-        verbose_name_plural = "Unterrichtsstunden"
+        verbose_name = _("Unterrichtsstunde")
+        verbose_name_plural = _("Unterrichtsstunden")
         ordering = ["date", "start_time"]
 
     def __str__(self):
@@ -754,8 +749,8 @@ class Todo(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Aufgabe"
-        verbose_name_plural = "Aufgaben"
+        verbose_name = _("Aufgabe")
+        verbose_name_plural = _("Aufgaben")
         # Smart Ordering: Uncompleted -> High Priority -> Urgent Date -> Newest
         # 스마트 정렬: 미완료 -> 중요도 높음 -> 마감 임박 -> 최신순
         ordering = [
@@ -808,35 +803,33 @@ class Invoice(models.Model):
         null=True,
         blank=True,
         related_name="invoice",
-        help_text="이 영수증이 청구하는 대상 수강권",
+        help_text=_("Zugehörige Kursregistrierung")
     )
 
     # Invoice Identifiers
     # 영수증 식별자
-    invoice_number = models.PositiveIntegerField(help_text="순차적 번호 (예: 1001)")
+    invoice_number = models.PositiveIntegerField(help_text=_("Fortlaufende Nummer (z.B. 1001)"))
     full_invoice_code = models.CharField(
-        max_length=50, unique=True, help_text="최종 송장 번호 (예: RE-10012601)"
+        max_length=50, unique=True, help_text=_("Vollständige Rechnungsnummer (z.B. RE-10012601)")
     )
 
     # Dates, Snapshot Data, Content, Financials, etc.
     # 날짜 정보, 스냅샷 데이터, 내용, 재무 정보 등
-    created_at = models.DateTimeField(
-        auto_now_add=True, help_text="Rechnungsdatum (발행일)"
-    )
+    created_at = models.DateTimeField(auto_now_add=True, help_text=_("Rechnungsdatum"))
     delivery_date_start = models.DateField(
         _("Leistungszeitraum Start"), null=True, blank=True
     )
     delivery_date_end = models.DateField(
         _("Leistungszeitraum Ende"), null=True, blank=True
     )
-    due_date = models.DateField(_("Zahlungsziel"), help_text="납부 기한")
+    due_date = models.DateField(_("Zahlungsziel"), help_text=_("Fälligkeitsdatum"))
 
     # Snapshot of Business Profile Data
     # BusinessProfile 데이터 스냅샷 (발행 당시 정보 보존용)
     sender_data = models.JSONField(
         _("Absenderdaten Snapshot"),
         default=dict,
-        help_text="발행 시점의 BusinessProfile 데이터",
+        help_text=_("Snapshot der BusinessProfile-Daten zum Zeitpunkt der Erstellung")
     )
 
     recipient_name = models.CharField(_("Empfänger Name"), max_length=100)
@@ -844,10 +837,10 @@ class Invoice(models.Model):
 
     subject = models.CharField(_("Betreff"), max_length=200, default="Rechnung")
     header_text = models.TextField(
-        _("Kopftext"), blank=True, help_text="인사말 및 서문 (HTML 허용)"
+        _("Kopftext"), blank=True, help_text=_("Einleitungstext (HTML erlaubt)")
     )
     footer_text = models.TextField(
-        _("Fußtext"), blank=True, help_text="맺음말 및 안내 (HTML 허용)"
+        _("Fußtext"), blank=True, help_text=_("Schlusstext und Hinweise (HTML erlaubt)")
     )
 
     # Financials (Calculated Fields)
@@ -866,7 +859,7 @@ class Invoice(models.Model):
         max_digits=10,
         decimal_places=2,
         default=0,
-        help_text="계산된 조정 금액 (할인은 음수, 추가금은 양수로 저장될 수 있음)",
+        help_text=_("Summe der Anpassungen (Rabatte/Aufschläge)"),
     )
 
     total_amount = models.DecimalField(
@@ -878,17 +871,17 @@ class Invoice(models.Model):
     is_sent = models.BooleanField(
         _("Versendet"),
         default=False,
-        help_text="발송 여부 (체크박스)",
+        help_text=_("Wurde die Rechnung bereits versendet?")
     )
 
     is_small_business = models.BooleanField(
-        default=False, help_text="§19 UStG 적용 여부"
+        default=False, help_text=_("Anwendung der Kleinunternehmerregelung (§19 UStG)")
     )
 
     class Meta:
         ordering = ["-created_at"]
-        verbose_name = "Rechnung"
-        verbose_name_plural = "Rechnungen"
+        verbose_name = _("Rechnung")
+        verbose_name_plural = _("Rechnungen")
 
     def __str__(self):
         return f"{self.full_invoice_code} - {self.recipient_name}"
@@ -1010,7 +1003,7 @@ class InvoiceAdjustment(models.Model):
     )
 
     value = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, help_text="입력값 (예: 10)"
+        max_digits=10, decimal_places=2, default=0, help_text=_("Wert (z.B. 10)")
     )
 
     unit = models.CharField(
@@ -1020,7 +1013,7 @@ class InvoiceAdjustment(models.Model):
     )
 
     amount = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, help_text="계산된 유로 금액"
+        max_digits=10, decimal_places=2, default=0, help_text=_("Berechneter Betrag in Euro")
     )
 
     def __str__(self):
@@ -1041,10 +1034,10 @@ class InvoiceItem(models.Model):
     # Updated to match Frontend Unit Mapping
     # 프론트엔드 단위 매핑과 일치하도록 업데이트됨
     class UnitChoices(models.TextChoices):
-        PIECE = "PIECE", "Stück"
-        HOUR = "HOUR", "Stunde"
-        DAY = "DAY", "Tag"
-        FLAT_RATE = "FLAT_RATE", "Pauschal"
+        PIECE = "PIECE", _("Stück")
+        HOUR = "HOUR", _("Stunde")
+        DAY = "DAY", _("Tag")
+        FLAT_RATE = "FLAT_RATE", _("Pauschal")
 
     class DiscountUnitChoices(models.TextChoices):
         PERCENT = "PERCENT", "%"
@@ -1078,7 +1071,7 @@ class InvoiceItem(models.Model):
         max_digits=10,
         decimal_places=2,
         default=0,
-        help_text="입력된 할인 값",
+        help_text=_("Rabattwert")
     )
     discount_unit = models.CharField(
         max_length=10,

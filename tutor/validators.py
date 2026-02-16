@@ -1,7 +1,6 @@
 import re
 from django.core.exceptions import ValidationError
-from django.utils.translation import gettext as _
-
+from django.utils.translation import gettext_lazy as _
 
 class CustomPasswordValidator:
     """
@@ -17,7 +16,7 @@ class CustomPasswordValidator:
         # 최소 8글자 이상인지 확인
         if len(password) < 8:
             raise ValidationError(
-                _("비밀번호는 최소 8자 이상이어야 합니다."),
+                _("Das Passwort muss mindestens 8 Zeichen lang sein."),
                 code="password_too_short",
             )
 
@@ -25,7 +24,7 @@ class CustomPasswordValidator:
         # 최소 1개의 영문 대문자가 포함되어 있는지 확인
         if not re.search(r"[A-Z]", password):
             raise ValidationError(
-                _("비밀번호에는 최소 1개의 영문 대문자가 포함되어야 합니다."),
+                _("Das Passwort muss mindestens einen Großbuchstaben enthalten."),
                 code="password_no_upper",
             )
 
@@ -33,7 +32,7 @@ class CustomPasswordValidator:
         # 최소 1개의 특수문자가 포함되어 있는지 확인
         if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
             raise ValidationError(
-                _("비밀번호에는 최소 1개의 특수문자가 포함되어야 합니다."),
+                _("Das Passwort muss mindestens ein Sonderzeichen enthalten."),
                 code="password_no_symbol",
             )
 
@@ -43,5 +42,5 @@ class CustomPasswordValidator:
         장고 관리자 페이지나 폼에서 표시될 도움말 텍스트를 반환합니다.
         """
         return _(
-            "비밀번호는 영문 대문자, 특수문자 포함 8자 이상이어야 합니다."
+            "Das Passwort muss mindestens 8 Zeichen lang sein und einen Großbuchstaben sowie ein Sonderzeichen enthalten."
         )

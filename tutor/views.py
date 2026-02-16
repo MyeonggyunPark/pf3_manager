@@ -2,6 +2,7 @@ import json
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
+from django.utils.translation import gettext_lazy as _
 from django.shortcuts import redirect
 from django.conf import settings
 from django.utils import timezone
@@ -11,10 +12,6 @@ from django.db.models.functions import TruncMonth
 from django.db import transaction
 from django.template.loader import render_to_string
 from django.http import HttpResponse
-
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.kakao.views import KakaoOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
@@ -31,7 +28,6 @@ from dj_rest_auth.views import UserDetailsView, LoginView
 from dj_rest_auth.registration.views import (
     RegisterView,
     VerifyEmailView,
-    SocialLoginView,
 )
 
 from weasyprint import HTML
@@ -49,7 +45,6 @@ from .models import (
     Todo,
     BusinessProfile,
     Invoice,
-    InvoiceAdjustment,
 )
 
 from .serializers import (
@@ -750,7 +745,7 @@ class CustomUserDetailsView(UserDetailsView):
         if user.is_authenticated:
             user.delete()
             response = Response(
-                {"detail": "계정이 성공적으로 삭제되었습니다."},
+                {"detail": _("Ihr Konto wurde erfolgreich gelöscht.")},
                 status=status.HTTP_204_NO_CONTENT,
             )
 
@@ -760,7 +755,7 @@ class CustomUserDetailsView(UserDetailsView):
             return response
 
         return Response(
-            {"detail": "인증되지 않은 사용자입니다."},
+            {"detail": _("Benutzer ist nicht authentifiziert.")},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -804,7 +799,7 @@ class BusinessProfileDetailView(APIView):
             return Response(serializer.data)
         except BusinessProfile.DoesNotExist:
             return Response(
-                {"detail": "Business profile not found."},
+                {"detail": _("Geschäftsprofil nicht gefunden.")},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -909,7 +904,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             )
         except BusinessProfile.DoesNotExist:
             return Response(
-                {"detail": "Business profile not found."},
+                {"detail": _("Geschäftsprofil nicht gefunden.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -934,7 +929,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             profile = BusinessProfile.objects.select_for_update().get(tutor=user)
         except BusinessProfile.DoesNotExist:
             return Response(
-                {"detail": "먼저 사업자 프로필(설정)을 완료해주세요."},
+                {
+                    "detail": _(
+                        "Bitte vervollständigen Sie zuerst Ihr Geschäftsprofil (Einstellungen)."
+                    )
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -983,7 +982,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         """
         if HTML is None:
             return Response(
-                {"detail": "WeasyPrint library is not installed."}, status=500
+                {"detail": _("WeasyPrint-Bibliothek ist nicht installiert.")},
+                status=500,
             )
 
         data = request.data
@@ -1061,7 +1061,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             try:
                 student = Student.objects.get(id=student_id)
 
-                if recipient_name == "Unbekannt":
+                if recipient_name == _("Unbekannt"):
                     recipient_name = student.billing_name or student.name
 
                 recipient_no = student.customer_number
@@ -1229,7 +1229,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         """
         if HTML is None:
             return Response(
-                {"detail": "WeasyPrint library is not installed."}, status=500
+                {"detail": _("WeasyPrint-Bibliothek ist nicht installiert.")},
+                status=500,
             )
 
         invoice = self.get_object()
@@ -1389,7 +1390,7 @@ def social_login_callback(request):
     # 세션 쿠키가 유실된 경우를 대비하여 수동 로그인을 시도하고 유저를 식별합니다.
     if not user.is_authenticated:
         frontend_url = getattr(
-            settings, "FRONTEND_BASE_URL", "https://ms-planer.up.railway.app"
+            settings, "FRONTEND_BASE_URL", "https://www.ms-planer.de"
         )
         return redirect(f"{frontend_url.rstrip('/')}/login?error=auth_failed")
 
@@ -1402,7 +1403,7 @@ def social_login_callback(request):
     # Get the frontend base URL from settings
     # 설정 파일에서 프론트엔드 베이스 URL을 가져옴
     frontend_url = getattr(
-        settings, "FRONTEND_BASE_URL", "https://ms-planer.up.railway.app"
+        settings, "FRONTEND_BASE_URL", "https://www.ms-planer.de"
     )
     frontend_url = frontend_url.rstrip("/")
 

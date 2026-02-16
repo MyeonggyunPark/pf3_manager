@@ -16,7 +16,7 @@ from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
-
+from django.utils.translation import gettext_lazy as _
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # 프로젝트 내부 경로 생성 예시: BASE_DIR / 'subdir'
@@ -128,6 +128,10 @@ MIDDLEWARE = [
     # 요청 간 사용자 세션 관리
     "django.contrib.sessions.middleware.SessionMiddleware",
     
+    # Enables language selection based on request data
+    # 요청 데이터를 기반으로 언어 선택 활성화 (필수)
+    "django.middleware.locale.LocaleMiddleware",
+    
     # Adds common functionality (e.g., forbidding access to user agents)
     # 일반적인 기능 추가 (예: 특정 사용자 에이전트 접근 금지 등)
     "django.middleware.common.CommonMiddleware",
@@ -215,7 +219,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+# Set default language to German
+# 기본 언어를 독일어로 설정
+LANGUAGE_CODE = "de"
+
+# Define supported languages (German is default, Korean is optional)
+# 지원 가능한 언어 목록 정의 (독일어 기본, 한국어 선택 가능)
+LANGUAGES = [
+    ("de", _("German")),
+    ("ko", _("Korean")),
+]
 
 TIME_ZONE = "Europe/Berlin"
 
@@ -223,6 +236,11 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Directory where translation files (.po) are stored
+# 번역 파일(.po)이 저장되는 경로 설정
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
