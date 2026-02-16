@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-16 14:26+0100\n"
+"POT-Creation-Date: 2026-02-16 15:13+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,6 +25,93 @@ msgstr "독일어"
 #: config/settings.py:230
 msgid "Korean"
 msgstr "한국어"
+
+#: templates/account/email/email_confirmation_signup_message.html:8
+msgid "E-Mail-Bestätigung"
+msgstr "이메일 인증"
+
+#: templates/account/email/email_confirmation_signup_message.html:27
+msgid "Bitte bestätigen Sie Ihre E-Mail-Adresse."
+msgstr "이메일 주소를 인증해주세요."
+
+#: templates/account/email/email_confirmation_signup_message.html:30
+#, python-format
+msgid ""
+"\n"
+"                    Hallo <strong>%(username)s</strong>!\n"
+"                    <br>\n"
+"                    Vielen Dank für Ihre Registrierung bei MS Planer.\n"
+"                    <br>\n"
+"                    Bitte klicken Sie auf den Button unten, um die "
+"Registrierung abzuschließen.\n"
+"                    "
+msgstr ""
+"\n"
+"                    안녕하세요 <strong>%(username)s</strong>님!\n"
+"                    <br>\n"
+"                    MS Planer에 가입해 주셔서 감사합니다.\n"
+"                    <br>\n"
+"                    아래 버튼을 클릭하여 가입을 완료해주세요.\n"
+"                    "
+
+#: templates/account/email/email_confirmation_signup_message.html:42
+msgid "Konto aktivieren"
+msgstr "계정 활성화"
+
+#: templates/account/email/email_confirmation_signup_message.html:47
+msgid "Falls Sie dies nicht angefordert haben, löschen Sie bitte diese E-Mail."
+msgstr "본인이 요청하지 않았다면 이 이메일을 삭제해주세요."
+
+#: templates/account/email/email_confirmation_signup_message.html:49
+msgid "Ihr Konto ist sicher."
+msgstr "계정은 안전합니다."
+
+#: templates/account/email/email_confirmation_subject.txt:1
+msgid "Bestätigung Ihrer E-Mail-Adresse"
+msgstr "이메일 주소 인증"
+
+#: templates/registration/password_reset_email.html:7
+#: templates/registration/password_reset_email.html:41
+msgid "Passwort zurücksetzen"
+msgstr "비밀번호 재설정"
+
+#: templates/registration/password_reset_email.html:26
+msgid "Haben Sie Ihr Passwort vergessen?"
+msgstr "비밀번호를 잊으셨나요?"
+
+#: templates/registration/password_reset_email.html:29
+#, python-format
+msgid ""
+"\n"
+"                    Hallo <strong>%(username)s</strong>,\n"
+"                    <br>\n"
+"                    wir haben eine Anfrage zum Zurücksetzen Ihres Passworts "
+"erhalten.\n"
+"                    <br>\n"
+"                    Bitte klicken Sie auf den Button unten, um ein neues "
+"Passwort festzulegen.\n"
+"                    "
+msgstr ""
+"\n"
+"                    안녕하세요 <strong>%(username)s</strong>님,\n"
+"                    <br>\n"
+"                    비밀번호 재설정 요청을 받았습니다.\n"
+"                    <br>\n"
+"                    아래 버튼을 클릭하여 새 비밀번호를 설정해주세요.\n"
+"                    "
+
+#: templates/registration/password_reset_email.html:46
+msgid ""
+"Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren."
+msgstr "본인이 요청하지 않았다면 이 이메일을 무시하셔도 됩니다."
+
+#: templates/registration/password_reset_email.html:48
+msgid "Ihr Passwort wird nicht geändert."
+msgstr "비밀번호는 변경되지 않습니다."
+
+#: templates/registration/password_reset_subject.txt:1
+msgid "[MS Planer] Passwort zurücksetzen"
+msgstr "[MS Planer] 비밀번호 재설정"
 
 #: tutor/models.py:22
 msgid "E-mail"
@@ -123,7 +210,8 @@ msgid ""
 "Wählen Sie, ob die eingegebenen Preise inklusive (Brutto) oder exklusive "
 "(Netto) USt sind."
 msgstr ""
-"입력하는 가격이 부가세를 포함한 금액(Brutto)인지 제외한 금액(Netto)인지 선택하세요."
+"입력하는 가격이 부가세를 포함한 금액(Brutto)인지 제외한 금액(Netto)인지 선택"
+"하세요."
 
 #: tutor/models.py:104
 msgid "Bankname"
@@ -577,7 +665,8 @@ msgid ""
 "Das Passwort muss mindestens 8 Zeichen lang sein und einen Großbuchstaben "
 "sowie ein Sonderzeichen enthalten."
 msgstr ""
-"비밀번호는 최소 8자 이상이어야 하며, 대문자와 특수문자를 각각 하나 이상 포함해야 합니다."
+"비밀번호는 최소 8자 이상이어야 하며, 대문자와 특수문자를 각각 하나 이상 포함"
+"해야 합니다."
 
 #: tutor/views.py:748
 msgid "Ihr Konto wurde erfolgreich gelöscht."
