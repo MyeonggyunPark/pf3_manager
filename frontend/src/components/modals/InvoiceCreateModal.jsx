@@ -108,6 +108,11 @@ const CANCEL_BUTTON_STYLE =
 const SUBMIT_BUTTON_STYLE =
   "h-9 px-3 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer transition-all";
 
+const ErrorMessage = ({ message }) => {
+  if (!message) return null;
+  return <p className="text-xs text-destructive mt-1 font-medium ml-1">{message}</p>;
+};
+
 // Tiptap Editor Component
 // 팁탭 에디터 컴포넌트 (텍스트 편집기)
 const TiptapEditor = ({ value, onChange }) => {
@@ -364,6 +369,8 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
 
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
 
   // Reset form to initial state
   // 폼 초기화 함수
@@ -386,6 +393,8 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
     setGlobalAdjustments([]);
     setIsPreviewLoading(false);
     setIsSubmitting(false);
+    setErrors({});
+    setSubmitError(null);
   }, [templateBase]);
 
   const handleCloseModal = () => {
@@ -526,6 +535,9 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
   const handleInvoiceDateChange = (e) => {
     const newDate = e.target.value;
     setInvoiceDate(newDate);
+    if (errors.invoice_date) {
+      setErrors((prev) => ({ ...prev, invoice_date: null }));
+    }
     if (dueDays) {
       setDueDate(calculateDueDateStr(newDate, dueDays));
     }
@@ -536,6 +548,9 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
     setDeliveryDate("");
     setPeriodStart("");
     setPeriodEnd("");
+    if (errors.delivery_period) {
+      setErrors((prev) => ({ ...prev, delivery_period: null }));
+    }
   };
 
   const handleDueDaysChange = (e) => {
@@ -563,6 +578,9 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
   const handleRecipientChange = (e) => {
     const id = Number(e.target.value);
     setRecipientId(id);
+    if (errors.recipient) {
+      setErrors((prev) => ({ ...prev, recipient: null }));
+    }
     const student = students.find((s) => s.id === id);
 
     if (student) {
@@ -572,6 +590,9 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
         city: student.city || "",
         country: student.country || "Deutschland",
       });
+      if (errors.recipient_address) {
+        setErrors((prev) => ({ ...prev, recipient_address: null }));
+      }
 
       const recipientName = student.billing_name || student.name || "";
       const studentName = student.name || "";
@@ -607,6 +628,9 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
           city: updatedStudent.city || "",
           country: updatedStudent.country || "Deutschland",
         });
+        if (errors.recipient_address) {
+          setErrors((prev) => ({ ...prev, recipient_address: null }));
+        }
       }
     }
   };
@@ -662,6 +686,33 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
     const newAdjustments = [...globalAdjustments];
     newAdjustments[index] = { ...newAdjustments[index], [field]: value };
     setGlobalAdjustments(newAdjustments);
+  };
+
+  const validateRequiredFields = () => {
+    const newErrors = {};
+
+    if (!recipientId) {
+      newErrors.recipient = "Bitte wählen Sie einen Empfänger aus.";
+    }
+    if (
+      !recipientAddress.street.trim() ||
+      !recipientAddress.zip.trim() ||
+      !recipientAddress.city.trim() ||
+      !recipientAddress.country.trim()
+    ) {
+      newErrors.recipient_address = "Bitte geben Sie eine vollständige Anschrift an.";
+    }
+    if (!invoiceDate) {
+      newErrors.invoice_date = "Bitte geben Sie ein Rechnungsdatum an.";
+    }
+
+    if (!deliveryDate && (!periodStart || !periodEnd)) {
+      newErrors.delivery_period =
+        "Bitte geben Sie ein Lieferdatum oder einen Leistungszeitraum an.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   // Construct payload for API submission
@@ -756,6 +807,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
 
   const handlePreview = async () => {
     setIsPreviewLoading(true);
+    setSubmitError(null);
     try {
       const payload = getInvoicePayload();
       const response = await api.post("/api/invoices/preview_pdf/", payload, {
@@ -766,7 +818,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
       window.open(pdfUrl, "_blank");
     } catch (err) {
       console.error("Preview failed", err);
-      alert("Die Vorschau konnte nicht geladen werden.");
+      setSubmitError("Die Vorschau konnte nicht geladen werden.");
     } finally {
       setIsPreviewLoading(false);
     }
@@ -774,13 +826,8 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
-
-    if (!recipientId) {
-      alert("Bitte wählen Sie einen Empfänger aus.");
-      return;
-    }
-    if (!deliveryDate && (!periodStart || !periodEnd)) {
-      alert("Bitte geben Sie ein Lieferdatum oder einen Leistungszeitraum an.");
+    setSubmitError(null);
+    if (!validateRequiredFields()) {
       return;
     }
 
@@ -797,7 +844,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
       if (err.response && err.response.data) {
         errorMessage += `\n${JSON.stringify(err.response.data)}`;
       }
-      alert(errorMessage);
+      setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -805,13 +852,8 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
 
   const handleSaveAndPrint = async () => {
     if (isSubmitting) return;
-
-    if (!recipientId) {
-      alert("Bitte wählen Sie einen Empfänger aus.");
-      return;
-    }
-    if (!deliveryDate && (!periodStart || !periodEnd)) {
-      alert("Bitte geben Sie ein Lieferdatum oder einen Leistungszeitraum an.");
+    setSubmitError(null);
+    if (!validateRequiredFields()) {
       return;
     }
 
@@ -838,7 +880,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
       if (err.response && err.response.data) {
         errorMessage += `\n${JSON.stringify(err.response.data)}`;
       }
-      alert(errorMessage);
+      setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -914,6 +956,12 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8 bg-white dark:bg-card">
+            {submitError && (
+              <div className="p-3 text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 font-medium text-center whitespace-pre-wrap animate-in slide-in-from-top-1">
+                {submitError}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-slate-800 dark:text-foreground">
@@ -921,7 +969,12 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                 </h3>
 
                 <div className="space-y-1">
-                  <label className={LABEL_CLASS}>
+                  <label
+                    className={cn(
+                      LABEL_CLASS,
+                      errors.recipient ? "text-destructive" : "",
+                    )}
+                  >
                     Kontakt <span className="text-destructive">*</span>
                   </label>
                   <div className="relative">
@@ -953,11 +1006,17 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                       <ChevronDown className="w-5 h-5" />
                     </div>
                   </div>
+                  <ErrorMessage message={errors.recipient} />
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex justify-between items-end mb-1.5 min-h-5">
-                    <label className="text-xs font-bold tracking-wider pl-1 block text-slate-500 dark:text-muted-foreground mb-0">
+                    <label
+                      className={cn(
+                        "text-xs font-bold tracking-wider pl-1 block text-slate-500 dark:text-muted-foreground mb-0",
+                        errors.recipient_address ? "text-destructive" : "",
+                      )}
+                    >
                       Anschrift <span className="text-destructive">*</span>
                     </label>
                     {recipientId && !recipientAddress.street && (
@@ -976,9 +1035,14 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                     placeholder="Straße und Hausnummer"
                     value={recipientAddress.street}
                     onChange={(e) =>
-                      setRecipientAddress({
-                        ...recipientAddress,
-                        street: e.target.value,
+                      setRecipientAddress((prev) => {
+                        if (errors.recipient_address) {
+                          setErrors((prevErrors) => ({
+                            ...prevErrors,
+                            recipient_address: null,
+                          }));
+                        }
+                        return { ...prev, street: e.target.value };
                       })
                     }
                   />
@@ -988,9 +1052,14 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                       placeholder="PLZ"
                       value={recipientAddress.zip}
                       onChange={(e) =>
-                        setRecipientAddress({
-                          ...recipientAddress,
-                          zip: e.target.value,
+                        setRecipientAddress((prev) => {
+                          if (errors.recipient_address) {
+                            setErrors((prevErrors) => ({
+                              ...prevErrors,
+                              recipient_address: null,
+                            }));
+                          }
+                          return { ...prev, zip: e.target.value };
                         })
                       }
                     />
@@ -999,9 +1068,14 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                       placeholder="Ort"
                       value={recipientAddress.city}
                       onChange={(e) =>
-                        setRecipientAddress({
-                          ...recipientAddress,
-                          city: e.target.value,
+                        setRecipientAddress((prev) => {
+                          if (errors.recipient_address) {
+                            setErrors((prevErrors) => ({
+                              ...prevErrors,
+                              recipient_address: null,
+                            }));
+                          }
+                          return { ...prev, city: e.target.value };
                         })
                       }
                     />
@@ -1012,13 +1086,19 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                       placeholder="Land"
                       value={recipientAddress.country}
                       onChange={(e) =>
-                        setRecipientAddress({
-                          ...recipientAddress,
-                          country: e.target.value,
+                        setRecipientAddress((prev) => {
+                          if (errors.recipient_address) {
+                            setErrors((prevErrors) => ({
+                              ...prevErrors,
+                              recipient_address: null,
+                            }));
+                          }
+                          return { ...prev, country: e.target.value };
                         })
                       }
                     />
                   </div>
+                  <ErrorMessage message={errors.recipient_address} />
                 </div>
               </div>
 
@@ -1034,7 +1114,12 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                   )}
                 >
                   <div className="space-y-1">
-                    <label className={LABEL_CLASS}>
+                    <label
+                      className={cn(
+                        LABEL_CLASS,
+                        errors.invoice_date ? "text-destructive" : "",
+                      )}
+                    >
                       Rechnungsdatum <span className="text-destructive">*</span>
                     </label>
                     <div className="relative">
@@ -1046,12 +1131,18 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                         onClick={(e) => e.target.showPicker()}
                       />
                     </div>
+                    <ErrorMessage message={errors.invoice_date} />
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex justify-between mb-1.5">
-                      <label className="text-xs font-bold tracking-wider pl-1 block text-slate-500 dark:text-muted-foreground">
-                        {isPeriodMode ? "Leistungszeitraum" : " ferdatum"}{" "}
+                      <label
+                        className={cn(
+                          "text-xs font-bold tracking-wider pl-1 block text-slate-500 dark:text-muted-foreground",
+                          errors.delivery_period ? "text-destructive" : "",
+                        )}
+                      >
+                        {isPeriodMode ? "Leistungszeitraum" : "Lieferdatum"}{" "}
                         <span className="text-destructive">*</span>
                       </label>
                       <button
@@ -1071,7 +1162,15 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                               "px-2",
                             )}
                             value={periodStart}
-                            onChange={(e) => setPeriodStart(e.target.value)}
+                            onChange={(e) => {
+                              setPeriodStart(e.target.value);
+                              if (errors.delivery_period) {
+                                setErrors((prev) => ({
+                                  ...prev,
+                                  delivery_period: null,
+                                }));
+                              }
+                            }}
                             onClick={(e) => e.target.showPicker()}
                           />
                         </div>
@@ -1081,7 +1180,15 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                             type="date"
                             className={cn(DATE_INPUT_STYLE(periodEnd), "px-2")}
                             value={periodEnd}
-                            onChange={(e) => setPeriodEnd(e.target.value)}
+                            onChange={(e) => {
+                              setPeriodEnd(e.target.value);
+                              if (errors.delivery_period) {
+                                setErrors((prev) => ({
+                                  ...prev,
+                                  delivery_period: null,
+                                }));
+                              }
+                            }}
                             onClick={(e) => e.target.showPicker()}
                           />
                         </div>
@@ -1092,7 +1199,15 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                           type="date"
                           className={DATE_INPUT_STYLE(deliveryDate)}
                           value={deliveryDate}
-                          onChange={(e) => setDeliveryDate(e.target.value)}
+                          onChange={(e) => {
+                            setDeliveryDate(e.target.value);
+                            if (errors.delivery_period) {
+                              setErrors((prev) => ({
+                                ...prev,
+                                delivery_period: null,
+                              }));
+                            }
+                          }}
                           onClick={(e) => e.target.showPicker()}
                         />
                       </div>
@@ -1105,6 +1220,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                           * Das Enddatum liegt vor dem Startdatum.
                         </p>
                       )}
+                    <ErrorMessage message={errors.delivery_period} />
                   </div>
                 </div>
 

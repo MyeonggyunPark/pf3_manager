@@ -181,7 +181,16 @@ export default function Settings() {
   // Final Cleanup and Redirect
   // 최종 정리 및 리다이렉트 (성공 모달에서 확인 버튼 클릭 시 호출)
   const handleFinalRedirect = () => {
-    localStorage.clear();
+    // Remove only auth/session-related keys.
+    // Keep user preferences (theme/language) so UI mode does not unexpectedly change.
+    [
+      "user_info",
+      "is_logged_in",
+      "access_token",
+      "refresh_token",
+      "saved_email",
+      "i18nextLng",
+    ].forEach((key) => localStorage.removeItem(key));
     window.location.href = "/login";
   };
 
