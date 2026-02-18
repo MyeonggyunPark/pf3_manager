@@ -139,10 +139,9 @@ export default function Dashboard() {
             try {
                 // Parallel API calls for performance
                 // 성능을 위해 API 병렬 호출
-                const [s, t, e, todoRes] = await Promise.all([
+                const [s, t, todoRes] = await Promise.all([
                     api.get("/api/dashboard/stats/"),
                     api.get("/api/lessons/today/"),
-                    api.get("/api/official-results/"),
                     api.get("/api/todos/"),
                 ]);
 
@@ -159,25 +158,10 @@ export default function Dashboard() {
                 // 할 일 데이터 설정
                 setTodos(todoRes.data);
 
-                // Normalize current time to 00:00:00 for accurate date comparison
-                // 정확한 날짜 비교를 위해 현재 시간을 00:00:00으로 정규화
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                // Filter future exams and sort by date ascending
-                // 미래 시험 일정 필터링 및 날짜 오름차순 정렬
-                const futureExams = e.data
-                .filter((exam) => {
-                    const examDate = new Date(exam.exam_date);
-                    examDate.setHours(0, 0, 0, 0);
-                    return examDate >= today;
-                })
-                .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date));
-
-                // Store total count and slice top 3
-                // 전체 개수 저장 및 상위 3개 추출
-                setTotalExamCount(futureExams.length);
-                setUpcomingExams(futureExams.slice(0, 3));
+                // Use lightweight upcoming exam payload from dashboard stats API
+                // 대시보드 통계 API에서 제공하는 경량 시험 데이터 사용
+                setTotalExamCount(s.data.upcoming_exam_count || 0);
+                setUpcomingExams(s.data.upcoming_exams || []);
             } catch (e) {
                 console.error("Dashboard Data Load Failed:", e);
             }

@@ -132,8 +132,12 @@ export default function Schedule() {
             }
         };
 
-        // Fetch todos list when component mounts or refresh is triggered
-        // 컴포넌트 마운트 시 또는 새로고침 트리거 시 할 일 목록 조회
+        fetchLessons();
+    }, [currentDate, viewMode, refreshTrigger]);
+
+    // Fetch todos independently to avoid refetching on date navigation
+    // 날짜 이동 시 불필요한 재호출을 막기 위해 투두는 별도 조회
+    useEffect(() => {
         const fetchTodos = async () => {
             try {
                 const res = await api.get("/api/todos/");
@@ -143,9 +147,8 @@ export default function Schedule() {
             }
         };
 
-        fetchLessons();
         fetchTodos();
-    }, [currentDate, viewMode, refreshTrigger]);
+    }, [refreshTrigger]);
 
     const openCreateModal = () => {
         setSelectedLesson(null);

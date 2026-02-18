@@ -131,7 +131,9 @@ class CourseRegistrationViewSet(viewsets.ModelViewSet):
         Retrieve registrations only for students managed by the logged-in tutor.
         로그인한 튜터가 관리하는 학생들의 수강 등록만 조회합니다.
         """
-        return CourseRegistration.objects.filter(student__tutor=self.request.user)
+        return CourseRegistration.objects.filter(
+            student__tutor=self.request.user
+        ).select_related("student")
 
 
 class ExamStandardViewSet(viewsets.ReadOnlyModelViewSet):
@@ -190,7 +192,12 @@ class ExamRecordViewSet(viewsets.ModelViewSet):
             
             # Optimize Many-to-Many or Reverse Foreign Keys (1:N): Uses separate queries
             # 다대다 또는 역방향 외래 키 최적화 (1:N 관계): 별도의 쿼리를 사용합니다
-            .prefetch_related("attachments")
+            .prefetch_related(
+                "attachments",
+                "score_inputs",
+                "detail_results",
+                "exam_standard__modules",
+            )
         )
 
 
@@ -257,6 +264,7 @@ class OfficialExamResultViewSet(viewsets.ModelViewSet):
             # Optimize Foreign Key lookups (Student, ExamStandard)
             # 외래 키 조회 최적화 (학생, 시험 표준)
             .select_related("student", "exam_standard")
+            .prefetch_related("exam_standard__modules")
         )
 
 
@@ -383,6 +391,23 @@ class DashboardStatsView(APIView):
             tomorrow_lessons_queryset, many=True
         ).data
 
+        # Upcoming official exams (top 3 preview + total count) for dashboard
+        # 대시보드용 다가오는 정규 시험 (상위 3개 미리보기 + 전체 개수)
+        upcoming_exam_qs = (
+            OfficialExamResult.objects.filter(
+                student__tutor=user,
+                exam_date__gte=today,
+            )
+            .select_related("student", "exam_standard")
+            .prefetch_related("exam_standard__modules")
+            .order_by("exam_date")
+        )
+        upcoming_exam_count = upcoming_exam_qs.count()
+        upcoming_exam_rows = upcoming_exam_qs[:3]
+        upcoming_exams = OfficialExamResultSerializer(
+            upcoming_exam_rows, many=True
+        ).data
+
         return Response(
             {
                 "estimated_revenue": estimated_revenue,
@@ -390,6 +415,8 @@ class DashboardStatsView(APIView):
                 "active_students": active_students,
                 "monthly_lesson_count": monthly_lesson_count,
                 "tomorrow_lessons": tomorrow_lessons_data,
+                "upcoming_exam_count": upcoming_exam_count,
+                "upcoming_exams": upcoming_exams,
             }
         )
 
@@ -868,7 +895,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         Retrieve invoices only for the logged-in tutor.
         로그인한 튜터의 영수증만 조회.
         """
-        return Invoice.objects.filter(tutor=self.request.user)
+        return (
+            Invoice.objects.filter(tutor=self.request.user)
+            .select_related("student", "course_registration")
+            .prefetch_related("items", "adjustments")
+        )
 
     @action(detail=False, methods=["get"])
     def next_number(self, request):

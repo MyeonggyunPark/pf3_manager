@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef, useLayoutEffect } from "react";
+import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -77,7 +77,6 @@ export default function CourseList() {
     // State for data and loading status
     // 데이터 및 로딩 상태 관리
     const [courses, setCourses] = useState([]);
-    const [students, setStudents] = useState([]);
     const [invoices, setInvoices] = useState([]); 
     const [isLoading, setIsLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -156,16 +155,14 @@ export default function CourseList() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                    // Fetch courses, students and invoices in parallel
-                    // 수강권 목록, 학생 목록, 영수증 목록을 병렬로 요청
-                    const [cRes, sRes, iRes] = await Promise.all([
+                    // Fetch courses and invoices in parallel
+                    // 수강권 목록과 영수증 목록을 병렬로 요청
+                    const [cRes, iRes] = await Promise.all([
                     api.get("/api/courses/"),
-                    api.get("/api/students/"),
                     api.get("/api/invoices/").catch(() => ({ data: [] })), 
                 ]);
 
                 setCourses(cRes.data);
-                setStudents(sRes.data);
                 setInvoices(iRes.data);
 
                 // Auto-select the most recent year if current year has no data
@@ -188,16 +185,6 @@ export default function CourseList() {
 
         fetchData();
     }, [refreshTrigger]);
-
-    // Helper to get student name by ID
-    // ID로 학생 이름을 조회하는 헬퍼 함수
-    const getStudentName = useCallback(
-        (id) => {
-            const student = students.find((s) => s.id === id);
-            return student ? student.name : "Unknown";
-        },
-        [students],
-    );
 
     // Helper to download PDF
     // PDF 다운로드/열기 헬퍼 함수
@@ -292,7 +279,7 @@ export default function CourseList() {
             (paymentFilter === "PAID" && course.is_paid) ||
             (paymentFilter === "UNPAID" && !course.is_paid);
             
-            const studentName = getStudentName(course.student).toLowerCase();
+            const studentName = (course.student_name || "").toLowerCase();
             const matchesSearch =
                 appliedSearch === "" ||
                 studentName.includes(appliedSearch.toLowerCase());
@@ -309,7 +296,6 @@ export default function CourseList() {
         paymentFilter,
         isAllUnpaidMode,
         appliedSearch,
-        getStudentName,
     ]);
 
     // Filtered Invoices (For Invoice Table)
@@ -325,7 +311,7 @@ export default function CourseList() {
             selectedMonth === 0 ||
             invoiceDate.getMonth() + 1 === parseInt(selectedMonth);
 
-            const studentName = getStudentName(invoice.student).toLowerCase();
+            const studentName = (invoice.student_name || "").toLowerCase();
             const matchesSearch =
             appliedSearch === "" ||
             studentName.includes(appliedSearch.toLowerCase());
@@ -343,7 +329,7 @@ export default function CourseList() {
             (a, b) =>
             new Date(b.date || b.created_at) - new Date(a.date || a.created_at),
         );
-    }, [invoices, selectedYear, selectedMonth, appliedSearch, getStudentName, sentFilter]);
+    }, [invoices, selectedYear, selectedMonth, appliedSearch, sentFilter]);
 
     // Scroll detection effect
     // 스크롤 감지 이펙트
@@ -1012,7 +998,7 @@ export default function CourseList() {
                                     >
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-800 dark:text-foreground truncate w-[18%] group-hover:text-primary text-xs md:text-sm">
                                             <span className="font-bold">
-                                                {getStudentName(course.student)}
+                                                {course.student_name || "Unknown"}
                                             </span>
                                         </td>
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[22%] text-xs md:text-sm">
@@ -1090,7 +1076,7 @@ export default function CourseList() {
                                         {invoice.full_invoice_code || invoice.invoice_number}
                                         </td>
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center font-bold text-slate-800 dark:text-foreground w-[15%] text-xs md:text-sm">
-                                        {getStudentName(invoice.student)}
+                                        {invoice.student_name || "Unknown"}
                                         </td>
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%] text-xs md:text-sm">
                                         {formatDate(invoice.date || invoice.created_at)}

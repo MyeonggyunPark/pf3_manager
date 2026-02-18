@@ -248,39 +248,8 @@ export default function ExamResults() {
   const tableBodyRef = useRef(null);
   const [hasScroll, setHasScroll] = useState(false);
 
-  // --- 1. Fetch Available Years ---
-  // API에서 사용 가능한 연도 목록 조회
-  useEffect(() => {
-    const fetchYears = async () => {
-      try {
-        const [officialRes, mockRes] = await Promise.all([
-          api.get("/api/official-results/"),
-          api.get("/api/exam-records/"),
-        ]);
-
-        const yearsSet = new Set();
-        yearsSet.add(currentYear);
-
-        officialRes.data.forEach((exam) => {
-          if (exam.exam_date)
-            yearsSet.add(new Date(exam.exam_date).getFullYear());
-        });
-        mockRes.data.forEach((exam) => {
-          if (exam.exam_date)
-            yearsSet.add(new Date(exam.exam_date).getFullYear());
-        });
-
-        const sorted = Array.from(yearsSet).sort((a, b) => b - a);
-        setAvailableYears(sorted);
-      } catch (e) {
-        console.error("Failed to fetch years", e);
-      }
-    };
-    fetchYears();
-  }, [refreshTrigger, currentYear]);
-
-  // --- 2. Data Fetching ---
-  // 초기 시험 데이터 조회
+  // --- 1. Data Fetching ---
+  // 초기 시험 데이터 및 연도 목록 조회
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -292,6 +261,17 @@ export default function ExamResults() {
 
         setOfficialExams(officialRes.data);
         setMockExams(mockRes.data);
+
+        const yearsSet = new Set([currentYear]);
+        officialRes.data.forEach((exam) => {
+          if (exam.exam_date)
+            yearsSet.add(new Date(exam.exam_date).getFullYear());
+        });
+        mockRes.data.forEach((exam) => {
+          if (exam.exam_date)
+            yearsSet.add(new Date(exam.exam_date).getFullYear());
+        });
+        setAvailableYears(Array.from(yearsSet).sort((a, b) => b - a));
       } catch (e) {
         console.error("Failed to load exam data", e);
       } finally {
@@ -299,9 +279,9 @@ export default function ExamResults() {
       }
     };
     fetchData();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, currentYear]);
 
-  // --- 3. Official Exam Statistics Calculation ---
+  // --- 2. Official Exam Statistics Calculation ---
   // 정규 시험 통계 계산 (KPI 및 차트용 데이터)
   const officialStats = useMemo(() => {
     let data = [...officialExams];

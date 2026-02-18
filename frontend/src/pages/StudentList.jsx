@@ -367,6 +367,11 @@ export default function StudentList() {
   const [studentExams, setStudentExams] = useState([]);
   const [studentMockExams, setStudentMockExams] = useState([]);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  const [loadedDetailTabs, setLoadedDetailTabs] = useState({
+    courses: false,
+    exams: false,
+    mockExams: false,
+  });
 
   const [activeTab, setActiveTab] = useState("courses");
 
@@ -426,52 +431,81 @@ export default function StudentList() {
     fetchStudents();
   }, [refreshTrigger, statusFilter, levelFilter]);
 
-  // Effect: Fetch detailed records (courses, exams) for the active student
-  // 활성 학생의 상세 기록(수강 이력, 시험) 조회
+  // Effect: Reset detail cache when selected student or refresh key changes
+  // 선택 학생/새로고침 키 변경 시 상세 캐시 초기화
+  useEffect(() => {
+    setStudentCourses([]);
+    setStudentExams([]);
+    setStudentMockExams([]);
+    setLoadedDetailTabs({
+      courses: false,
+      exams: false,
+      mockExams: false,
+    });
+    setIsDetailsLoading(false);
+  }, [activeStudentId, refreshTrigger]);
+
+  // Effect: Fetch active-tab details lazily for the selected student
+  // 선택 학생의 활성 탭 데이터만 지연 로딩
   useEffect(() => {
     if (!activeStudentId) return;
 
-    const fetchDetails = async () => {
+    const tabKey =
+      activeTab === "mock-exams"
+        ? "mockExams"
+        : activeTab === "exams"
+          ? "exams"
+          : "courses";
+    if (loadedDetailTabs[tabKey]) return;
+
+    let isCancelled = false;
+    const fetchDetailsByTab = async () => {
       setIsDetailsLoading(true);
       try {
-        // Execute API calls in parallel for performance
-        // 성능을 위해 API 호출을 병렬로 실행
-        const [coursesRes, examsRes, mockExamsRes] = await Promise.all([
-          api.get("/api/courses/", { params: { student: activeStudentId } }),
-          api.get("/api/official-results/", {
+        if (tabKey === "courses") {
+          const coursesRes = await api.get("/api/courses/", {
             params: { student: activeStudentId },
-          }),
-          api.get("/api/exam-records/", {
+          });
+          if (isCancelled) return;
+          setStudentCourses(
+            coursesRes.data.sort(
+              (a, b) => new Date(b.start_date) - new Date(a.start_date),
+            ),
+          );
+        } else if (tabKey === "exams") {
+          const examsRes = await api.get("/api/official-results/", {
             params: { student: activeStudentId },
-          }),
-        ]);
-
-        // Sort data by date (newest first)
-        // 날짜 기준 내림차순 정렬 (최신순)
-        setStudentCourses(
-          coursesRes.data.sort(
-            (a, b) => new Date(b.start_date) - new Date(a.start_date),
-          ),
-        );
-        setStudentExams(
-          examsRes.data.sort(
-            (a, b) => new Date(b.exam_date) - new Date(a.exam_date),
-          ),
-        );
-        setStudentMockExams(
-          mockExamsRes.data.sort(
-            (a, b) => new Date(b.exam_date) - new Date(a.exam_date),
-          ),
-        );
+          });
+          if (isCancelled) return;
+          setStudentExams(
+            examsRes.data.sort(
+              (a, b) => new Date(b.exam_date) - new Date(a.exam_date),
+            ),
+          );
+        } else {
+          const mockExamsRes = await api.get("/api/exam-records/", {
+            params: { student: activeStudentId },
+          });
+          if (isCancelled) return;
+          setStudentMockExams(
+            mockExamsRes.data.sort(
+              (a, b) => new Date(b.exam_date) - new Date(a.exam_date),
+            ),
+          );
+        }
+        setLoadedDetailTabs((prev) => ({ ...prev, [tabKey]: true }));
       } catch (err) {
         console.error("Failed to fetch student details:", err);
       } finally {
-        setIsDetailsLoading(false);
+        if (!isCancelled) setIsDetailsLoading(false);
       }
     };
 
-    fetchDetails();
-  }, [activeStudentId, refreshTrigger]);
+    fetchDetailsByTab();
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeStudentId, activeTab, loadedDetailTabs]);
 
   const openCreateModal = () => {
     setSelectedStudent(null);

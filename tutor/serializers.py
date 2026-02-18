@@ -105,6 +105,10 @@ class CourseRegistrationSerializer(serializers.ModelSerializer):
     수강 등록 이력을 위한 시리얼라이저입니다.
     """
 
+    # Read-only field for easier frontend display/filtering
+    # 프론트엔드 표시/검색을 위한 읽기 전용 학생 이름
+    student_name = serializers.CharField(source="student.name", read_only=True)
+
     class Meta:
         model = CourseRegistration
         fields = "__all__"
@@ -300,8 +304,11 @@ class ExamRecordSerializer(serializers.ModelSerializer):
             return obj.exam_standard.total_score
 
         # Partial Exam (Written/Oral Score from Module)
-        # 부분 응시인 경우: ExamStandard와 연결된 ExamModule 중 타입이 일치하는 것 검색
-        module = obj.exam_standard.modules.filter(module_type=obj.exam_mode).first()
+        # 부분 응시인 경우: prefetch된 모듈 목록에서 일치 항목 검색
+        module = next(
+            (m for m in obj.exam_standard.modules.all() if m.module_type == obj.exam_mode),
+            None,
+        )
 
         # Return module max_score if exists, else 0
         # 모듈이 존재하면 해당 모듈의 max_score 반환, 없으면 0
@@ -442,7 +449,11 @@ class OfficialExamResultSerializer(serializers.ModelSerializer):
         # 부분 응시인 경우: 표준 내에서 일치하는 모듈(ExamModule) 검색하여 점수 반환
         elif obj.exam_mode in ["WRITTEN", "ORAL"]:
             # 'modules' is the related_name from ExamModule to ExamStandard
-            module = obj.exam_standard.modules.filter(module_type=obj.exam_mode).first()
+            # Use prefetched relation cache when available to avoid per-row DB hits.
+            module = next(
+                (m for m in obj.exam_standard.modules.all() if m.module_type == obj.exam_mode),
+                None,
+            )
             if module:
                 return module.max_score
 
