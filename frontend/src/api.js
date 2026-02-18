@@ -1,4 +1,5 @@
 import axios from "axios";
+import i18n from "./i18n";
 
 // Helper to retrieve cookie by name
 // 현재 설정에서는 JS가 쿠키를 읽을 수 없어 사용되지 않으므로 함수 정의도 주석 처리함.
@@ -30,6 +31,22 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Request interceptor
+// 요청 인터셉터
+api.interceptors.request.use(
+  (config) => {
+    
+    // Set Accept-Language header based on current i18n language
+    // 현재 i18n 언어 설정에 맞춰 Accept-Language 헤더 설정
+    // This allows the backend to return translated messages (e.g., error messages)
+    // 이를 통해 백엔드가 번역된 메시지(예: 에러 메시지)를 반환할 수 있음
+    config.headers["Accept-Language"] = i18n.language;
+
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
 
 // Request interceptor
 // 요청 인터셉터

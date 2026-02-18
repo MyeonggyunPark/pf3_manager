@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import {
   X,
   Loader2,
@@ -31,6 +32,7 @@ import { TableHeader } from "@tiptap/extension-table-header";
 // Tiptap Editor Component
 // 팁탭 에디터 컴포넌트
 const TiptapEditor = ({ value, onChange }) => {
+  const { t } = useTranslation();
   const [showTableGrid, setShowTableGrid] = useState(false);
   const [hoveredCell, setHoveredCell] = useState({ row: 0, col: 0 });
   const gridContainerRef = useRef(null);
@@ -119,7 +121,7 @@ const TiptapEditor = ({ value, onChange }) => {
               ? "bg-slate-300 dark:bg-slate-600 text-slate-900"
               : "hover:bg-slate-200 dark:hover:bg-muted-foreground/20 text-slate-600 dark:text-foreground"
           }`}
-          title="Fett (Bold)"
+          title={t("invoice_editor_bold")}
         >
           <Bold className="w-4 h-4" />
         </button>
@@ -131,7 +133,7 @@ const TiptapEditor = ({ value, onChange }) => {
               ? "bg-slate-300 dark:bg-slate-600 text-slate-900"
               : "hover:bg-slate-200 dark:hover:bg-muted-foreground/20 text-slate-600 dark:text-foreground"
           }`}
-          title="Kursiv (Italic)"
+          title={t("invoice_editor_italic")}
         >
           <Italic className="w-4 h-4" />
         </button>
@@ -143,7 +145,7 @@ const TiptapEditor = ({ value, onChange }) => {
               ? "bg-slate-300 dark:bg-slate-600 text-slate-900"
               : "hover:bg-slate-200 dark:hover:bg-muted-foreground/20 text-slate-600 dark:text-foreground"
           }`}
-          title="Unterstrichen (Underline)"
+          title={t("invoice_editor_underline")}
         >
           <Underline className="w-4 h-4" />
         </button>
@@ -156,7 +158,7 @@ const TiptapEditor = ({ value, onChange }) => {
               ? "bg-slate-300 dark:bg-slate-600 text-slate-900"
               : "hover:bg-slate-200 dark:hover:bg-muted-foreground/20 text-slate-600 dark:text-foreground"
           }`}
-          title="Liste (Bullet List)"
+          title={t("invoice_editor_list")}
         >
           <List className="w-4 h-4" />
         </button>
@@ -171,7 +173,7 @@ const TiptapEditor = ({ value, onChange }) => {
                 ? "bg-slate-200 dark:bg-muted-foreground/20"
                 : "hover:bg-slate-200 dark:hover:bg-muted-foreground/20 text-slate-600 dark:text-foreground"
             }`}
-            title="Tabelle einfügen"
+            title={t("invoice_editor_insert_table")}
           >
             <TableIcon className="w-4 h-4" />
             <ChevronDown className="w-3 h-3 opacity-50" />
@@ -181,8 +183,11 @@ const TiptapEditor = ({ value, onChange }) => {
             <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-popover border border-slate-200 dark:border-border rounded-lg shadow-xl p-3 w-47.5 animate-in fade-in zoom-in-95">
               <div className="mb-2 text-xs font-semibold text-slate-600 dark:text-foreground text-center">
                 {hoveredCell.row > 0
-                  ? `${hoveredCell.row} x ${hoveredCell.col} 표 삽입`
-                  : "표 크기 선택"}
+                  ? t("invoice_editor_insert_table_size", {
+                      row: hoveredCell.row,
+                      col: hoveredCell.col,
+                    })
+                  : t("invoice_editor_select_table_size")}
               </div>
               <div
                 className="grid grid-cols-6 gap-1"
@@ -212,7 +217,7 @@ const TiptapEditor = ({ value, onChange }) => {
                 })}
               </div>
               <div className="mt-2 text-[10px] text-slate-400 text-center">
-                최대 6 x 6
+                {t("invoice_editor_max_table")}
               </div>
             </div>
           )}
@@ -224,7 +229,8 @@ const TiptapEditor = ({ value, onChange }) => {
             onClick={() => editor.chain().focus().deleteTable().run()}
             className="ml-auto p-1.5 text-destructive/70 hover:text-destructive hover:underline text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
           >
-            <Trash2 className="w-3 h-3" />표 삭제
+            <Trash2 className="w-3 h-3" />
+            {t("invoice_editor_delete_table")}
           </button>
         )}
       </div>
@@ -236,15 +242,25 @@ const TiptapEditor = ({ value, onChange }) => {
 
 // Tabs Configuration
 // 탭 설정 상수
-const TABS = [
-  { id: "general", label: "사업자 정보", icon: User },
-  { id: "tax", label: "세무 및 설정", icon: Receipt },
-  { id: "bank", label: "은행 정보", icon: Landmark },
-  { id: "logo", label: "로고", icon: ImageIcon },
-  { id: "template", label: "영수증 본문 설정", icon: FileText },
+const getTabs = (t) => [
+  { id: "general", label: t("invoice_tab_general"), icon: User },
+  { id: "tax", label: t("invoice_tab_tax"), icon: Receipt },
+  { id: "bank", label: t("invoice_tab_bank"), icon: Landmark },
+  { id: "logo", label: t("invoice_tab_logo"), icon: ImageIcon },
+  { id: "template", label: t("invoice_tab_template"), icon: FileText },
 ];
 
 export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+  const defaultCountry = isGerman ? "Deutschland" : "독일";
+
+  const TABS = getTabs(t);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
@@ -259,7 +275,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
     street: "",
     postcode: "",
     city: "",
-    country: "Deutschland",
+    country: defaultCountry,
     phone: "",
     email: "",
     website: "",
@@ -295,7 +311,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
         } catch (err) {
           if (err.response?.status !== 404) {
             console.error("Failed to load business profile", err);
-            setSubmitError("프로필 정보를 불러오는데 실패했습니다.");
+            setSubmitError(t("invoice_error_fetch_profile"));
           }
         } finally {
           setIsFetching(false);
@@ -303,7 +319,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
       };
       fetchProfile();
     }
-  }, [isOpen]);
+  }, [isOpen, t]);
 
   if (!isOpen) return null;
 
@@ -353,21 +369,21 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
 
     const newErrors = {};
     if (!formData.manager_name)
-      newErrors.manager_name = "대표자 성명을 입력해주세요.";
-    if (!formData.street) newErrors.street = "주소를 입력해주세요.";
-    if (!formData.postcode) newErrors.postcode = "우편번호를 입력해주세요.";
-    if (!formData.city) newErrors.city = "도시를 입력해주세요.";
+      newErrors.manager_name = t("invoice_error_manager_name");
+    if (!formData.street) newErrors.street = t("invoice_error_street");
+    if (!formData.postcode) newErrors.postcode = t("invoice_error_postcode");
+    if (!formData.city) newErrors.city = t("invoice_error_city");
     if (!formData.tax_number)
-      newErrors.tax_number = "세금 번호를 입력해주세요.";
-    if (!formData.bank_name) newErrors.bank_name = "은행명을 입력해주세요.";
+      newErrors.tax_number = t("invoice_error_tax_number");
+    if (!formData.bank_name) newErrors.bank_name = t("invoice_error_bank_name");
     if (!formData.account_holder)
-      newErrors.account_holder = "예금주명을 입력해주세요.";
-    if (!formData.iban) newErrors.iban = "IBAN을 입력해주세요.";
-    if (!formData.bic) newErrors.bic = "BIC/SWIFT를 입력해주세요.";
+      newErrors.account_holder = t("invoice_error_account_holder");
+    if (!formData.iban) newErrors.iban = t("invoice_error_iban");
+    if (!formData.bic) newErrors.bic = t("invoice_error_bic");
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setSubmitError("필수 입력 항목을 확인해주세요.");
+      setSubmitError(t("invoice_error_required_fields"));
       return;
     }
 
@@ -389,7 +405,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
       handleClose();
     } catch (err) {
       console.error(err);
-      setSubmitError(err.response?.data?.detail || "설정 저장에 실패했습니다.");
+      setSubmitError(err.response?.data?.detail || t("invoice_error_save"));
     } finally {
       setIsLoading(false);
     }
@@ -422,7 +438,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
 
   const InputLabel = ({ label, required, hasError, subLabel }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 block mb-1.5 ${
+      className={`text-xs font-bold tracking-wider pl-1 block mb-1.5 ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
@@ -452,10 +468,10 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border shrink-0">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
-              사업자 정보 설정
+              {t("invoice_title")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
-              영수증 발급에 필요한 필수 정보들을 입력하세요.
+              {t("invoice_desc")}
             </p>
           </div>
           <button
@@ -512,19 +528,19 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <InputLabel label="회사명" />
+                      <InputLabel label={t("invoice_field_company_name")} />
                       <input
                         name="company_name"
                         value={formData.company_name}
                         onChange={handleChange}
-                        placeholder="회사명 입력"
+                        placeholder={t("invoice_placeholder_company_name")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                         autoComplete="off"
                       />
                     </div>
                     <div>
                       <InputLabel
-                        label="대표자"
+                        label={t("invoice_field_manager_name")}
                         required
                         hasError={!!errors.manager_name}
                       />
@@ -533,7 +549,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                         name="manager_name"
                         value={formData.manager_name}
                         onChange={handleChange}
-                        placeholder="대표자 이름 입력"
+                        placeholder={t("invoice_placeholder_manager_name")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                       />
                       <ErrorMessage message={errors.manager_name} />
@@ -543,7 +559,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                   <div className="grid grid-cols-6 gap-4">
                     <div className="col-span-6">
                       <InputLabel
-                        label="주소"
+                        label={t("invoice_field_street")}
                         required
                         hasError={!!errors.street}
                       />
@@ -552,14 +568,14 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                         name="street"
                         value={formData.street}
                         onChange={handleChange}
-                        placeholder="주소 입력 / 예) Musterstraße 123"
+                        placeholder={t("invoice_placeholder_street")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                       />
                       <ErrorMessage message={errors.street} />
                     </div>
                     <div className="col-span-2">
                       <InputLabel
-                        label="우편번호"
+                        label={t("invoice_field_postcode")}
                         required
                         hasError={!!errors.postcode}
                       />
@@ -575,7 +591,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                     </div>
                     <div className="col-span-2">
                       <InputLabel
-                        label="도시"
+                        label={t("invoice_field_city")}
                         required
                         hasError={!!errors.city}
                       />
@@ -584,14 +600,14 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                         name="city"
                         value={formData.city}
                         onChange={handleChange}
-                        placeholder="도시"
+                        placeholder={t("invoice_placeholder_city")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                       />
                       <ErrorMessage message={errors.city} />
                     </div>
                     <div className="col-span-2">
                       <InputLabel
-                        label="국가"
+                        label={t("invoice_field_country")}
                         required
                         hasError={!!errors.country}
                       />
@@ -600,7 +616,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                         name="country"
                         value={formData.country}
                         onChange={handleChange}
-                        placeholder="국가"
+                        placeholder={t("invoice_placeholder_country")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                       />
                       <ErrorMessage message={errors.country} />
@@ -609,33 +625,33 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                     <div>
-                      <InputLabel label="연락처" />
+                      <InputLabel label={t("invoice_field_phone")} />
                       <input
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        placeholder="연락처"
+                        placeholder={t("invoice_placeholder_phone")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                       />
                     </div>
                     <div>
-                      <InputLabel label="이메일" />
+                      <InputLabel label={t("invoice_field_email")} />
                       <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        placeholder="이메일"
+                        placeholder={t("invoice_placeholder_email")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <InputLabel label="웹사이트" />
+                      <InputLabel label={t("invoice_field_website")} />
                       <input
                         name="website"
                         value={formData.website}
                         onChange={handleChange}
-                        placeholder="웹사이트"
+                        placeholder={t("invoice_placeholder_website")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                       />
                     </div>
@@ -648,7 +664,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <InputLabel
-                        label="세금 번호"
+                        label={t("invoice_field_tax_number")}
                         required
                         hasError={!!errors.tax_number}
                       />
@@ -657,34 +673,34 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                         name="tax_number"
                         value={formData.tax_number}
                         onChange={handleChange}
-                        placeholder="세금 번호"
+                        placeholder={t("invoice_placeholder_tax_number")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                       />
                       <ErrorMessage message={errors.tax_number} />
                     </div>
                     <div>
-                      <InputLabel label="부가세 ID" />
+                      <InputLabel label={t("invoice_field_vat_id")} />
                       <input
                         name="vat_id"
                         value={formData.vat_id}
                         onChange={handleChange}
-                        placeholder="부가세 ID"
+                        placeholder={t("invoice_placeholder_vat_id")}
                         className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                       />
                     </div>
                   </div>
-                  <InputLabel label="부가가치세" />
+                  <InputLabel label={t("invoice_field_vat")} />
                   <div className="bg-slate-50 dark:bg-muted/30 p-4 rounded-xl border border-slate-200 dark:border-border">
                     <div className="flex justify-between items-center mb-3">
                       <div>
                         <h4 className="text-sm font-bold text-slate-800 dark:text-foreground flex items-center gap-2">
-                          소규모 사업자 규정 (Kleinunternehmer)
+                          {t("invoice_small_business_title")}
                           <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
                             § 19 UStG
                           </span>
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-muted-foreground mt-1">
-                          활성화 시, 영수증에 부가세(USt)가 0%로 책정됩니다.
+                          {t("invoice_small_business_desc")}
                         </p>
                       </div>
                       <div
@@ -703,10 +719,13 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                     </div>
                   </div>
                   <div>
-                    <InputLabel label="가격 입력 방식 설정" required />
+                    <InputLabel
+                      label={t("invoice_price_input_type_label")}
+                      required
+                    />
                     <div className="grid grid-cols-2 gap-3">
                       <SelectionChip
-                        label="Brutto (부가세 포함)"
+                        label={t("invoice_price_type_brutto")}
                         value="BRUTTO"
                         selectedValue={formData.price_input_type}
                         onClick={(val) =>
@@ -715,7 +734,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                         className="cursor-pointer"
                       />
                       <SelectionChip
-                        label="Netto (부가세 별도)"
+                        label={t("invoice_price_type_netto")}
                         value="NETTO"
                         selectedValue={formData.price_input_type}
                         onClick={(val) =>
@@ -732,7 +751,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div>
                     <InputLabel
-                      label="은행명"
+                      label={t("invoice_field_bank_name")}
                       hasError={!!errors.bank_name}
                       required
                     />
@@ -741,14 +760,14 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                       name="bank_name"
                       value={formData.bank_name}
                       onChange={handleChange}
-                      placeholder="은행명"
+                      placeholder={t("invoice_placeholder_bank_name")}
                       className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                     />
                     <ErrorMessage message={errors.bank_name} />
                   </div>
                   <div>
                     <InputLabel
-                      label="예금주"
+                      label={t("invoice_field_account_holder")}
                       hasError={!!errors.account_holder}
                       required
                     />
@@ -756,7 +775,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                       name="account_holder"
                       value={formData.account_holder}
                       onChange={handleChange}
-                      placeholder="예금주"
+                      placeholder={t("invoice_placeholder_account_holder")}
                       className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
                     />
                     <ErrorMessage message={errors.account_holder} />
@@ -798,8 +817,8 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
               {activeTab === "logo" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <InputLabel
-                    label="회사 로고"
-                    subLabel="영수증 상단에 표시됩니다"
+                    label={t("invoice_field_company_logo")}
+                    subLabel={t("invoice_field_company_logo_sublabel")}
                   />
                   <div className="flex flex-col items-center justify-center">
                     {logoPreview ? (
@@ -838,14 +857,14 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
                             <>
                               <ImageIcon className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
                               <span className="text-sm font-medium text-slate-400 dark:text-muted-foreground group-hover:text-primary transition-colors">
-                                로고 변경
+                                {t("invoice_logo_change")}
                               </span>
                             </>
                           ) : (
                             <>
                               <UploadCloud className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
                               <span className="text-sm font-medium text-slate-400 dark:text-muted-foreground group-hover:text-primary transition-colors">
-                                로고 업로드 (PNG, JPG)
+                                {t("invoice_logo_upload")}
                               </span>
                             </>
                           )}
@@ -859,26 +878,25 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
               {activeTab === "template" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <InputLabel
-                    label="영수증 기본 문구"
-                    subLabel="영수증 작성 시 Kopftext 필드에 자동으로 입력되는 문구입니다."
+                    label={t("invoice_field_default_intro_text")}
+                    subLabel={t("invoice_field_default_intro_text_sublabel")}
                   />
                   <div className="rounded-xl border border-border bg-secondary/30 dark:bg-secondary/10 p-4 mb-4">
                     <h4 className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                      작성 가이드
+                      {t("invoice_template_guide_title")}
                     </h4>
                     <ul className="text-xs text-muted-foreground space-y-1 ml-2 list-disc list-inside">
                       <li>
                         <strong className="text-foreground">Frau/Herr</strong>{" "}
-                        뒤에는 청구인 이름이 자동으로 입력되어집니다.
+                        {t("invoice_template_guide_line1")}
                       </li>
                       <li>
                         <strong className="text-foreground">Name:</strong>{" "}
-                        뒤에는 학생 이름이 자동으로 입력되어집니다.
+                        {t("invoice_template_guide_line2")}
                       </li>
                       <li>
-                        표나 리스트를 활용하여 기본 문구를 추가로 수정할 수
-                        있습니다.
+                        {t("invoice_template_guide_line3")}
                       </li>
                     </ul>
                   </div>
@@ -902,7 +920,7 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
             className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 h-11 text-sm font-semibold cursor-pointer transition-all"
             disabled={isLoading}
           >
-            취소
+            {t("invoice_cancel")}
           </Button>
           <Button
             type="submit"
@@ -912,10 +930,11 @@ export default function InvoiceSettingsModal({ isOpen, onClose, onSuccess }) {
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 저장 중...
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                {t("invoice_saving")}
               </>
             ) : (
-              "저장"
+              t("invoice_save")
             )}
           </Button>
         </div>

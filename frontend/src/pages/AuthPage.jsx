@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../api";
+import { cn } from "../lib/utils";
 import Button from "../components/ui/Button";
-
+  
 // Reusable Floating Input Component
 // 재사용 가능한 플로팅 입력 컴포넌트
 const FloatingInput = ({
@@ -77,6 +79,8 @@ const FloatingInput = ({
 // Forgot Password Modal using Portal
 // Portal을 사용한 비밀번호 찾기 모달
 const ForgotPasswordModal = ({ isOpen, onClose }) => {
+
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
@@ -105,7 +109,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
     setError("");
 
     if (!email.trim()) {
-      setError("이메일을 입력해주세요.");
+      setError(t("auth_error_email_required"));
       return;
     }
 
@@ -118,7 +122,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
       setIsSent(true);
     } catch (err) {
       console.error(err);
-      setError("해당 이메일로 가입된 계정을 찾을 수 없습니다.");
+      setError(t("auth_error_account_not_found"));
     } finally {
       setIsLoading(false);
     }
@@ -139,18 +143,18 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
         {!isSent ? (
           <>
             <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
-              비밀번호 찾기
+              {t("auth_forgot_title")}
             </h3>
             <p className="text-slate-400 dark:text-muted-foreground text-sm mb-6">
-              가입하신 이메일 주소를 입력하시면
+              {t("auth_forgot_desc_line1")}
               <br />
-              비밀번호 재설정 링크를 보내드립니다.
+              {t("auth_forgot_desc_line2")}
             </p>
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <FloatingInput
                 id="reset-email"
                 type="email"
-                label="이메일"
+                label={t("auth_input_email")}
                 value={email}
                 onChange={handleInputChange}
                 error={error}
@@ -162,7 +166,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
                 className="w-full h-11 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
                 isLoading={isLoading}
               >
-                인증 메일 전송
+                {t("auth_forgot_send_mail")}
               </Button>
             </form>
           </>
@@ -172,20 +176,21 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
               <LucideIcons.MailCheck className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent-foreground mb-2">
-              메일 전송 완료
+              {t("auth_forgot_sent_title")}
             </h3>
             <p className="text-slate-400 dark:text-muted-foreground text-sm mb-6">
-              <strong>{email}</strong>으로
+              <strong>{email}</strong>
+              {t("auth_forgot_sent_to")}
               <br />
-              비밀번호 재설정 메일을 보냈습니다.
+              {t("auth_forgot_sent_desc_line1")}
               <br />
-              메일함을 확인해주세요.
+              {t("auth_forgot_sent_desc_line2")}
             </p>
             <Button
               onClick={onClose}
               className="w-full h-11 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
             >
-              로그인 화면으로
+              {t("auth_back_to_login")}
             </Button>
           </div>
         )}
@@ -193,7 +198,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
     </div>,
     document.body,
   );
-};
+};;
 
 // Social Login Button Group
 // 소셜 로그인 버튼 그룹
@@ -274,6 +279,23 @@ const useMediaQuery = (query) => {
 // Main Auth Page Component (Login + Signup)
 // 메인 인증 페이지 컴포넌트 (로그인 + 회원가입)
 const AuthPage = ({ onLogin }) => {
+
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+
+  const textLogIn = t("auth_login_title");
+  const textSignUp = t("auth_signup_title");
+  const textOrContinueWith = t("auth_or_continue_with");
+  const textOrJoinWith = t("auth_or_join_with");
+  const textNewHere = t("auth_new_here");
+  const textWelcome = t("auth_welcome_back_line1");
+  const textBack = t("auth_welcome_back_line2");
+
   // Check if device is desktop (min-width: 768px)
   // 데스크탑 장치 확인 (최소 너비: 768px)
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -391,7 +413,7 @@ const AuthPage = ({ onLogin }) => {
       console.error(err);
       setLoginErrors({
         email: " ",
-        password: "이메일 또는 비밀번호를 확인해주세요.",
+        password: t("auth_error_login_invalid"),
       });
     } finally {
       setLoginLoading(false);
@@ -417,10 +439,13 @@ const AuthPage = ({ onLogin }) => {
 
     // Frontend Validation
     // 프론트엔드 유효성 검사
-    if (!email.trim()) newErrors.email = "이메일을 입력해주세요.";
-    if (!password) newErrors.password = "비밀번호를 입력해주세요.";
+    if (!email.trim()) newErrors.email = t("auth_error_email_required");
+    if (!password)
+      newErrors.password = t("auth_error_signup_password_required");
     if (!passwordConfirm)
-      newErrors.passwordConfirm = "비밀번호 확인을 입력해주세요.";
+      newErrors.passwordConfirm = t(
+        "auth_error_signup_password_confirm_required",
+      );
 
     // Password Complexity Check (Upper + Special + 8 chars)
     // 비밀번호 복잡성 검사 (대문자 + 특수문자 + 8자)
@@ -429,7 +454,7 @@ const AuthPage = ({ onLogin }) => {
       const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
       const isValidLength = password.length >= 8;
       if (!isValidLength || !hasUpperCase || !hasSpecialChar) {
-        const msg = "영문 대문자, 특수문자 포함 8자 이상이어야 합니다.";
+        const msg = t("auth_error_password_rule");
         newErrors.password = msg;
         if (passwordConfirm) newErrors.passwordConfirm = msg;
       }
@@ -441,7 +466,7 @@ const AuthPage = ({ onLogin }) => {
       passwordConfirm &&
       password !== passwordConfirm
     ) {
-      newErrors.passwordConfirm = "비밀번호가 일치하지 않습니다.";
+      newErrors.passwordConfirm = t("auth_error_password_mismatch");
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -480,7 +505,7 @@ const AuthPage = ({ onLogin }) => {
         });
         setSignupErrors(fieldErrors);
       } else {
-        setSignupGlobalError("회원가입 중 오류가 발생했습니다.");
+        setSignupGlobalError(t("auth_error_signup_failed"));
       }
     } finally {
       setSignupLoading(false);
@@ -523,18 +548,18 @@ const AuthPage = ({ onLogin }) => {
               <LucideIcons.MailCheck className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent-foreground mb-2">
-              인증 메일 발송
+              {t("auth_signup_success_title")}
             </h3>
             <p className="text-slate-400 dark:text-muted-foreground text-center mb-6 text-sm font-medium">
-              가입하신 이메일로 인증 메일이 전송되었습니다.
+              {t("auth_signup_success_desc_line1")}
               <br />
-              링크를 클릭하여 계정을 활성화해주세요.
+              {t("auth_signup_success_desc_line2")}
             </p>
             <Button
               onClick={handleConfirmSuccess}
               className="w-full h-11 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
             >
-              로그인 화면으로
+              {t("auth_back_to_login")}
             </Button>
           </div>
         </div>
@@ -565,7 +590,7 @@ const AuthPage = ({ onLogin }) => {
           <div className="w-full max-w-sm mt-4 md:mt-8 scale-90 md:scale-100 origin-top">
             <div className="mb-4 md:mb-8 text-center">
               <h2 className="text-3xl text-end sm:text-center md:text-4xl font-black text-primary tracking-tight uppercase">
-                log in
+                {textLogIn}
               </h2>
             </div>
 
@@ -575,7 +600,7 @@ const AuthPage = ({ onLogin }) => {
                   id="login-email"
                   type="email"
                   name="email"
-                  label="이메일"
+                  label={t("auth_input_email")}
                   value={loginData.email}
                   onChange={handleLoginChange}
                   error={loginErrors.email}
@@ -586,7 +611,7 @@ const AuthPage = ({ onLogin }) => {
                   id="login-password"
                   type="password"
                   name="password"
-                  label="비밀번호"
+                  label={t("auth_input_password")}
                   value={loginData.password}
                   onChange={handleLoginChange}
                   error={loginErrors.password}
@@ -618,7 +643,7 @@ const AuthPage = ({ onLogin }) => {
                     </svg>
                   </div>
                   <span className="text-xs text-muted-foreground group-hover:text-primary group-hover:font-semibold select-none">
-                    아이디 기억하기
+                    {t("auth_remember_email")}
                   </span>
                 </label>
 
@@ -627,7 +652,7 @@ const AuthPage = ({ onLogin }) => {
                   onClick={() => setShowForgotModal(true)}
                   className="text-xs text-muted-foreground hover:text-primary hover:font-semibold transition-colors cursor-pointer"
                 >
-                  비밀번호 찾기
+                  {t("auth_forgot_password")}
                 </button>
               </div>
 
@@ -637,7 +662,7 @@ const AuthPage = ({ onLogin }) => {
                 variant="primary"
                 isLoading={loginLoading}
               >
-                로그인
+                {t("auth_login_button")}
               </Button>
             </form>
 
@@ -647,7 +672,7 @@ const AuthPage = ({ onLogin }) => {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-white dark:bg-card px-2 text-muted-foreground">
-                  Or continue with
+                  {textOrContinueWith}
                 </span>
               </div>
             </div>
@@ -679,7 +704,7 @@ const AuthPage = ({ onLogin }) => {
           <div className="w-full max-w-sm mt-4 md:mt-8 scale-90 md:scale-100 origin-top">
             <div className="mb-4 md:mb-8 text-center">
               <h2 className="text-3xl text-start sm:text-center md:text-4xl font-black text-accent tracking-tight uppercase">
-                sign up
+                {textSignUp}
               </h2>
             </div>
 
@@ -694,7 +719,7 @@ const AuthPage = ({ onLogin }) => {
                 id="signup-email"
                 type="email"
                 name="email"
-                label="이메일"
+                label={t("auth_input_email")}
                 value={signupData.email}
                 onChange={handleSignupChange}
                 error={signupErrors.email}
@@ -706,7 +731,7 @@ const AuthPage = ({ onLogin }) => {
                 id="signup-password"
                 type="password"
                 name="password"
-                label="비밀번호"
+                label={t("auth_input_password")}
                 value={signupData.password}
                 onChange={handleSignupChange}
                 error={signupErrors.password}
@@ -717,7 +742,7 @@ const AuthPage = ({ onLogin }) => {
                 id="signup-confirm"
                 type="password"
                 name="passwordConfirm"
-                label="비밀번호 확인"
+                label={t("auth_input_password_confirm")}
                 value={signupData.passwordConfirm}
                 onChange={handleSignupChange}
                 error={signupErrors.passwordConfirm}
@@ -731,7 +756,7 @@ const AuthPage = ({ onLogin }) => {
                 className="w-full h-11 md:h-12 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
                 isLoading={signupLoading}
               >
-                회원가입
+                {t("auth_signup_button")}
               </Button>
             </form>
 
@@ -741,7 +766,7 @@ const AuthPage = ({ onLogin }) => {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-[#f9fafb] dark:bg-[#1a202c] px-2 text-muted-foreground">
-                  Or join with
+                  {textOrJoinWith}
                 </span>
               </div>
             </div>
@@ -767,18 +792,18 @@ const AuthPage = ({ onLogin }) => {
           >
             <LucideIcons.UserPlus className="w-12 h-12 md:w-20 md:h-20 mb-4 md:mb-6 opacity-80 dark:text-accent" />
             <h2 className="text-2xl md:text-4xl font-black mb-2 md:mb-4 tracking-tighter uppercase">
-              new here?
+              {textNewHere}
             </h2>
             <p className="text-center mb-6 md:mb-12 opacity-90 leading-relaxed font-medium text-sm md:text-base">
-              아직 계정이 없으신가요?
+              {t("auth_overlay_signup_desc_line1")}
               <br className="hidden md:block" />
-              지금 가입하고 체계적인 학생 관리를 시작하세요.
+              {t("auth_overlay_signup_desc_line2")}
             </p>
             <Button
               onClick={handleSwitchToSignup}
               className="bg-card dark:bg-card text-accent border-3 hover:text-card hover:scale-105 w-36 h-11 md:w-48 md:h-14 text-sm md:text-lg rounded-full shadow-2xl uppercase cursor-pointer"
             >
-              sign up
+              {textSignUp}
             </Button>
           </div>
 
@@ -792,19 +817,35 @@ const AuthPage = ({ onLogin }) => {
             }}
           >
             <LucideIcons.LogIn className="w-12 h-12 md:w-20 md:h-20 mb-4 md:mb-6 opacity-80 dark:text-primary" />
-            <h2 className="text-2xl md:text-4xl font-black mb-2 md:mb-4 tracking-tighter uppercase">
-              welcome back!
+            <h2
+              className={cn(
+                "text-2xl md:text-4xl font-black mb-2 md:mb-4 tracking-tighter uppercase",
+                isGerman ? "hidden" : "block",
+              )}
+            >
+              {textWelcome} {textBack}
             </h2>
+
+            <h2
+              className={cn(
+                "text-2xl text-center md:text-4xl font-black mb-2 md:mb-4 tracking-tighter uppercase",
+                isGerman ? "block" : "hidden",
+              )}
+            >
+              <p>{textWelcome}</p>
+              <p>{textBack}</p>
+            </h2>
+
             <p className="text-center mb-6 md:mb-12 opacity-90 leading-relaxed font-medium text-sm md:text-base">
-              이미 회원이신가요?
+              {t("auth_overlay_login_desc_line1")}
               <br className="hidden md:block" />
-              계정에 접속하여 학생 관리를 이어나가세요.
+              {t("auth_overlay_login_desc_line2")}
             </p>
             <Button
               onClick={handleSwitchToLogin}
               className="bg-card dark:bg-card text-primary border-3 hover:bg-primary hover:text-card hover:scale-105 w-36 h-11 md:w-48 md:h-14 font-bold text-sm md:text-lg rounded-full shadow-2xl transition-all uppercase cursor-pointer"
             >
-              log in
+              {textLogIn}
             </Button>
           </div>
         </div>
@@ -812,6 +853,6 @@ const AuthPage = ({ onLogin }) => {
       </div>
     </div>
   );
-};
+};;
 
 export default AuthPage;

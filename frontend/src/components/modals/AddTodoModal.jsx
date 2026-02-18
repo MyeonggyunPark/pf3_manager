@@ -1,23 +1,9 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../../api";
 import Button from "../ui/Button";
-
-// Define priority levels and todo categories for UI mapping
-// UI 매핑을 위한 우선순위 레벨 및 할 일 카테고리 정의
-const PRIORITIES = [
-  { value: 1, label: "중요" },
-  { value: 2, label: "보통" },
-  { value: 3, label: "낮음" },
-];
-
-const CATEGORIES = [
-  { value: "PREP", label: "수업 준비" },
-  { value: "ADMIN", label: "행정/회계" },
-  { value: "STUDENT", label: "학생 관리" },
-  { value: "PERSONAL", label: "개인 업무" },
-];
 
 export default function AddTodoModal({
   isOpen,
@@ -25,6 +11,29 @@ export default function AddTodoModal({
   onSuccess,
   todoData = null,
 }) {
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+
+  // Define priority levels and todo categories for UI mapping
+  // UI 매핑을 위한 우선순위 레벨 및 할 일 카테고리 정의
+  const PRIORITIES = [
+    { value: 1, label: t("schedule_priority_high") },
+    { value: 2, label: t("schedule_priority_medium") },
+    { value: 3, label: t("schedule_priority_low") },
+  ];
+
+  const CATEGORIES = [
+    { value: "PREP", label: t("schedule_category_prep") },
+    { value: "ADMIN", label: t("schedule_category_admin") },
+    { value: "STUDENT", label: t("schedule_category_student") },
+    { value: "PERSONAL", label: t("schedule_category_personal") },
+  ];
+
   // Manage loading states for async operations (Submit/Delete)
   // 비동기 작업(제출/삭제)에 대한 로딩 상태 관리
   const [isLoading, setIsLoading] = useState(false);
@@ -99,7 +108,7 @@ export default function AddTodoModal({
       handleClose();
     } catch (err) {
       console.error("Delete Failed:", err);
-      setSubmitError("삭제 중 오류가 발생했습니다.");
+      setSubmitError(t("todo_modal_error_delete"));
       setShowDeleteConfirm(false);
     } finally {
       setIsDeleting(false);
@@ -112,9 +121,9 @@ export default function AddTodoModal({
     // Perform frontend validation
     // 프론트엔드 유효성 검사 수행
     const newErrors = {};
-    if (!content.trim()) newErrors.content = "업무 내용을 입력해주세요.";
-    if (!priority) newErrors.priority = "우선순위를 선택해주세요.";
-    if (!category) newErrors.category = "카테고리를 선택해주세요.";
+    if (!content.trim()) newErrors.content = t("todo_modal_error_content");
+    if (!priority) newErrors.priority = t("todo_modal_error_priority");
+    if (!category) newErrors.category = t("todo_modal_error_category");
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -161,12 +170,16 @@ export default function AddTodoModal({
         setErrors(fieldErrors);
 
         // 필드 에러가 있어도 상단에 공통 에러 메시지 표시
-        setSubmitError("입력 값을 확인해주세요.");
+        setSubmitError(t("todo_modal_error_check_input"));
       } else {
         // 일반 에러
         setSubmitError(
           responseData?.detail ||
-            `업무 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
+            t("todo_modal_error_save", {
+              action: isEditMode
+                ? t("todo_modal_action_update_noun")
+                : t("todo_modal_action_create_noun"),
+            }),
         );
       }
     } finally {
@@ -214,7 +227,7 @@ export default function AddTodoModal({
   // 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
   const InputLabel = ({ label, required, hasError }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 transition-colors ${
+      className={`text-xs font-bold tracking-wider pl-1 flex items-center gap-1 transition-colors ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
@@ -237,13 +250,13 @@ export default function AddTodoModal({
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
-              삭제 확인
+              {t("delete_modal_title")}
             </h3>
             <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
-              정말로 삭제하시겠습니까?
+              {t("delete_modal_question")}
               <br />
               <span className="text-destructive mt-1 block font-medium">
-                이 작업은 되돌릴 수 없습니다.
+                {t("delete_modal_desc_highlight_irreversible")}
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
@@ -253,7 +266,7 @@ export default function AddTodoModal({
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
-                취소
+                {t("delete_modal_cancel")}
               </Button>
               <Button
                 className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold shadow-md cursor-pointer transition-all"
@@ -263,7 +276,7 @@ export default function AddTodoModal({
                 {isDeleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "삭제"
+                  t("delete_modal_delete")
                 )}
               </Button>
             </div>
@@ -274,12 +287,14 @@ export default function AddTodoModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
-              {isEditMode ? "업무 수정" : "업무 추가"}
+              {isEditMode
+                ? t("todo_modal_title_edit")
+                : t("todo_modal_title_add")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
-                ? "수정이 필요한 업무의 내용을 변경해주세요."
-                : "추가할 새로운 업무의 내용을 입력하세요."}
+                ? t("todo_modal_desc_edit")
+                : t("todo_modal_desc_add")}
             </p>
           </div>
           <button
@@ -300,7 +315,11 @@ export default function AddTodoModal({
           )}
 
           <div className="space-y-1.5">
-            <InputLabel label="내용" hasError={!!errors.content} required />
+            <InputLabel
+              label={t("todo_modal_field_content")}
+              hasError={!!errors.content}
+              required
+            />
             <input
               required
               type="text"
@@ -309,7 +328,7 @@ export default function AddTodoModal({
                 setContent(e.target.value);
                 clearError("content");
               }}
-              placeholder="업무 내용 입력"
+              placeholder={t("todo_modal_placeholder_content")}
               className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
               autoFocus={!isEditMode}
               autoComplete="off"
@@ -320,7 +339,7 @@ export default function AddTodoModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <InputLabel
-                label="우선순위"
+                label={t("todo_modal_field_priority")}
                 hasError={!!errors.priority}
                 required
               />
@@ -335,7 +354,7 @@ export default function AddTodoModal({
                       setPriority(val);
                       clearError("priority");
                     }}
-                    className="flex-1 cursor-pointer"
+                    className={`flex-1 cursor-pointer ${isGerman ? "text-xs" : ""}`}
                   />
                 ))}
               </div>
@@ -343,7 +362,7 @@ export default function AddTodoModal({
             </div>
 
             <div className="space-y-1.5">
-              <InputLabel label="마감 기한" hasError={false} />
+              <InputLabel label={t("todo_modal_field_due_date")} hasError={false} />
               <div className="relative">
                 <input
                   type="date"
@@ -366,7 +385,7 @@ export default function AddTodoModal({
 
           <div className="space-y-1.5">
             <InputLabel
-              label="카테고리"
+              label={t("todo_modal_field_category")}
               hasError={!!errors.category}
               required
             />
@@ -381,7 +400,7 @@ export default function AddTodoModal({
                     setCategory(val);
                     clearError("category");
                   }}
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
                 />
               ))}
             </div>
@@ -412,7 +431,7 @@ export default function AddTodoModal({
               onClick={handleClose}
               disabled={isLoading || isDeleting}
             >
-              취소
+              {t("todo_modal_cancel")}
             </Button>
             <Button
               type="submit"
@@ -422,12 +441,14 @@ export default function AddTodoModal({
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {isEditMode ? "수정 중..." : "저장 중..."}
+                  {isEditMode
+                    ? t("todo_modal_saving_edit")
+                    : t("todo_modal_saving_add")}
                 </>
               ) : isEditMode ? (
-                "수정"
+                t("todo_modal_action_edit")
               ) : (
-                "추가"
+                t("todo_modal_action_add")
               )}
             </Button>
           </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2, Trash2, AlertTriangle, Clock, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -10,6 +11,14 @@ export default function AddLessonModal({
   onSuccess,
   lessonData = null,
 }) {
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [students, setStudents] = useState([]);
@@ -43,15 +52,18 @@ export default function AddLessonModal({
 
   // Define initial form state with default values, setting date to today
   // 기본값으로 초기 폼 상태를 정의하며, 날짜는 오늘로 설정
-  const initialFormState = {
-    student: "",
-    date: new Date().toISOString().split("T")[0],
-    start_time: "",
-    end_time: "",
-    topic: "",
-    status: "",
-    memo: "",
-  };
+  const initialFormState = useMemo(
+    () => ({
+      student: "",
+      date: new Date().toISOString().split("T")[0],
+      start_time: "",
+      end_time: "",
+      topic: "",
+      status: "",
+      memo: "",
+    }),
+    [],
+  );
 
   const [formData, setFormData] = useState(initialFormState);
 
@@ -76,7 +88,7 @@ export default function AddLessonModal({
     } else if (isOpen && !lessonData) {
       setFormData(initialFormState);
     }
-  }, [isOpen, lessonData]);
+  }, [isOpen, lessonData, initialFormState]);
 
   // Fetch student list when modal opens and filter only 'ACTIVE' students for valid scheduling
   // 모달이 열릴 때 학생 목록을 조회하고, 유효한 수업 예약을 위해 'ACTIVE' 상태인 학생만 필터링
@@ -91,12 +103,12 @@ export default function AddLessonModal({
           setStudents(activeStudents);
         } catch (err) {
           console.error("Failed to load students:", err);
-          setSubmitError("학생 목록을 불러오는데 실패했습니다.");
+          setSubmitError(t("lesson_modal_error_students_load"));
         }
       };
       fetchStudents();
     }
-  }, [isOpen]);
+  }, [isOpen, t]);
 
   if (!isOpen) return null;
 
@@ -143,7 +155,7 @@ export default function AddLessonModal({
       handleClose();
     } catch (err) {
       console.error("Delete Failed:", err);
-      setSubmitError("삭제 중 오류가 발생했습니다.");
+      setSubmitError(t("lesson_modal_error_delete"));
       // Close overlay on error (에러 발생 시 오버레이 닫기)
       setShowDeleteConfirm(false);
     } finally {
@@ -160,15 +172,15 @@ export default function AddLessonModal({
     // 종료 시간이 시작 시간보다 늦는지 확인하는 로직을 포함한 프론트엔드 유효성 검사 수행
     const newErrors = {};
 
-    if (!formData.student) newErrors.student = "학생을 선택해주세요.";
-    if (!formData.date) newErrors.date = "날짜를 선택해주세요.";
+    if (!formData.student) newErrors.student = t("lesson_modal_error_student");
+    if (!formData.date) newErrors.date = t("lesson_modal_error_date");
     if (!formData.start_time)
-      newErrors.start_time = "시작 시간을 선택해주세요.";
-    if (!formData.end_time) newErrors.end_time = "종료 시간을 선택해주세요.";
-    if (!formData.status) newErrors.status = "수업 상태를 선택해주세요.";
+      newErrors.start_time = t("lesson_modal_error_start_time");
+    if (!formData.end_time) newErrors.end_time = t("lesson_modal_error_end_time");
+    if (!formData.status) newErrors.status = t("lesson_modal_error_status");
     if (formData.start_time && formData.end_time) {
       if (formData.end_time <= formData.start_time) {
-        newErrors.end_time = "종료 시간은 시작 시간보다 늦어야 합니다.";
+        newErrors.end_time = t("lesson_modal_error_time_order");
       }
     }
 
@@ -221,13 +233,17 @@ export default function AddLessonModal({
 
         // Show generic error message at top
         // 상단에 공통 에러 메시지 표시
-        setSubmitError("입력 값을 확인해주세요.");
+        setSubmitError(t("lesson_modal_error_check_input"));
       } else {
         // Handle General Errors (Server Error, Permission, etc.)
         // 일반 에러 처리 (서버 오류, 권한 등)
         setSubmitError(
           responseData?.detail ||
-            `수업 ${isEditMode ? "변경" : "등록"}에 실패했습니다.`,
+            t("lesson_modal_error_save", {
+              action: isEditMode
+                ? t("lesson_modal_action_update_noun")
+                : t("lesson_modal_action_create_noun"),
+            }),
         );
       }
     } finally {
@@ -275,7 +291,7 @@ export default function AddLessonModal({
   // 조건부 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
   const InputLabel = ({ label, required, hasError }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 ${
+      className={`text-xs font-bold tracking-wider pl-1 flex items-center gap-1 ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
@@ -298,13 +314,13 @@ export default function AddLessonModal({
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
-              삭제 확인
+              {t("delete_modal_title")}
             </h3>
             <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs">
-              정말로 삭제하시겠습니까?
+              {t("delete_modal_question")}
               <br />
               <span className="text-sm text-destructive mt-1 block font-medium">
-                이 작업은 되돌릴 수 없습니다.
+                {t("delete_modal_desc_highlight_irreversible")}
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
@@ -314,7 +330,7 @@ export default function AddLessonModal({
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
-                취소
+                {t("delete_modal_cancel")}
               </Button>
               <Button
                 className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 shadow-md shadow-destructive/20 text-sm font-semibold cursor-pointer transition-all"
@@ -324,7 +340,7 @@ export default function AddLessonModal({
                 {isDeleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "삭제"
+                  t("delete_modal_delete")
                 )}
               </Button>
             </div>
@@ -337,12 +353,14 @@ export default function AddLessonModal({
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
               {/* Dynamic title based on mode */}
               {/* 모드에 따른 동적 타이틀 */}
-              {isEditMode ? "수업 변경" : "수업 추가"}
+              {isEditMode
+                ? t("lesson_modal_title_edit")
+                : t("lesson_modal_title_add")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
-                ? "수정이 필요한 수업 정보를 변경해주세요."
-                : "추가할 새로운 수업의 정보를 입력하세요."}
+                ? t("lesson_modal_desc_edit")
+                : t("lesson_modal_desc_add")}
             </p>
           </div>
           <button
@@ -364,7 +382,11 @@ export default function AddLessonModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
-              <InputLabel label="학생" hasError={!!errors.student} required />
+              <InputLabel
+                label={t("lesson_modal_field_student")}
+                hasError={!!errors.student}
+                required
+              />
               <div className="relative">
                 <select
                   required
@@ -378,7 +400,7 @@ export default function AddLessonModal({
                   }`}
                 >
                   <option value="" disabled hidden>
-                    학생을 선택하세요.
+                    {t("lesson_modal_placeholder_student")}
                   </option>
                   {students.map((student) => (
                     <option
@@ -396,14 +418,18 @@ export default function AddLessonModal({
               </div>
               {students.length === 0 && (
                 <p className="text-xs text-destructive mt-1 ml-1 font-medium">
-                  * 등록된 수강중인 학생이 없습니다.
+                  * {t("lesson_modal_students_empty")}
                 </p>
               )}
               <ErrorMessage message={errors.student} />
             </div>
 
             <div className="space-y-1.5">
-              <InputLabel label="수업일" hasError={!!errors.date} required />
+              <InputLabel
+                label={t("lesson_modal_field_date")}
+                hasError={!!errors.date}
+                required
+              />
               <input
                 required
                 type="date"
@@ -420,7 +446,7 @@ export default function AddLessonModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             <div className="space-y-1.5">
               <InputLabel
-                label="수업 시간"
+                label={t("lesson_modal_field_time")}
                 hasError={!!errors.start_time || !!errors.end_time}
                 required
               />
@@ -437,7 +463,7 @@ export default function AddLessonModal({
                     }`}
                   >
                     <option value="" disabled hidden>
-                      시작
+                      {t("lesson_modal_time_start")}
                     </option>
                     {formData.start_time &&
                       !timeOptions.includes(formData.start_time) && (
@@ -478,7 +504,7 @@ export default function AddLessonModal({
                     }`}
                   >
                     <option value="" disabled hidden>
-                      종료
+                      {t("lesson_modal_time_end")}
                     </option>
                     {formData.end_time &&
                       !timeOptions.includes(formData.end_time) && (
@@ -507,62 +533,66 @@ export default function AddLessonModal({
             </div>
 
             <div className="space-y-1.5">
-              <InputLabel label="수업 주제" hasError={false} />
+              <InputLabel label={t("lesson_modal_field_topic")} hasError={false} />
               <input
                 name="topic"
                 value={formData.topic}
                 onChange={handleChange}
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
-                placeholder="예: Chapter 5 문법"
+                placeholder={t("lesson_modal_placeholder_topic")}
                 autoComplete="off"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <InputLabel label="수업 상태" hasError={!!errors.status} required />
+            <InputLabel
+              label={t("lesson_modal_field_status")}
+              hasError={!!errors.status}
+              required
+            />
             <div className="grid grid-cols-4 gap-2">
               <SelectionChip
-                label="예정"
+                label={t("lesson_status_scheduled")}
                 value="SCHEDULED"
                 selectedValue={formData.status}
                 onClick={(val) => handleValueChange("status", val)}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
               <SelectionChip
-                label="완료"
+                label={t("lesson_status_completed")}
                 value="COMPLETED"
                 selectedValue={formData.status}
                 onClick={(val) => handleValueChange("status", val)}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
               <SelectionChip
-                label="취소"
+                label={t("lesson_status_cancelled")}
                 value="CANCELLED"
                 selectedValue={formData.status}
                 onClick={(val) => handleValueChange("status", val)}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
               <SelectionChip
-                label="결석"
+                label={t("lesson_status_noshow")}
                 value="NOSHOW"
                 selectedValue={formData.status}
                 onClick={(val) => handleValueChange("status", val)}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
             </div>
             <ErrorMessage message={errors.status} />
           </div>
 
           <div className="space-y-1.5">
-            <InputLabel label="메모" hasError={false} />
+            <InputLabel label={t("lesson_modal_field_memo")} hasError={false} />
             <textarea
               name="memo"
               value={formData.memo}
               onChange={handleChange}
               rows={3}
               className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
-              placeholder="추가사항 / 특이사항"
+              placeholder={t("lesson_modal_placeholder_memo")}
               autoComplete="off"
             />
           </div>
@@ -595,7 +625,7 @@ export default function AddLessonModal({
               onClick={handleClose}
               disabled={isLoading || isDeleting}
             >
-              취소
+              {t("lesson_modal_cancel")}
             </Button>
             <Button
               type="submit"
@@ -605,12 +635,14 @@ export default function AddLessonModal({
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {isEditMode ? "변경 중..." : "저장 중..."}
+                  {isEditMode
+                    ? t("lesson_modal_saving_edit")
+                    : t("lesson_modal_saving_add")}
                 </>
               ) : isEditMode ? (
-                "변경"
+                t("lesson_modal_action_edit")
               ) : (
-                "저장"
+                t("lesson_modal_action_add")
               )}
             </Button>
           </div>

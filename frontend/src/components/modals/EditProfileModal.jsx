@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -10,6 +11,7 @@ export default function EditProfileModal({
   onSuccess,
   userData,
 }) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
@@ -23,7 +25,7 @@ export default function EditProfileModal({
       setErrors({});
       setSubmitError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, userData]);
 
   if (!isOpen) return null;
 
@@ -42,7 +44,7 @@ export default function EditProfileModal({
     setSubmitError(null);
 
     if (!name.trim()) {
-      setErrors({ name: "이름을 입력해주세요." });
+      setErrors({ name: t("edit_profile_modal_error_name_required") });
       return;
     }
 
@@ -73,7 +75,7 @@ export default function EditProfileModal({
       } else {
         // Handle general server errors
         // 일반 서버 에러 처리
-        setSubmitError(responseData?.detail || "프로필 수정에 실패했습니다.");
+        setSubmitError(responseData?.detail || t("edit_profile_modal_error_save"));
       }
     } finally {
       setIsLoading(false);
@@ -83,9 +85,9 @@ export default function EditProfileModal({
   // UI mapping for different auth methods
   // 인증 수단별 UI 레이블 매핑
   const getProviderLabel = (provider) => {
-    if (provider === "google") return "Google 계정 연동";
-    if (provider === "kakao") return "Kakao 계정 연동";
-    return "개인 계정 연동";
+    if (provider === "google") return t("edit_profile_modal_provider_google");
+    if (provider === "kakao") return t("edit_profile_modal_provider_kakao");
+    return t("edit_profile_modal_provider_local");
   };
 
   // Reusable sub-components for form styling
@@ -101,7 +103,7 @@ export default function EditProfileModal({
 
   const InputLabel = ({ label, required, hasError }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 transition-colors ${
+      className={`text-xs font-bold tracking-wider pl-1 flex items-center gap-1 transition-colors ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
@@ -117,10 +119,10 @@ export default function EditProfileModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground">
-              프로필 수정
+              {t("edit_profile_modal_title")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
-              이름만 수정할 수 있습니다.
+              {t("edit_profile_modal_desc")}
             </p>
           </div>
           <button
@@ -143,8 +145,8 @@ export default function EditProfileModal({
           {/* Read-only account info (Unchangeable) */}
           {/* 읽기 전용 계정 정보 (수정 불가) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase text-slate-500 dark:text-muted-foreground pl-1 flex items-center">
-              계정 유형
+            <label className="text-xs font-bold text-slate-500 dark:text-muted-foreground pl-1 flex items-center">
+              {t("edit_profile_modal_account_type")}
             </label>
             <div className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted flex items-center text-sm text-slate-500 dark:text-muted-foreground font-medium cursor-not-allowed">
               {getProviderLabel(userData?.provider)}
@@ -154,8 +156,8 @@ export default function EditProfileModal({
           {/* Read-only account info (Unchangeable) */}
           {/* 읽기 전용 계정 정보 (수정 불가) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase text-slate-500 dark:text-muted-foreground pl-1 flex items-center">
-              이메일
+            <label className="text-xs font-bold text-slate-500 dark:text-muted-foreground pl-1 flex items-center">
+              {t("edit_profile_modal_email")}
             </label>
             <div className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted flex items-center text-sm text-slate-500 dark:text-muted-foreground font-medium cursor-not-allowed">
               {userData?.email}
@@ -165,13 +167,17 @@ export default function EditProfileModal({
           {/* Editable name field */}
           {/* 수정 가능한 이름 필드 */}
           <div className="space-y-1.5">
-            <InputLabel label="이름" required hasError={!!errors.name} />
+            <InputLabel
+              label={t("edit_profile_modal_name")}
+              required
+              hasError={!!errors.name}
+            />
             <input
               type="text"
               value={name}
               onChange={handleChangeName}
               className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border bg-white dark:bg-card focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-slate-800 dark:text-foreground font-medium"
-              placeholder="이름 입력"
+              placeholder={t("edit_profile_modal_name_placeholder")}
             />
             <ErrorMessage message={errors.name} />
           </div>
@@ -184,7 +190,7 @@ export default function EditProfileModal({
               onClick={onClose}
               className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
             >
-              취소
+              {t("edit_profile_modal_cancel")}
             </Button>
             <Button
               type="submit"
@@ -194,7 +200,7 @@ export default function EditProfileModal({
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                "저장"
+                t("edit_profile_modal_save")
               )}
             </Button>
           </div>

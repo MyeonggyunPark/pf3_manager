@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../../api";
 import Button from "../ui/Button";
 
 export default function ChangePasswordModal({ isOpen, onClose }) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
 
   const [errors, setErrors] = useState({});
@@ -52,11 +54,11 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
     // Basic empty field validation
     // 기본 빈 필드 유효성 검사
     if (!formData.old_password)
-      newErrors.old_password = "현재 비밀번호를 입력해주세요.";
+      newErrors.old_password = t("change_pw_error_current_required");
     if (!formData.new_password1)
-      newErrors.new_password1 = "새 비밀번호를 입력해주세요.";
+      newErrors.new_password1 = t("change_pw_error_new_required");
     if (!formData.new_password2)
-      newErrors.new_password2 = "새 비밀번호 확인을 입력해주세요.";
+      newErrors.new_password2 = t("change_pw_error_confirm_required");
 
     // Complex password strength validation (Regex)
     // 복합 비밀번호 강도 유효성 검사 (정규식)
@@ -67,7 +69,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
       const isValidLength = password.length >= 8;
 
       if (!isValidLength || !hasUpperCase || !hasSpecialChar) {
-        const msg = "영문 대문자, 특수문자 포함 8자 이상이어야 합니다.";
+        const msg = t("change_pw_error_rule");
         newErrors.new_password1 = msg;
 
         if (formData.new_password2) {
@@ -84,7 +86,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
       formData.new_password2
     ) {
       if (formData.new_password1 !== formData.new_password2) {
-        newErrors.new_password2 = "새 비밀번호가 일치하지 않습니다.";
+        newErrors.new_password2 = t("change_pw_error_mismatch");
       }
     }
 
@@ -118,9 +120,9 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
         setErrors(fieldErrors);
 
         // 필드 에러가 있어도 상단에 에러 메시지 표시
-        setSubmitError("입력 값을 확인해주세요.");
+        setSubmitError(t("change_pw_error_check_input"));
       } else {
-        setSubmitError(responseData?.detail || "비밀번호 변경에 실패했습니다.");
+        setSubmitError(responseData?.detail || t("change_pw_error_failed"));
       }
     } finally {
       setIsLoading(false);
@@ -150,7 +152,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
 
   const InputLabel = ({ label, required, hasError }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 mb-1.5 flex items-center gap-1 transition-colors ${
+      className={`text-xs font-bold tracking-wider pl-1 mb-1.5 flex items-center gap-1 transition-colors ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
@@ -171,19 +173,21 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
               <LucideIcons.CheckCircle className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent mb-2">
-              변경 완료
+              {t("change_pw_success_title")}
             </h3>
             <p className="text-muted-foreground dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
-              비밀번호가 성공적으로 변경되었습니다.
+              {t("change_pw_success_desc_line1")}
               <br />
-              보안을 위해 <strong>로그인 화면</strong>으로 이동됩니다.
+              {t("change_pw_success_desc_prefix")}{" "}
+              <strong>{t("change_pw_success_desc_highlight")}</strong>
+              {t("change_pw_success_desc_suffix")}
             </p>
             <Button
               variant="default"
               className="w-full max-w-xs bg-accent hover:bg-accent/90 text-white font-bold h-11 shadow-md cursor-pointer"
               onClick={handleConfirmSuccess}
             >
-              확인
+              {t("confirm")}
             </Button>
           </div>
         )}
@@ -191,10 +195,10 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground">
-              비밀번호 변경
+              {t("change_pw_title")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
-              원하는 새로운 비밀번호로 변경하세요.
+              {t("change_pw_desc")}
             </p>
           </div>
           <button
@@ -218,7 +222,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
           {/* 현재 비밀번호 필드 */}
           <div className="space-y-1">
             <InputLabel
-              label="현재 비밀번호"
+              label={t("change_pw_current_label")}
               required
               hasError={!!errors.old_password}
             />
@@ -237,7 +241,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
           {/* 새 비밀번호 필드 */}
           <div className="space-y-1">
             <InputLabel
-              label="새 비밀번호"
+              label={t("change_pw_new_label")}
               required
               hasError={!!errors.new_password1}
             />
@@ -256,7 +260,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
           {/* 새 비밀번호 확인 필드 */}
           <div className="space-y-1">
             <InputLabel
-              label="새 비밀번호 확인"
+              label={t("change_pw_confirm_label")}
               required
               hasError={!!errors.new_password2}
             />
@@ -279,7 +283,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
               onClick={handleClose}
               className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
             >
-              취소
+              {t("change_pw_cancel")}
             </Button>
             <Button
               type="submit"
@@ -289,7 +293,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
               {isLoading ? (
                 <LucideIcons.Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                "변경"
+                t("change_pw_submit")
               )}
             </Button>
           </div>

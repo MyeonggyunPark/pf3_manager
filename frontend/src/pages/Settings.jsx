@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../api";
+import { cn } from "../lib/utils";
 import {
   Card,
   CardHeader,
@@ -15,6 +17,11 @@ import DeleteAccountModal from "../components/modals/DeleteAccountModal";
 import InvoiceSettingsModal from "../components/modals/InvoiceSettingsModal";
 
 const DeletionSuccessModal = ({ isOpen, onConfirm }) => {
+
+  // Use translation hook
+  // 번역 훅 사용
+  const { t } = useTranslation();
+
   // Prevent rendering if not open
   // 열려있지 않으면 렌더링 방지
   if (!isOpen) return null;
@@ -28,18 +35,18 @@ const DeletionSuccessModal = ({ isOpen, onConfirm }) => {
           </div>
 
           <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent mb-2">
-            계정삭제 완료
+            {t("delete_complete_title")}
           </h3>
 
           <p className="text-slate-400 dark:text-muted-foreground text-center mb-6 text-sm leading-relaxed">
-            그동안 서비스를 이용해 주셔서 감사합니다.
+            {t("delete_complete_desc")}
           </p>
 
           <Button
             onClick={onConfirm}
             className="w-full h-11 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
           >
-            확인
+            {t("confirm")}
           </Button>
         </div>
       </div>
@@ -49,6 +56,11 @@ const DeletionSuccessModal = ({ isOpen, onConfirm }) => {
 };
 
 const DeletionErrorModal = ({ isOpen, onClose }) => {
+
+  // Use translation hook
+  // 번역 훅 사용
+  const { t } = useTranslation();
+
   // Prevent rendering if not open
   // 열려있지 않으면 렌더링 방지
   if (!isOpen) return null;
@@ -62,20 +74,18 @@ const DeletionErrorModal = ({ isOpen, onClose }) => {
           </div>
 
           <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
-            삭제 실패
+            {t("delete_error_title")}
           </h3>
 
-          <p className="text-sm text-center text-slate-500 dark:text-muted-foreground mb-8">
-            계정 삭제 중 오류가 발생했습니다.
-            <br />
-            잠시 후 다시 시도해 주세요.
+          <p className="text-sm text-center text-slate-500 dark:text-muted-foreground mb-8 whitespace-pre-line">
+            {t("delete_error_desc")}
           </p>
 
           <Button
             onClick={onClose}
             className="w-full bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 h-11 font-semibold text-sm transition-all cursor-pointer"
           >
-            확인
+            {t("confirm")}
           </Button>
         </div>
       </div>
@@ -85,6 +95,11 @@ const DeletionErrorModal = ({ isOpen, onClose }) => {
 };
 
 export default function Settings() {
+
+  // Use translation hook and access i18n instance
+  // 번역 훅 사용 및 i18n 인스턴스 접근
+  const { t, i18n } = useTranslation();
+
   const [user, setUser] = useState(null);
 
   // Persist user theme preference from storage
@@ -102,10 +117,19 @@ export default function Settings() {
 
   // Account Deletion States
   // 계정 삭제 관련 상태 관리
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // 1st Step: Confirmation (1단계: 확인)
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // 2nd Step: Success (2단계: 성공)
-  const [showErrorModal, setShowErrorModal] = useState(false); // 2nd Step: Error (2단계: 실패)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Function to toggle language between German and Korean
+  // 독일어와 한국어 사이에서 언어를 토글하는 함수
+  const toggleLanguage = () => {
+    const currentLang = i18n.resolvedLanguage || i18n.language || "de";
+    const newLang = currentLang.startsWith("ko") ? "de" : "ko";
+    i18n.changeLanguage(newLang);
+    localStorage.setItem("i18nextLng", newLang);
+  };
 
   // Sync profile data with backend on mount
   // 마운트 시 백엔드 유저 데이터 동기화
@@ -143,16 +167,10 @@ export default function Settings() {
     setIsDeleting(true);
     try {
       await api.delete("/api/auth/user/");
-
-      // Success: Close confirm modal, Open success modal
-      // 성공: 확인 모달 닫기, 성공 모달 열기
       setShowDeleteConfirm(false);
       setShowSuccessModal(true);
     } catch (e) {
       console.error("Delete failed", e);
-
-      // Failure: Close confirm modal, Open error modal
-      // 실패: 확인 모달 닫기, 에러 모달 열기
       setShowDeleteConfirm(false);
       setShowErrorModal(true);
     } finally {
@@ -182,7 +200,7 @@ export default function Settings() {
           className:
             "bg-warning/20 text-yellow-700 border-warning/50 dark:text-warning",
         };
-      default: // 'email'
+      default:
         return {
           label: "EMAIL",
           className:
@@ -221,37 +239,20 @@ export default function Settings() {
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
       />
-
-      {/* Invoice Settings Modal */}
-      {/* 영수증 설정 모달 */}
       <InvoiceSettingsModal
         isOpen={isInvoiceModalOpen}
         onClose={() => setIsInvoiceModalOpen(false)}
-        onSuccess={() => {
-          // Optional: Show a toast notification or just close
-          // 선택사항: 토스트 알림 표시 또는 단순 닫기
-          // console.log("Business Profile Updated");
-        }}
       />
-
-      {/* Account Deletion Modals */}
-      {/* 계정 삭제 관련 모달 컴포넌트 */}
       <DeleteAccountModal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteAccount}
         isDeleting={isDeleting}
       />
-
-      {/* Deletion Success Modal (Custom Popup) */}
-      {/* 삭제 성공 모달 (커스텀 팝업) */}
       <DeletionSuccessModal
         isOpen={showSuccessModal}
         onConfirm={handleFinalRedirect}
       />
-
-      {/* Deletion Error Modal (Custom Popup) */}
-      {/* 삭제 실패 모달 (커스텀 팝업) */}
       <DeletionErrorModal
         isOpen={showErrorModal}
         onClose={() => setShowErrorModal(false)}
@@ -264,7 +265,7 @@ export default function Settings() {
           <div className="h-16 lg:h-20 w-16 lg:w-20 rounded-2xl bg-white flex items-center justify-center text-primary shadow-lg border-4 border-muted dark:border-accent overflow-hidden dark:bg-slate-200 shrink-0">
             <img
               src="/icons/tutor-icon.png"
-              alt="선생님 프로필 아이콘"
+              alt="Profile Icon"
               className="w-10 lg:w-13 h-10 lg:h-13 object-contain"
             />
           </div>
@@ -291,7 +292,7 @@ export default function Settings() {
             className="w-full lg:w-auto h-9 lg:h-10 px-3 lg:px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2 text-xs lg:text-sm"
           >
             <LucideIcons.Edit3 className="w-3.5 lg:w-4 h-3.5 lg:h-4 mr-1" />{" "}
-            정보 수정
+            {t("edit_profile")}
           </Button>
         </CardHeader>
       </Card>
@@ -304,17 +305,17 @@ export default function Settings() {
             <div className="w-8 h-8 border-3 border-muted dark:border-border rounded-lg flex items-center justify-center shadow-md">
               <LucideIcons.Building2 className="w-5 h-5" />
             </div>
-            사업자 설정
+            {t("business_settings")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
               <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
-                정보 관리
+                {t("manage_info")}
               </div>
               <div className="text-xs text-muted-foreground">
-                (영수증 발행을 위한 사업자 정보를 설정하세요.)
+                ({t("business_settings_desc")})
               </div>
             </div>
             <button
@@ -335,21 +336,57 @@ export default function Settings() {
             <div className="w-8 h-8 border-3 border-muted dark:border-border rounded-lg flex items-center justify-center shadow-md">
               <LucideIcons.Wrench className="w-5 h-5" />
             </div>
-            시스템 설정
+            {t("system_settings")}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-4">
+          {/* Language Settings Section with Toggle Button */}
+          {/* 토글 버튼이 포함된 언어 설정 섹션 */}
           <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
               <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
-                화면 모드
+                {t("language_settings")}
               </div>
               <div className="text-xs text-muted-foreground">
-                (활성화 모드:{" "}
+                ({t("language")}:{" "}
+                <span className="font-semibold">
+                  {(i18n.resolvedLanguage || i18n.language || "").startsWith("ko")
+                    ? "한국어"
+                    : "Deutsch"}
+                </span>
+                )
+              </div>
+            </div>
+
+            {/* Language Toggle circular button (Consistent with Theme Toggle) */}
+            {/* 언어 토글 원형 버튼 (테마 토글과 일관성 유지) */}
+            <div
+              onClick={toggleLanguage}
+              className={cn(
+                "px-2.5 py-1 rounded-full bg-muted-foreground/20 text-muted-foreground/80 hover:bg-muted-foreground/80 hover:text-card transition-colors active:scale-95 shadow-md cursor-pointer dark:bg-muted dark:text-muted-foreground",
+              )}
+            >
+              {/* Use Flag Emojis instead of image files for better performance and simplicity */}
+              {/* 성능과 간결함을 위해 이미지 파일 대신 국기 이모지 사용 */}
+              <span className="text-[22px] animate-in fade-in zoom-in-75 duration-300 select-none">
+                {(i18n.resolvedLanguage || i18n.language || "").startsWith("ko")
+                  ? "🇰🇷"
+                  : "🇩🇪"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+              <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
+                {t("screen_mode")}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                ({t("active_mode")}:{" "}
                 {isDarkMode ? (
-                  <span className="font-semibold">다크 모드</span>
+                  <span className="font-semibold">{t("dark_mode")}</span>
                 ) : (
-                  <span className="font-semibold">라이트 모드</span>
+                  <span className="font-semibold">{t("light_mode")}</span>
                 )}
                 )
               </div>
@@ -389,20 +426,18 @@ export default function Settings() {
             <div className="w-8 h-8 border-3 border-muted dark:border-border rounded-lg flex items-center justify-center shadow-md">
               <LucideIcons.ShieldAlert className="w-5 h-5" />
             </div>
-            보안 및 계정
+            {t("security_account")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {/* password change for non-social login users */}
-          {/* 비소셜 로그인 사용자의 비밀번호 변경 */}
           {isEmailUser && (
             <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
                 <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
-                  비밀번호 변경
+                  {t("change_password")}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  (보안을 위해 주기적으로 변경하세요.)
+                  ({t("change_password_desc")})
                 </div>
               </div>
               <button
@@ -414,15 +449,13 @@ export default function Settings() {
             </div>
           )}
 
-          {/* account deletion */}
-          {/* 계정 삭제 */}
           <div className="flex items-center justify-between px-4 py-3 border-2 border-muted-foreground/10 dark:border-border rounded-xl">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
               <div className="text-sm font-bold text-foreground/80 dark:text-foreground">
-                계정 삭제
+                {t("delete_account")}
               </div>
               <div className="text-xs text-muted-foreground">
-                (모든 데이터가 영구적으로 삭제됩니다.)
+                ({t("delete_account_desc")})
               </div>
             </div>
             <div

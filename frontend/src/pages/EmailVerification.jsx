@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import api from "../api";
 import Button from "../components/ui/Button";
 
 // Email verification page component
 // 이메일 인증 페이지 컴포넌트
 export default function EmailVerification() {
+  const { t } = useTranslation();
 
   // Retrieve verification key from URL parameters
   // URL 파라미터에서 인증 키 추출
@@ -69,10 +71,10 @@ export default function EmailVerification() {
           <div>
             <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground">
-              인증 확인 중...
+              {t("email_verify_verifying_title")}
             </h2>
             <p className="text-slate-400 dark:text-muted-foreground mt-2">
-              잠시만 기다려주세요.
+              {t("email_verify_verifying_desc")}
             </p>
           </div>
         )}
@@ -97,18 +99,18 @@ export default function EmailVerification() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-[#4a7a78] dark:text-accent mb-2">
-              이메일 인증 성공
+              {t("email_verify_success_title")}
             </h2>
             <p className="text-slate-400 dark:text-muted-foreground mb-6">
-              계정이 활성화되었습니다.
+              {t("email_verify_success_desc_line1")}
               <br />
-              이제 로그인할 수 있습니다.
+              {t("email_verify_success_desc_line2")}
             </p>
             <Button
               onClick={() => navigate("/login")}
               className="w-full h-11 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
             >
-              로그인 화면으로
+              {t("auth_back_to_login")}
             </Button>
           </div>
         )}
@@ -133,16 +135,16 @@ export default function EmailVerification() {
               </svg>
             </div>
             <h2 className="text-xl font-bold text-destructive mb-2">
-              인증 실패
+              {t("email_verify_fail_title")}
             </h2>
             <p className="text-slate-400 dark:text-muted-foreground mb-6">
-              유효하지 않거나 만료된 링크입니다.
+              {t("email_verify_fail_desc")}
             </p>
             <Button
               onClick={() => navigate("/login")}
               className="w-full h-11 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
             >
-              로그인 화면으로
+              {t("auth_back_to_login")}
             </Button>
           </div>
         )}

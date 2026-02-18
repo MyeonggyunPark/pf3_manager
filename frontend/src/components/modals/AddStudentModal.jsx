@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -57,6 +58,10 @@ export default function AddStudentModal({
   onSuccess,
   studentData = null,
 }) {
+  const { t, i18n } = useTranslation();
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+  const defaultCountry = isGerman ? "Deutschland" : "독일";
+
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -75,21 +80,24 @@ export default function AddStudentModal({
 
   // Initial form state matching the Student model fields
   // Student 모델 필드와 일치하는 초기 폼 상태
-  const initialFormState = {
-    name: "",
-    gender: "",
-    age: "",
-    current_level: "",
-    target_level: "",
-    target_exam_mode: "",
-    status: "",
-    street: "",
-    postcode: "",
-    city: "",
-    country: "Deutschland",
-    billing_name: "",
-    memo: "",
-  };
+  const initialFormState = useMemo(
+    () => ({
+      name: "",
+      gender: "",
+      age: "",
+      current_level: "",
+      target_level: "",
+      target_exam_mode: "",
+      status: "",
+      street: "",
+      postcode: "",
+      city: "",
+      country: defaultCountry,
+      billing_name: "",
+      memo: "",
+    }),
+    [defaultCountry],
+  );
 
   const [formData, setFormData] = useState(initialFormState);
 
@@ -108,7 +116,7 @@ export default function AddStudentModal({
         street: studentData.street || "",
         postcode: studentData.postcode || "",
         city: studentData.city || "",
-        country: studentData.country || "Deutschland",
+        country: studentData.country || defaultCountry,
         billing_name: studentData.billing_name || "",
         memo: studentData.memo || "",
       });
@@ -117,7 +125,7 @@ export default function AddStudentModal({
       setErrors({});
       setSubmitError(null);
     }
-  }, [isOpen, studentData]);
+  }, [isOpen, studentData, initialFormState, defaultCountry]);
 
   // Do not render if modal is closed
   // 모달이 닫혀있으면 렌더링하지 않음
@@ -168,7 +176,7 @@ export default function AddStudentModal({
       handleClose();
     } catch (err) {
       console.error("Delete Failed:", err);
-      setSubmitError("삭제 중 오류가 발생했습니다.");
+      setSubmitError(t("student_modal_error_delete"));
       setShowDeleteConfirm(false);
     } finally {
       setIsDeleting(false);
@@ -184,15 +192,15 @@ export default function AddStudentModal({
     // [유효성 검사 로직] 조기 반환 대신 모든 에러를 수집
     const newErrors = {};
 
-    if (!formData.name.trim()) newErrors.name = "이름을 입력해주세요.";
-    if (!formData.gender) newErrors.gender = "성별을 선택해주세요.";
+    if (!formData.name.trim()) newErrors.name = t("student_modal_error_name");
+    if (!formData.gender) newErrors.gender = t("student_modal_error_gender");
     if (!formData.current_level)
-      newErrors.current_level = "현재 레벨을 선택해주세요.";
+      newErrors.current_level = t("student_modal_error_current_level");
     if (!formData.target_level)
-      newErrors.target_level = "목표 레벨을 선택해주세요.";
+      newErrors.target_level = t("student_modal_error_target_level");
     if (!formData.target_exam_mode)
-      newErrors.target_exam_mode = "시험 유형을 선택해주세요.";
-    if (!formData.status) newErrors.status = "수강 상태를 선택해주세요.";
+      newErrors.target_exam_mode = t("student_modal_error_exam_mode");
+    if (!formData.status) newErrors.status = t("student_modal_error_status");
 
     // If there are validation errors, update state and stop submission
     // 유효성 에러가 존재하면 상태를 업데이트하고 제출 중단
@@ -242,13 +250,17 @@ export default function AddStudentModal({
         setErrors(fieldErrors);
 
         // 필드 에러가 있어도 상단에 에러 메시지 표시
-        setSubmitError("입력 값을 확인해주세요.");
+        setSubmitError(t("student_modal_error_check_input"));
       } else {
         // Fallback for general errors
         // 일반 에러 처리
         setSubmitError(
           responseData?.detail ||
-            `학생 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
+            t("student_modal_error_save", {
+              action: isEditMode
+                ? t("student_modal_action_edit")
+                : t("student_modal_action_add"),
+            }),
         );
       }
     } finally {
@@ -312,7 +324,7 @@ export default function AddStudentModal({
   // 조건부 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
   const InputLabel = ({ label, required, hasError, subLabel }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center mb-1.5 ${
+      className={`text-xs font-bold tracking-wider pl-1 flex items-center mb-1.5 ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
@@ -337,13 +349,13 @@ export default function AddStudentModal({
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
-              삭제 확인
+              {t("delete_modal_title")}
             </h3>
             <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
-              정말로 삭제하시겠습니까?
+              {t("delete_modal_question")}
               <br />
               <span className="text-destructive mt-1 block font-medium">
-                이 작업은 되돌릴 수 없습니다.
+                {t("delete_modal_desc_highlight_irreversible")}
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
@@ -353,7 +365,7 @@ export default function AddStudentModal({
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
-                취소
+                {t("delete_modal_cancel")}
               </Button>
               <Button
                 className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold shadow-md cursor-pointer transition-all"
@@ -363,7 +375,7 @@ export default function AddStudentModal({
                 {isDeleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "삭제"
+                  t("delete_modal_delete")
                 )}
               </Button>
             </div>
@@ -375,12 +387,14 @@ export default function AddStudentModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border shrink-0">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
-              {isEditMode ? "학생 정보 수정" : "학생 등록"}
+              {isEditMode
+                ? t("student_modal_title_edit")
+                : t("student_modal_title_add")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
-                ? "수정이 필요한 학생 정보를 변경해주세요."
-                : "등록할 새로운 학생의 정보를 입력하세요."}
+                ? t("student_modal_desc_edit")
+                : t("student_modal_desc_add")}
             </p>
           </div>
           <button
@@ -416,14 +430,18 @@ export default function AddStudentModal({
               {/* Name Input */}
               {/* 이름 입력 */}
               <div className="col-span-12 sm:col-span-5 space-y-1.5">
-                <InputLabel label="이름" hasError={!!errors.name} required />
+                <InputLabel
+                  label={t("student_modal_field_name")}
+                  hasError={!!errors.name}
+                  required
+                />
                 <input
                   required
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
-                  placeholder="학생 이름"
+                  placeholder={t("student_modal_placeholder_name")}
                   autoComplete="off"
                 />
                 <ErrorMessage message={errors.name} />
@@ -432,14 +450,14 @@ export default function AddStudentModal({
               {/* Age Input */}
               {/* 나이 입력 */}
               <div className="col-span-4 sm:col-span-2 space-y-1.5">
-                <InputLabel label="나이" hasError={!!errors.age} />
+                <InputLabel label={t("student_modal_field_age")} hasError={!!errors.age} />
                 <input
                   type="number"
                   name="age"
                   value={formData.age}
                   onChange={handleChange}
                   className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  placeholder="나이"
+                  placeholder={t("student_modal_placeholder_age")}
                 />
                 <ErrorMessage message={errors.age} />
               </div>
@@ -447,10 +465,14 @@ export default function AddStudentModal({
               {/* Gender Selection */}
               {/* 성별 선택 */}
               <div className="col-span-8 sm:col-span-5 space-y-1.5">
-                <InputLabel label="성별" hasError={!!errors.gender} required />
+                <InputLabel
+                  label={t("student_modal_field_gender")}
+                  hasError={!!errors.gender}
+                  required
+                />
                 <div className="grid grid-cols-2 gap-2 h-10">
                   <SelectionChip
-                    label="남성"
+                    label={t("student_modal_gender_male")}
                     value="M"
                     icon={MaleIcon}
                     selectedValue={formData.gender}
@@ -458,7 +480,7 @@ export default function AddStudentModal({
                     className="h-full cursor-pointer dark:hover:text-foreground"
                   />
                   <SelectionChip
-                    label="여성"
+                    label={t("student_modal_gender_female")}
                     value="F"
                     icon={FemaleIcon}
                     selectedValue={formData.gender}
@@ -477,7 +499,7 @@ export default function AddStudentModal({
               {/* 현재 레벨 */}
               <div className="space-y-2">
                 <InputLabel
-                  label="현재 레벨"
+                  label={t("student_modal_field_current_level")}
                   hasError={!!errors.current_level}
                   required
                 />
@@ -500,7 +522,7 @@ export default function AddStudentModal({
               {/* 목표 레벨 */}
               <div className="space-y-2">
                 <InputLabel
-                  label="목표 레벨"
+                  label={t("student_modal_field_target_level")}
                   hasError={!!errors.target_level}
                   required
                 />
@@ -527,13 +549,13 @@ export default function AddStudentModal({
               {/* 목표 시험 유형 */}
               <div className="col-span-12 sm:col-span-7 space-y-2">
                 <InputLabel
-                  label="목표 응시 유형"
+                  label={t("student_modal_field_target_exam_mode")}
                   hasError={!!errors.target_exam_mode}
                   required
                 />
                 <div className="grid grid-cols-3 gap-1.5">
                   <SelectionChip
-                    label="Gesamt"
+                    label={t("student_exam_mode_full")}
                     value="FULL"
                     selectedValue={formData.target_exam_mode}
                     onClick={(val) =>
@@ -542,7 +564,7 @@ export default function AddStudentModal({
                     className="cursor-pointer dark:hover:text-foreground"
                   />
                   <SelectionChip
-                    label="Schriftlich"
+                    label={t("student_exam_mode_written")}
                     value="WRITTEN"
                     selectedValue={formData.target_exam_mode}
                     onClick={(val) =>
@@ -551,7 +573,7 @@ export default function AddStudentModal({
                     className="cursor-pointer dark:hover:text-foreground"
                   />
                   <SelectionChip
-                    label="Mündlich"
+                    label={t("student_exam_mode_oral")}
                     value="ORAL"
                     selectedValue={formData.target_exam_mode}
                     onClick={(val) =>
@@ -567,27 +589,27 @@ export default function AddStudentModal({
               {/* 수강 상태 */}
               <div className="col-span-12 sm:col-span-5 space-y-2">
                 <InputLabel
-                  label="수강 상태"
+                  label={t("student_modal_field_status")}
                   hasError={!!errors.status}
                   required
                 />
                 <div className="grid grid-cols-3 gap-1.5">
                   <SelectionChip
-                    label="수강중"
+                    label={t("student_status_active")}
                     value="ACTIVE"
                     selectedValue={formData.status}
                     onClick={(val) => handleValueChange("status", val)}
                     className="cursor-pointer dark:hover:text-foreground"
                   />
                   <SelectionChip
-                    label="일시중지"
+                    label={t("student_status_paused")}
                     value="PAUSED"
                     selectedValue={formData.status}
                     onClick={(val) => handleValueChange("status", val)}
                     className="cursor-pointer dark:hover:text-foreground"
                   />
                   <SelectionChip
-                    label="종료"
+                    label={t("student_status_finished")}
                     value="FINISHED"
                     selectedValue={formData.status}
                     onClick={(val) => handleValueChange("status", val)}
@@ -601,14 +623,14 @@ export default function AddStudentModal({
             {/* Row 4: Memo */}
             {/* 4행: 메모 */}
             <div className="space-y-1.5">
-              <InputLabel label="메모" hasError={false} />
+              <InputLabel label={t("student_modal_field_memo")} hasError={false} />
               <textarea
                 name="memo"
                 value={formData.memo}
                 onChange={handleChange}
                 rows={4}
                 className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
-                placeholder="추가사항 / 특이사항"
+                placeholder={t("student_modal_placeholder_memo")}
                 autoComplete="off"
               />
             </div>
@@ -617,7 +639,7 @@ export default function AddStudentModal({
             {/* 5행: 영수증 정보 입력 */}
             <div className="pt-2">
               <h4 className="text-sm font-bold text-slate-700 dark:text-foreground mb-3 flex items-center gap-2">
-                영수증 정보
+                {t("student_modal_billing_section")}
                 <div className="h-px flex-1 bg-slate-100 dark:bg-border"></div>
               </h4>
               <div className="grid grid-cols-6 gap-4">
@@ -626,15 +648,15 @@ export default function AddStudentModal({
                 {/* 청구인 이름 입력 (전체 너비) */}
                 <div className="col-span-6 space-y-1.5">
                   <InputLabel
-                    label="청구인"
-                    subLabel="학생 본인이 아닌 경우 / 비워두면 학생 이름 사용"
+                    label={t("student_modal_field_billing_name")}
+                    subLabel={t("student_modal_field_billing_name_sub")}
                   />
                   <input
                     name="billing_name"
                     value={formData.billing_name}
                     onChange={handleChange}
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
-                    placeholder="청구인 이름"
+                    placeholder={t("student_modal_placeholder_billing_name")}
                     autoComplete="off"
                   />
                 </div>
@@ -642,13 +664,13 @@ export default function AddStudentModal({
                 {/* Street Input */}
                 {/* 주소 입력 */}
                 <div className="col-span-6 space-y-1.5">
-                  <InputLabel label="주소" />
+                  <InputLabel label={t("student_modal_field_street")} />
                   <input
                     name="street"
                     value={formData.street}
                     onChange={handleChange}
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
-                    placeholder="청구인 주소 / 예) Musterstraße 123"
+                    placeholder={t("student_modal_placeholder_street")}
                     autoComplete="off"
                   />
                 </div>
@@ -656,13 +678,13 @@ export default function AddStudentModal({
                 {/* Postcode Input */}
                 {/* 우편번호 입력 */}
                 <div className="col-span-2 space-y-1.5">
-                  <InputLabel label="우편번호" />
+                  <InputLabel label={t("student_modal_field_postcode")} />
                   <input
                     name="postcode"
                     value={formData.postcode}
                     onChange={handleChange}
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
-                    placeholder="우편번호(PLZ)"
+                    placeholder={t("student_modal_placeholder_postcode")}
                     autoComplete="off"
                   />
                 </div>
@@ -670,13 +692,13 @@ export default function AddStudentModal({
                 {/* City Input */}
                 {/* 도시 입력 */}
                 <div className="col-span-2 space-y-1.5">
-                  <InputLabel label="도시" />
+                  <InputLabel label={t("student_modal_field_city")} />
                   <input
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
-                    placeholder="도시명"
+                    placeholder={t("student_modal_placeholder_city")}
                     autoComplete="off"
                   />
                 </div>
@@ -684,13 +706,13 @@ export default function AddStudentModal({
                 {/* Country Input */}
                 {/* 국가 입력 */}
                 <div className="col-span-2 space-y-1.5">
-                  <InputLabel label="국가" />
+                  <InputLabel label={t("student_modal_field_country")} />
                   <input
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
-                    placeholder="국가명"
+                    placeholder={t("student_modal_placeholder_country")}
                     autoComplete="off"
                   />
                 </div>
@@ -723,7 +745,7 @@ export default function AddStudentModal({
             onClick={handleClose}
             disabled={isLoading}
           >
-            취소
+            {t("student_modal_cancel")}
           </Button>
           <Button
             type="submit"
@@ -734,12 +756,14 @@ export default function AddStudentModal({
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                {isEditMode ? "수정 중..." : "저장 중..."}
+                {isEditMode
+                  ? t("student_modal_saving_edit")
+                  : t("student_modal_saving_add")}
               </>
             ) : isEditMode ? (
-              "수정"
+              t("student_modal_action_edit")
             ) : (
-              "등록"
+              t("student_modal_action_add")
             )}
           </Button>
         </div>

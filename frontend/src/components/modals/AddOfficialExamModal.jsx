@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../../api";
+import { cn } from "../../lib/utils";
 import Button from "../ui/Button";
 
 // Grading Scales Configuration
@@ -82,6 +84,14 @@ export default function AddOfficialExamModal({
   onSuccess,
   examData,
 }) {
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+
   const [isLoading, setIsLoading] = useState(false);
 
   // State for delete operation status and confirmation modal visibility
@@ -105,17 +115,20 @@ export default function AddOfficialExamModal({
 
   // Initial form state mapping to the API structure
   // API 구조에 매핑되는 초기 폼 상태
-  const initialFormState = {
-    student: "",
-    exam_standard: "",
-    exam_name_manual: "",
-    exam_date: "",
-    exam_mode: "",
-    status: "",
-    total_score: "",
-    grade: "",
-    memo: "",
-  };
+  const initialFormState = useMemo(
+    () => ({
+      student: "",
+      exam_standard: "",
+      exam_name_manual: "",
+      exam_date: "",
+      exam_mode: "",
+      status: "",
+      total_score: "",
+      grade: "",
+      memo: "",
+    }),
+    [],
+  );
 
   // Initialize form data using lazy initialization to handle examData prop
   // examData prop을 처리하기 위해 지연 초기화를 사용하여 폼 데이터 초기화
@@ -174,7 +187,7 @@ export default function AddOfficialExamModal({
         if (studentsRes) {
           setStudents(studentsRes.data);
         } else {
-          setSubmitError("학생 목록을 불러오는데 실패했습니다.");
+          setSubmitError(t("official_modal_error_students_load"));
         }
 
         if (standardsRes) {
@@ -187,15 +200,15 @@ export default function AddOfficialExamModal({
           // 학생 목록 실패 시 메시지 추가, 아니면 새로 설정
           setSubmitError((prev) =>
             prev
-              ? `${prev} / 시험 기준을 불러오는데 실패했습니다.`
-              : "시험 기준을 불러오는데 실패했습니다.",
+              ? `${prev} / ${t("official_modal_error_standards_load_short")}`
+              : t("official_modal_error_standards_load"),
           );
         }
       };
 
       fetchData();
     }
-  }, [isOpen]);
+  }, [isOpen, t]);
 
   // Populate form with existing data when editing
   // 수정 시 기존 데이터로 폼 필드 채우기
@@ -226,7 +239,7 @@ export default function AddOfficialExamModal({
       // 열리거나 변경될 때 유효성 검사 에러 초기화
       setErrors({});
     }
-  }, [isOpen, examData]);
+  }, [isOpen, examData, initialFormState]);
 
   // Auto-calculate Grade & Status when Score or Standard changes
   // 점수나 시험 종류가 변경될 때 등급과 합격 여부 자동 계산
@@ -312,7 +325,7 @@ export default function AddOfficialExamModal({
       handleClose();
     } catch (err) {
       console.error("Exam Delete Failed:", err);
-      setSubmitError("삭제 중 오류가 발생했습니다.");
+      setSubmitError(t("official_modal_error_delete"));
       setShowDeleteConfirm(false);
     } finally {
       setIsDeleting(false);
@@ -327,17 +340,17 @@ export default function AddOfficialExamModal({
     // Validate required fields: Student, Date, Exam Type (Standard or Manual) and Exam Mode
     // 필수 필드 유효성 검사: 학생, 날짜, 시험 종류(표준 또는 직접 입력), 응시 유형
     const newErrors = {};
-    if (!formData.student) newErrors.student = "학생을 선택해주세요.";
-    if (!formData.exam_date) newErrors.exam_date = "응시일을 선택해주세요.";
-    if (!formData.exam_mode) newErrors.exam_mode = "응시 유형을 선택해주세요.";
+    if (!formData.student) newErrors.student = t("official_modal_error_student");
+    if (!formData.exam_date) newErrors.exam_date = t("official_modal_error_exam_date");
+    if (!formData.exam_mode) newErrors.exam_mode = t("official_modal_error_exam_mode");
     if (
       (!formData.exam_standard || formData.exam_standard === "manual") &&
       !formData.exam_name_manual.trim()
     ) {
       if (formData.exam_standard === "manual") {
-        newErrors.exam_name_manual = "시험 명칭을 입력해주세요.";
+        newErrors.exam_name_manual = t("official_modal_error_exam_name_manual");
       } else {
-        newErrors.exam_standard = "시험 종류를 선택하거나 직접 입력해주세요.";
+        newErrors.exam_standard = t("official_modal_error_exam_standard_or_manual");
       }
     }
 
@@ -396,11 +409,15 @@ export default function AddOfficialExamModal({
         setErrors(fieldErrors);
 
         // 필드 에러가 있더라도 상단에 공통 메시지를 표시
-        setSubmitError("입력 값을 확인해주세요.");
+        setSubmitError(t("official_modal_error_check_input"));
       } else {
         setSubmitError(
           responseData?.detail ||
-            `정규 시험 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
+            t("official_modal_error_save", {
+              action: isEditMode
+                ? t("official_modal_action_update_noun")
+                : t("official_modal_action_create_noun"),
+            }),
         );
       }
     } finally {
@@ -423,7 +440,7 @@ export default function AddOfficialExamModal({
   // 에러 상태 스타일링이 적용된 라벨 헬퍼 컴포넌트
   const InputLabel = ({ label, required, hasError }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 flex items-center gap-1 ${
+      className={`text-xs font-bold tracking-wider pl-1 flex items-center gap-1 ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
@@ -472,13 +489,13 @@ export default function AddOfficialExamModal({
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
-              삭제 확인
+              {t("delete_modal_title")}
             </h3>
             <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
-              정말로 삭제하시겠습니까?
+              {t("delete_modal_question")}
               <br />
               <span className="text-destructive mt-1 block font-medium">
-                이 작업은 되돌릴 수 없습니다.
+                {t("delete_modal_desc_highlight_irreversible")}
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
@@ -488,7 +505,7 @@ export default function AddOfficialExamModal({
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
-                취소
+                {t("delete_modal_cancel")}
               </Button>
               <Button
                 className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold shadow-md cursor-pointer transition-all"
@@ -498,7 +515,7 @@ export default function AddOfficialExamModal({
                 {isDeleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "삭제"
+                  t("delete_modal_delete")
                 )}
               </Button>
             </div>
@@ -510,12 +527,14 @@ export default function AddOfficialExamModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
-              {isEditMode ? "정규 시험 정보 수정" : "정규 시험 등록"}
+              {isEditMode
+                ? t("official_modal_title_edit")
+                : t("official_modal_title_add")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
-                ? "수정이 필요한 정규 시험 정보를 변경해주세요."
-                : "등록할 정규 시험의 정보를 입력하세요."}
+                ? t("official_modal_desc_edit")
+                : t("official_modal_desc_add")}
             </p>
           </div>
           <button
@@ -541,7 +560,11 @@ export default function AddOfficialExamModal({
             {/* Student Selection */}
             {/* 학생 선택 */}
             <div className="space-y-1.5">
-              <InputLabel label="학생" hasError={!!errors.student} required />
+              <InputLabel
+                label={t("official_modal_field_student")}
+                hasError={!!errors.student}
+                required
+              />
               <div className="relative">
                 <select
                   name="student"
@@ -554,7 +577,7 @@ export default function AddOfficialExamModal({
                   }`}
                 >
                   <option value="" disabled hidden>
-                    학생을 선택하세요.
+                    {t("official_modal_placeholder_student")}
                   </option>
                   {students.map((student) => (
                     <option
@@ -572,7 +595,7 @@ export default function AddOfficialExamModal({
               </div>
               {students.length === 0 && (
                 <p className="text-xs text-destructive mt-1 ml-1 font-medium">
-                  * 등록된 수강중인 학생이 없습니다.
+                  * {t("official_modal_students_empty")}
                 </p>
               )}
               <ErrorMessage message={errors.student} />
@@ -582,7 +605,7 @@ export default function AddOfficialExamModal({
             {/* 응시일 입력 */}
             <div className="space-y-1.5">
               <InputLabel
-                label="응시일"
+                label={t("official_modal_field_exam_date")}
                 hasError={!!errors.exam_date}
                 required
               />
@@ -607,7 +630,7 @@ export default function AddOfficialExamModal({
           {/* 시험 종류 선택 */}
           <div className="space-y-1.5">
             <InputLabel
-              label="시험 종류"
+              label={t("official_modal_field_exam_standard")}
               hasError={!!errors.exam_standard}
               required
             />
@@ -629,13 +652,13 @@ export default function AddOfficialExamModal({
                 }`}
               >
                 <option value="" disabled hidden>
-                  시험 종류를 선택하세요.
+                  {t("official_modal_placeholder_exam_standard")}
                 </option>
                 <option
                   value="manual"
                   className="text-slate-800 dark:text-foreground dark:bg-card"
                 >
-                  (선택지 없을 시) 직접 입력
+                  {t("official_modal_manual_option")}
                 </option>
                 {examStandards.map((std) => (
                   <option
@@ -659,7 +682,7 @@ export default function AddOfficialExamModal({
           {formData.exam_standard === "manual" && (
             <div className="space-y-1.5 animate-in slide-in-from-top-2">
               <InputLabel
-                label="시험 종류 (직접 입력)"
+                label={t("official_modal_field_exam_name_manual")}
                 hasError={!!errors.exam_name_manual}
               />
               <input
@@ -668,7 +691,7 @@ export default function AddOfficialExamModal({
                 value={formData.exam_name_manual}
                 onChange={handleChange}
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm"
-                placeholder="시험 명칭 입력"
+                placeholder={t("official_modal_placeholder_exam_name_manual")}
                 autoComplete="off"
               />
               <ErrorMessage message={errors.exam_name_manual} />
@@ -679,31 +702,31 @@ export default function AddOfficialExamModal({
           {/* 응시 유형 선택 */}
           <div className="space-y-2">
             <InputLabel
-              label="응시 유형"
+              label={t("official_modal_field_exam_mode")}
               hasError={!!errors.exam_mode}
               required
             />
             <div className="grid grid-cols-3 gap-2">
               <SelectionChip
-                label="Gesamt"
+                label={t("exam_mode_full")}
                 value="FULL"
                 selectedValue={formData.exam_mode}
                 onClick={handleModeChange}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
               <SelectionChip
-                label="Schriftlich"
+                label={t("exam_mode_written")}
                 value="WRITTEN"
                 selectedValue={formData.exam_mode}
                 onClick={handleModeChange}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
               <SelectionChip
-                label="Mündlich"
+                label={t("exam_mode_oral")}
                 value="ORAL"
                 selectedValue={formData.exam_mode}
                 onClick={handleModeChange}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
             </div>
             <ErrorMessage message={errors.exam_mode} />
@@ -712,28 +735,32 @@ export default function AddOfficialExamModal({
           {/* Exam Status Selection */}
           {/* 시험 상태 선택 */}
           <div className="space-y-2">
-            <InputLabel label="시험 상태" hasError={false} required />
+            <InputLabel
+              label={t("official_modal_field_status")}
+              hasError={false}
+              required
+            />
             <div className="grid grid-cols-3 gap-2">
               <SelectionChip
-                label="대기"
+                label={t("exam_result_waiting")}
                 value="WAITING"
                 selectedValue={formData.status}
                 onClick={handleStatusChange}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
               <SelectionChip
-                label="합격"
+                label={t("exam_result_passed")}
                 value="PASSED"
                 selectedValue={formData.status}
                 onClick={handleStatusChange}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
               <SelectionChip
-                label="불합격"
+                label={t("exam_result_failed")}
                 value="FAILED"
                 selectedValue={formData.status}
                 onClick={handleStatusChange}
-                className="cursor-pointer"
+                className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
               />
             </div>
           </div>
@@ -742,7 +769,10 @@ export default function AddOfficialExamModal({
           {/* 점수 및 등급 입력 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <InputLabel label="점수" hasError={false} />
+              <InputLabel
+                label={t("official_modal_field_total_score")}
+                hasError={false}
+              />
               <input
                 type="number"
                 step="0.01"
@@ -751,20 +781,38 @@ export default function AddOfficialExamModal({
                 value={formData.total_score}
                 onChange={handleChange}
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-bold text-primary dark:text-primary placeholder:text-slate-400 text-sm text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="0"
+                placeholder={t("official_modal_placeholder_score")}
               />
-              <p className="text-[11px] text-slate-400 dark:text-muted-foreground/60 font-medium pl-1">
-                * 점수를 확인한 경우 입력하세요.
+              <p
+                className={cn(
+                  "text-[11px] text-slate-400 dark:text-muted-foreground/60 font-medium pl-1",
+                  isGerman ? "hidden" : "block",
+                )}
+              >
+                * {t("official_modal_score_help")}
+              </p>
+              <p
+                className={cn(
+                  "text-[11px] text-slate-400 dark:text-muted-foreground/60 font-medium pl-1",
+                  isGerman ? "block" : "hidden",
+                )}
+              >
+                * {t("official_modal_score_help_line1")}
+                <br />
+                <span className="pl-2">{t("official_modal_score_help_line2")}</span>
               </p>
             </div>
             <div className="cursor-not-allowed">
-              <InputLabel label="등급" hasError={false} />
+              <InputLabel
+                label={t("official_modal_field_grade")}
+                hasError={false}
+              />
               <input
                 name="grade"
                 value={formData.grade}
                 readOnly
                 className="w-full h-10 px-3 mt-1.5 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 focus:outline-none font-bold text-sm pointer-events-none text-center text-primary dark:text-primary placeholder:text-slate-400"
-                placeholder="자동 입력"
+                placeholder={t("official_modal_placeholder_grade_auto")}
               />
             </div>
           </div>
@@ -772,14 +820,17 @@ export default function AddOfficialExamModal({
           {/* Memo Input */}
           {/* 메모 입력 */}
           <div className="space-y-1.5">
-            <InputLabel label="메모" hasError={false} />
+            <InputLabel
+              label={t("official_modal_field_memo")}
+              hasError={false}
+            />
             <textarea
               name="memo"
               value={formData.memo}
               onChange={handleChange}
               rows={3}
               className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
-              placeholder="추가사항 / 특이사항"
+              placeholder={t("official_modal_placeholder_memo")}
               autoComplete="off"
             />
           </div>
@@ -810,7 +861,7 @@ export default function AddOfficialExamModal({
               onClick={handleClose}
               disabled={isLoading}
             >
-              취소
+              {t("official_modal_cancel")}
             </Button>
             <Button
               type="submit"
@@ -819,12 +870,13 @@ export default function AddOfficialExamModal({
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 저장 중...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                  {t("official_modal_saving")}
                 </>
               ) : isEditMode ? (
-                "수정"
+                t("official_modal_action_edit")
               ) : (
-                "등록"
+                t("official_modal_action_add")
               )}
             </Button>
           </div>

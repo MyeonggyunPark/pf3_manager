@@ -1,7 +1,15 @@
-import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
+import {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   LineChart,
   Line,
@@ -54,17 +62,12 @@ const examResultStyles = {
   WAITING: "bg-muted/50 text-muted-foreground border-border hover:bg-muted/50",
 };
 
-const EXAM_MODE_LABELS = {
-  FULL: "Gesamt",
-  WRITTEN: "Schriftlich",
-  ORAL: "Mündlich",
-};
-
 const LEVEL_OPTIONS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 // FilePopover Component
 // 파일 팝오버 컴포넌트
 const FilePopover = ({ attachments }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const buttonRef = useRef(null);
@@ -129,10 +132,10 @@ const FilePopover = ({ attachments }) => {
 
             <div className="p-1 flex flex-col max-h-60 overflow-y-auto custom-scrollbar">
               <div className="px-3 py-2 text-xs font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-700 mb-1">
-                첨부파일 목록 ({attachments.length})
+                {t("exam_attachment_list", { count: attachments.length })}
               </div>
               {attachments.map((file, index) => {
-                let fileName = "파일";
+                let fileName = t("exam_file_default");
                 if (file.original_name) fileName = file.original_name;
                 else if (file.file) {
                   try {
@@ -140,7 +143,7 @@ const FilePopover = ({ attachments }) => {
                       file.file.split("/").pop().split("?")[0],
                     );
                   } catch {
-                    fileName = "Unknown File";
+                    fileName = t("exam_file_unknown");
                   }
                 }
 
@@ -168,25 +171,49 @@ const FilePopover = ({ attachments }) => {
   );
 };
 
-// Helper to format date string
-// 날짜 문자열 포맷팅 헬퍼 함수
-const formatDate = (dateStr) => {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("de-DE", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-};
-
-// Helper to format score numbers
-// 점수 숫자 포맷팅 헬퍼 함수
-const formatScore = (score) => {
-  if (score === undefined || score === null || score === "") return "-";
-  return Number(score).toLocaleString("de-DE");
-};
-
 export default function ExamResults() {
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+  const locale = isGerman ? "de-DE" : "ko-KR";
+
+  const examModeLabels = {
+    FULL: t("exam_mode_full"),
+    WRITTEN: t("exam_mode_written"),
+    ORAL: t("exam_mode_oral"),
+  };
+
+  const examResultLabels = {
+    PASSED: t("exam_result_passed"),
+    FAILED: t("exam_result_failed"),
+    WAITING: t("exam_result_waiting"),
+  };
+
+  const formatDate = useCallback((dateStr) => {
+    if (!dateStr) return "-";
+
+    const formatted = new Date(dateStr).toLocaleDateString(locale, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    if (locale === "ko-KR") {
+      return formatted.replace(/\s/g, "").replace(/\.$/, "");
+    }
+
+    return formatted;
+  }, [locale]);
+
+  const formatScore = useCallback((score) => {
+    if (score === undefined || score === null || score === "") return "-";
+    return Number(score).toLocaleString(locale);
+  }, [locale]);
+
   // Loading and Navigation State
   // 로딩 및 네비게이션 상태
   const [loading, setLoading] = useState(true);
@@ -293,7 +320,7 @@ export default function ExamResults() {
     const levelMap = {};
     data.forEach((exam) => {
       if (exam.status === "WAITING") return;
-      const level = exam.student_level || "Unknown";
+      const level = exam.student_level || t("exam_unknown_level");
       if (!levelMap[level]) levelMap[level] = { passed: 0, failed: 0 };
       if (exam.status === "PASSED") levelMap[level].passed++;
       else if (exam.status === "FAILED") levelMap[level].failed++;
@@ -316,7 +343,7 @@ export default function ExamResults() {
       });
 
     return { total, passed, waiting, passRate, chartData };
-  }, [officialExams, selectedYear]);
+  }, [officialExams, selectedYear, t]);
 
   // --- 4. Filter Logic for Official Exams ---
   // 정규 시험 목록 필터링 로직
@@ -386,7 +413,7 @@ export default function ExamResults() {
     // 라인 차트 데이터 준비
     const trendChart = trendDataRaw.map((e) => ({
       date: formatDate(e.exam_date),
-      shortDate: new Date(e.exam_date).toLocaleDateString("de-DE", {
+      shortDate: new Date(e.exam_date).toLocaleDateString(locale, {
         month: "2-digit",
         day: "2-digit",
       }),
@@ -411,7 +438,7 @@ export default function ExamResults() {
       // 수동 입력 점수 처리
       if (exam.score_inputs && Array.isArray(exam.score_inputs)) {
         exam.score_inputs.forEach((input) => {
-          const catName = input.category || "Unbekannt";
+          const catName = input.category || t("exam_unknown_category");
           const score = Number(input.score || 0);
           const max = Number(input.section_max_score || 0);
           if (!categoryMap[catName])
@@ -425,7 +452,7 @@ export default function ExamResults() {
       // 상세 결과 처리 (자동 채점)
       if (exam.detail_results && Array.isArray(exam.detail_results)) {
         exam.detail_results.forEach((detail) => {
-          const catName = detail.category || "Unbekannt";
+          const catName = detail.category || t("exam_unknown_category");
           const points = Number(detail.points || 1);
           const sectionId = detail.exam_section;
           const sectionMax = Number(detail.section_max_score || 0);
@@ -468,7 +495,7 @@ export default function ExamResults() {
       weakestCategory,
       weakestScore,
     };
-  }, [filteredMockList, focusedStudent]);
+  }, [filteredMockList, focusedStudent, formatDate, locale, t]);
 
   // Scroll detection effect
   // 스크롤 감지 이펙트
@@ -555,10 +582,10 @@ export default function ExamResults() {
                   className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: CHART_COLORS.accent }}
                 />
-                합격
+                {t("exam_result_passed")}
               </span>
               <span className="font-semibold text-slate-700 dark:text-foreground">
-                {data.passed}명
+                {t("exam_people_count", { count: data.passed })}
               </span>
             </div>
             <div className="flex items-center justify-between gap-4">
@@ -567,14 +594,16 @@ export default function ExamResults() {
                   className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: CHART_COLORS.destructive }}
                 />
-                불합격
+                {t("exam_result_failed")}
               </span>
               <span className="font-semibold text-slate-700 dark:text-foreground">
-                {data.failed}명
+                {t("exam_people_count", { count: data.failed })}
               </span>
             </div>
             <div className="border-t border-slate-100 dark:border-border mt-1 pt-1 flex items-center justify-between gap-4">
-              <span className="text-xs font-bold text-primary">합격률</span>
+              <span className="text-xs font-bold text-primary">
+                {t("exam_pass_rate")}
+              </span>
               <span className="font-bold text-primary">{data.rate}%</span>
             </div>
           </div>
@@ -595,7 +624,7 @@ export default function ExamResults() {
             style={{ backgroundColor: CHART_COLORS.accent }}
           />
           <span className="font-medium text-slate-600 dark:text-foreground">
-            합격
+            {t("exam_result_passed")}
           </span>
         </li>
         <li className="flex items-center gap-1.5">
@@ -604,7 +633,7 @@ export default function ExamResults() {
             style={{ backgroundColor: CHART_COLORS.destructive }}
           />
           <span className="font-medium text-slate-600 dark:text-foreground">
-            불합격
+            {t("exam_result_failed")}
           </span>
         </li>
       </ul>
@@ -612,7 +641,7 @@ export default function ExamResults() {
   };
 
   return (
-    <div className="space-y-3 md:space-y-6 animate-in flex flex-col h-auto md:h-[calc(100vh-200px)]">
+    <div className="space-y-3 md:space-y-6 animate-in flex flex-col h-auto">
       {/* Modals */}
       {/* 모달 컴포넌트 */}
       <AddMockExamModal
@@ -646,7 +675,7 @@ export default function ExamResults() {
                 setStatusFilter("all");
               }}
             >
-              모의고사
+              {t("exam_tab_mock")}
             </TabsTrigger>
             <TabsTrigger
               value="official"
@@ -659,7 +688,7 @@ export default function ExamResults() {
                 setStatusFilter("all");
               }}
             >
-              정규 시험
+              {t("exam_tab_official")}
             </TabsTrigger>
           </TabsList>
 
@@ -675,12 +704,15 @@ export default function ExamResults() {
                   );
                   setFocusedStudent(null);
                 }}
-                className="h-10 w-full md:w-28 rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-xs md:text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none pr-8"
+                className={cn(
+                  "h-10 w-full md:w-28 rounded-xl border border-border bg-white dark:bg-card text-sm md:text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none",
+                  isGerman ? "px-3.5" : "px-3 md:px-4",
+                )}
               >
-                <option value="all">전체(년도)</option>
+                <option value="all">{t("exam_filter_all_year")}</option>
                 {availableYears.map((y) => (
                   <option key={y} value={y}>
-                    {y}년
+                    {t("exam_year_option", { year: y })}
                   </option>
                 ))}
               </select>
@@ -697,9 +729,12 @@ export default function ExamResults() {
                     setLevelFilter(e.target.value);
                     setFocusedStudent(null);
                   }}
-                  className="h-10 w-full md:w-29 rounded-xl border border-border bg-white dark:bg-card px-3 text-xs md:text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none"
+                  className={cn(
+                    "h-10 w-full md:w-28 rounded-xl border border-border bg-white dark:bg-card text-sm md:text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none",
+                    isGerman ? "px-2.5" : "px-3 md:px-4",
+                  )}
                 >
-                  <option value="">전체(레벨)</option>
+                  <option value="">{t("exam_filter_all_level")}</option>
                   {LEVEL_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}
@@ -716,12 +751,15 @@ export default function ExamResults() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="h-10 w-full md:w-29 rounded-xl border border-border bg-white dark:bg-card px-3 text-xs md:text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none"
+                    className={cn(
+                      "h-10 w-full rounded-xl border border-border bg-white dark:bg-card px-3 text-sm md:text-md font-medium focus:outline-none focus:border-primary cursor-pointer text-foreground appearance-none",
+                      isGerman ? "md:w-35" : "md:w-29",
+                    )}
                   >
-                    <option value="all">전체(결과)</option>
-                    <option value="WAITING">대기</option>
-                    <option value="PASSED">합격</option>
-                    <option value="FAILED">불합격</option>
+                    <option value="all">{t("exam_filter_all_result")}</option>
+                    <option value="WAITING">{examResultLabels.WAITING}</option>
+                    <option value="PASSED">{examResultLabels.PASSED}</option>
+                    <option value="FAILED">{examResultLabels.FAILED}</option>
                   </select>
                   <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 </div>
@@ -730,23 +768,28 @@ export default function ExamResults() {
               {/* Search Input */}
               {/* 검색 입력 */}
               <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-2 group">
-                <div className="relative flex-1 w-full md:w-48">
+                <div
+                  className={cn(
+                    "relative flex-1 w-full md:w-48",
+                    isGerman ? "md:w-50" : "md:w-48",
+                  )}
+                >
                   <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors dark:text-muted-foreground" />
                   <input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-xs md:text-md text-slate-800 dark:text-foreground placeholder:text-slate-400"
-                    placeholder="학생 이름 입력"
+                    className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-sm md:text-md text-slate-800 dark:text-foreground placeholder:text-slate-400"
+                    placeholder={t("exam_search_placeholder")}
                   />
                 </div>
               </div>
               <Button
                 variant="default"
                 onClick={handleSearchClick}
-                className="w-full md:w-auto h-10 px-3 md:px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer text-xs md:text-md"
+                className="w-full md:w-auto h-10 px-3 md:px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer text-sm md:text-md"
               >
-                검색
+                {t("exam_search_button")}
               </Button>
             </div>
           </div>
@@ -763,12 +806,13 @@ export default function ExamResults() {
         >
           {activeTab === "mock" ? (
             <>
-              <LucideIcons.FilePlus className="w-4 h-4 mr-2" /> 모의고사 추가
+              <LucideIcons.FilePlus className="w-4 h-4 mr-2" />{" "}
+              {t("exam_action_add_mock")}
             </>
           ) : (
             <>
-              <LucideIcons.GraduationCap className="w-4 h-4 mr-2" /> 정규시험
-              추가
+              <LucideIcons.GraduationCap className="w-4 h-4 mr-2" />{" "}
+              {t("exam_action_add_official")}
             </>
           )}
         </Button>
@@ -786,16 +830,54 @@ export default function ExamResults() {
                 <div className="bg-slate-50 dark:bg-muted/20 p-3.5 rounded-full inline-block mt-2 mb-2 ring-1 ring-slate-100 dark:ring-border/50">
                   <LucideIcons.FileBarChart className="w-8 h-8 text-slate-300 dark:text-muted-foreground/40" />
                 </div>
-                <div className="text-center space-y-1">
+                <div className="space-y-1">
                   <h3 className="font-semibold text-lg text-primary">
-                    학생별 상세 분석
+                    {t("exam_mock_analysis_title")}
                   </h3>
-                  <p className="text-sm max-w-sm mx-auto text-slate-500 dark:text-muted-foreground">
-                    아래 목록에서 학생을 선택하면
+
+                  <p
+                    className={cn(
+                      "text-sm max-w-sm mx-auto text-slate-500 dark:text-muted-foreground",
+                      isGerman ? "hidden" : "block",
+                    )}
+                  >
+                    {t("exam_mock_analysis_desc_line1")}
                     <br />
-                    선택된 학생의 {""}{" "}
-                    <strong>평균 점수, 취약 영역, 점수 추이</strong>를<br />
-                    확인 할 수 있습니다.
+                    {t("exam_mock_analysis_desc_line2_prefix")}{" "}
+                    <strong>{t("exam_mock_analysis_desc_highlight")}</strong>
+                    {t("exam_mock_analysis_desc_line2_1_suffix")}
+                    <br />
+                    {t("exam_mock_analysis_desc_line2_2_suffix")}
+                  </p>
+
+                  <p
+                    className={cn(
+                      "text-sm max-w-sm mx-auto text-slate-500 dark:text-muted-foreground",
+                      isGerman ? "hidden sm:block " : "hidden",
+                    )}
+                  >
+                    {t("exam_mock_analysis_desc_line1")}
+                    <br />
+                    <span className="whitespace-nowrap">
+                      {t("exam_mock_analysis_desc_line2_prefix")}{" "}
+                      <strong>{t("exam_mock_analysis_desc_highlight")}</strong>
+                      {t("exam_mock_analysis_desc_line2_suffix")}
+                    </span>
+                  </p>
+
+                  <p
+                    className={cn(
+                      "text-sm max-w-sm mx-auto text-slate-500 dark:text-muted-foreground",
+                      isGerman ? "block sm:hidden " : "hidden",
+                    )}
+                  >
+                    {t("exam_mock_analysis_desc_line1_mobile")}
+                    <br />
+                    {t("exam_mock_analysis_desc_line2_mobile")} <br />
+                    <strong>
+                      {t("exam_mock_analysis_desc_highlight_mobile")}
+                    </strong>
+                    {t("exam_mock_analysis_desc_line3_mobile")}
                   </p>
                 </div>
               </div>
@@ -809,41 +891,47 @@ export default function ExamResults() {
                   <button
                     onClick={handleResetAnalysis}
                     className="absolute top-2 right-2 p-1 hover:bg-slate-100 dark:hover:bg-muted rounded-full text-slate-400 dark:text-muted-foreground transition-colors cursor-pointer z-10"
-                    title="분석 닫기"
+                    title={t("exam_close_analysis")}
                   >
                     <LucideIcons.X className="w-4 h-4" />
                   </button>
-                  <CardHeader className="py-2">
-                    <CardTitle className="text-md font-bold text-primary uppercase tracking-wider">
-                      평균 점수
+                  <CardHeader>
+                    <CardTitle className="text-md font-bold text-primary tracking-wider">
+                      {t("exam_avg_score")}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="py-2">
-                    <span className="text-sm font-bold bg-primary/10 text-primary/80 px-2.5 py-1 rounded-full">
-                      총 {personalStats?.count}회 응시
-                    </span>
-                    <div className="flex justify-end items-center mt-2">
+                  <CardContent>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="mb-2 text-sm font-bold bg-primary/10 text-primary/80 px-2.5 py-1 rounded-full">
+                        {t("exam_attempt_count", {
+                          count: personalStats?.count || 0,
+                        })}
+                      </span>
                       <div className="flex items-center gap-2">
                         <span className="text-3xl font-extrabold text-primary pb-2">
                           {personalStats?.avgScore}
                         </span>
-                        <span className="text-sm text-primary/80">점</span>
+                        <span className="text-sm text-primary/80">
+                          {t("exam_score_unit")}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="flex-1 shadow-sm bg-white dark:bg-card border-2 border-destructive">
-                  <CardHeader className="py-2">
-                    <CardTitle className="text-md font-bold text-destructive uppercase tracking-wider">
-                      취약 영역
+                  <CardHeader>
+                    <CardTitle className="text-md font-bold text-destructive tracking-wider">
+                      {t("exam_weak_area")}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="py-2">
+                  <CardContent>
                     <span className="text-sm font-bold bg-destructive/10 text-destructive/80 px-2.5 py-1 rounded-full">
-                      정답률 {personalStats?.weakestScore}%
+                      {t("exam_accuracy_rate", {
+                        rate: personalStats?.weakestScore || 0,
+                      })}
                     </span>
-                    <div className="flex justify-end items-center mt-2">
+                    <div className="flex justify-end items-center mt-4">
                       <span className="text-xl font-bold text-destructive">
                         {personalStats?.weakestCategory}
                       </span>
@@ -858,7 +946,7 @@ export default function ExamResults() {
                   <CardHeader>
                     <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800 dark:text-foreground">
                       <LucideIcons.TrendingUp className="w-4 h-4 text-primary" />{" "}
-                      점수 변화 추이
+                      {t("exam_trend_title")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="h-40 md:h-70 relative">
@@ -902,7 +990,7 @@ export default function ExamResults() {
                           }}
                           formatter={(val, name, props) => [
                             `${val} / ${props.payload.max}`,
-                            "점수",
+                            t("exam_score"),
                           ]}
                           labelFormatter={(label, payload) =>
                             payload?.[0]?.payload?.examName || label
@@ -931,7 +1019,7 @@ export default function ExamResults() {
                   <CardHeader>
                     <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800 dark:text-foreground">
                       <LucideIcons.Target className="w-4 h-4 text-primary" />{" "}
-                      영역별 분석
+                      {t("exam_area_analysis")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="h-40 md:h-70 relative">
@@ -941,7 +1029,7 @@ export default function ExamResults() {
                         <RadarChart
                           cx="45%"
                           cy="50%"
-                          outerRadius="80%"
+                          outerRadius="70%"
                           data={personalStats.weaknessChart}
                         >
                           <PolarGrid stroke="var(--color-border)" />
@@ -949,11 +1037,11 @@ export default function ExamResults() {
                             dataKey="category"
                             tick={{
                               fill: "var(--color-muted-foreground)",
-                              fontSize: 11,
+                              fontSize: 12,
                             }}
                           />
                           <Radar
-                            name="정답률(%)"
+                            name={t("exam_accuracy_rate_short")}
                             dataKey="accuracy"
                             stroke={CHART_COLORS.primary}
                             fill={CHART_COLORS.primary}
@@ -974,7 +1062,7 @@ export default function ExamResults() {
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/70 flex-col gap-2">
                         <LucideIcons.SearchX className="w-7 h-7" />
                         <span className="text-sm font-semibold">
-                          영역별 분석을 위한 데이터가 없습니다.
+                          {t("exam_area_analysis_empty")}
                         </span>
                       </div>
                     )}
@@ -989,36 +1077,53 @@ export default function ExamResults() {
             {/* Official Exam KPI Cards */}
             <div className="lg:col-span-3 flex flex-col gap-4">
               <Card className="flex-1 shadow-sm bg-white dark:bg-card border-2 border-accent">
-                <CardHeader className="py-2">
-                  <CardTitle className="text-md font-bold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider">
-                    {selectedYear === "all" ? "전체" : selectedYear + "년"}{" "}
-                    합격률
+                <CardHeader>
+                  <CardTitle className="text-md font-bold text-[#4a7a78] dark:text-accent-foreground tracking-wider">
+                    {t("exam_pass_rate")}{" "}
+                    {selectedYear === "all"
+                      ? isGerman
+                        ? t("exam_all")
+                        : `[${t("exam_all")}]`
+                      : `[${t("exam_year_option", { year: selectedYear })}]`}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="py-2">
+                <CardContent>
                   <span className="text-sm font-bold bg-accent/10 text-accent/80 px-2.5 py-1 rounded-full">
-                    총 {officialStats.total}회 / {officialStats.passed}회 합격
+                    {t("exam_official_pass_summary", {
+                      total: officialStats.total,
+                      passed: officialStats.passed,
+                    })}
                   </span>
                   <div className="flex items-end justify-end mt-2">
-                    <span className="text-3xl font-extrabold text-[#4a7a78] dark:text-accent-foreground">
+                    <span
+                      className={cn(
+                        "text-3xl font-extrabold text-[#4a7a78] dark:text-accent-foreground",
+                        isGerman ? "mt-2" : "mt-0",
+                      )}
+                    >
                       {officialStats.passRate}%
                     </span>
                   </div>
                 </CardContent>
               </Card>
               <Card className="flex-1 shadow-sm bg-white dark:bg-card border-2 border-slate-100 dark:border-border">
-                <CardHeader className="py-2">
-                  <CardTitle className="text-md font-bold text-slate-400 dark:text-muted-foreground uppercase tracking-wider">
-                    결과 대기
+                <CardHeader>
+                  <CardTitle className="text-md font-bold text-slate-400 dark:text-muted-foreground tracking-wider">
+                    {t("exam_result_waiting_title")}{" "}
+                    {selectedYear === "all"
+                      ? isGerman
+                        ? t("exam_all")
+                        : `[${t("exam_all")}]`
+                      : `[${t("exam_year_option", { year: selectedYear })}]`}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="py-2">
+                <CardContent>
                   <div className="flex justify-end items-center gap-2 mt-2">
                     <span className="text-3xl font-bold text-slate-400 dark:text-muted-foreground pb-2">
                       {officialStats.waiting}
                     </span>
                     <span className="text-sm text-slate-400 dark:text-muted-foreground">
-                      건
+                      {t("exam_count_unit")}
                     </span>
                   </div>
                 </CardContent>
@@ -1031,7 +1136,7 @@ export default function ExamResults() {
                 <CardHeader>
                   <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800 dark:text-foreground">
                     <LucideIcons.BarChart2 className="w-4 h-4 text-primary" />{" "}
-                    레벨별 합격 현황
+                    {t("exam_level_pass_status")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="h-40 md:h-64 relative">
@@ -1067,7 +1172,7 @@ export default function ExamResults() {
                       <Legend iconSize={8} content={renderLegend} />
                       <Bar
                         dataKey="passed"
-                        name="합격"
+                        name={t("exam_result_passed")}
                         stackId="a"
                         fill={CHART_COLORS.accent}
                         radius={[0, 0, 0, 0]}
@@ -1087,7 +1192,7 @@ export default function ExamResults() {
                       </Bar>
                       <Bar
                         dataKey="failed"
-                        name="불합격"
+                        name={t("exam_result_failed")}
                         stackId="a"
                         fill={CHART_COLORS.destructive}
                         radius={[0, 0, 0, 0]}
@@ -1118,21 +1223,23 @@ export default function ExamResults() {
                       <LucideIcons.User className="w-4 h-4" />
                       {focusedStudent}
                     </Badge>
-                    학생의 전체 목록
+                    {t("exam_focused_student_list")}
                   </TabsTrigger>
                 </TabsList>
               </>
             ) : (
               <TabsList className="dark:bg-muted/50">
-                <TabsTrigger className="cursor-default">전체 목록</TabsTrigger>
+                <TabsTrigger className="cursor-default">
+                  {t("exam_all_list")}
+                </TabsTrigger>
               </TabsList>
             )}
           </div>
           <Badge
             variant="secondary"
-            className="bg-white dark:bg-card border-border text-slate-500 dark:text-muted-foreground shadow-sm"
+            className="hidden sm:block bg-white dark:bg-card border-border text-slate-500 dark:text-muted-foreground shadow-sm"
           >
-            Total{" "}
+            {t("exam_total")}{" "}
             {activeTab === "official"
               ? filteredOfficialList.length
               : filteredMockList.length}
@@ -1150,31 +1257,31 @@ export default function ExamResults() {
                 )}
               >
                 <table className="w-full text-md table-fixed min-w-150">
-                  <thead className="text-[10px] md:text-base text-slate-500 dark:text-muted-foreground uppercase">
+                  <thead className="text-[10px] md:text-base text-slate-500 dark:text-muted-foreground">
                     <tr>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                        학생
+                        {t("exam_table_student")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                        응시일
+                        {t("exam_table_date")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[20%]">
-                        시험명
+                        {t("exam_table_name")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                        응시 유형
+                        {t("exam_table_mode")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                        점수
+                        {t("exam_table_score")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
-                        등급
+                        {t("exam_table_grade")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
-                        파일
+                        {t("exam_table_file")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                        관리
+                        {t("exam_table_manage")}
                       </th>
                     </tr>
                   </thead>
@@ -1182,7 +1289,7 @@ export default function ExamResults() {
               </div>
               <div
                 ref={tableBodyRef}
-                className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+                className="h-75 sm:h-125 min-h-0 overflow-y-auto custom-scrollbar"
               >
                 <table
                   className={cn(
@@ -1205,7 +1312,7 @@ export default function ExamResults() {
                           <div className="flex flex-col items-center justify-center gap-2">
                             <LucideIcons.SearchX className="w-8 h-8" />
                             <p className="font-semibold text-sm">
-                              등록된 모의고사 데이터가 없습니다.
+                              {t("exam_empty_mock")}
                             </p>
                           </div>
                         </td>
@@ -1249,7 +1356,7 @@ export default function ExamResults() {
                                 variant="default"
                                 className="text-[10px] md:text-[11px] border border-primary/10 rounded-md hover:bg-primary/10 px-2 py-0.5 justify-center"
                               >
-                                {EXAM_MODE_LABELS[exam.exam_mode] ||
+                                {examModeLabels[exam.exam_mode] ||
                                   exam.exam_mode}
                               </Badge>
                             </div>
@@ -1293,7 +1400,7 @@ export default function ExamResults() {
                                 }
                               >
                                 <LucideIcons.Edit3 className="w-3 h-3 mr-1" />
-                                수정
+                                {t("exam_action_edit")}
                               </Button>
                             </div>
                           </td>
@@ -1316,28 +1423,28 @@ export default function ExamResults() {
                 )}
               >
                 <table className="w-full text-md table-fixed min-w-150">
-                  <thead className="text-[10px] md:text-md text-slate-500 dark:text-muted-foreground uppercase">
+                  <thead className="text-[10px] md:text-base text-slate-500 dark:text-muted-foreground">
                     <tr>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                        학생
+                        {t("exam_table_student")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                        응시일
+                        {t("exam_table_date")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[25%]">
-                        시험명
+                        {t("exam_table_name")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
-                        응시 유형
+                        {t("exam_table_mode")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
-                        점수
+                        {t("exam_table_score")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
-                        등급
+                        {t("exam_table_grade")}
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                        결과
+                        {t("exam_table_result")}
                       </th>
                     </tr>
                   </thead>
@@ -1345,7 +1452,7 @@ export default function ExamResults() {
               </div>
               <div
                 ref={tableBodyRef}
-                className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+                className="h-75 sm:h-125 min-h-0 overflow-y-auto custom-scrollbar"
               >
                 <table
                   className={cn(
@@ -1368,7 +1475,7 @@ export default function ExamResults() {
                           <div className="flex flex-col items-center justify-center gap-2">
                             <LucideIcons.SearchX className="w-8 h-8" />
                             <p className="font-semibold text-sm">
-                              등록된 정규시험 데이터가 없습니다.
+                              {t("exam_empty_official")}
                             </p>
                           </div>
                         </td>
@@ -1395,9 +1502,9 @@ export default function ExamResults() {
                                 variant="default"
                                 className="text-[10px] md:text-[11px] border border-primary/10 rounded-md hover:bg-primary/10 px-2 py-0.5 justify-center"
                               >
-                                {EXAM_MODE_LABELS[exam.exam_mode] ||
+                                {examModeLabels[exam.exam_mode] ||
                                   exam.exam_mode ||
-                                  "Gesamt"}
+                                  examModeLabels.FULL}
                               </Badge>
                             </div>
                           </td>
@@ -1436,11 +1543,7 @@ export default function ExamResults() {
                                   examResultStyles[exam.status],
                                 )}
                               >
-                                {exam.status === "PASSED"
-                                  ? "합격"
-                                  : exam.status === "FAILED"
-                                    ? "불합격"
-                                    : "대기"}
+                                {examResultLabels[exam.status]}
                               </Badge>
                             </div>
                           </td>

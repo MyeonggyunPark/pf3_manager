@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
     BarChart,
     Bar,
@@ -34,12 +35,6 @@ const statusStyles = {
     FINISHED: "bg-success/20 text-[#5f6e63] border-success/50 hover:bg-success/20 dark:text-success-foreground",
 };
 
-const STATUS_LABELS = {
-    ACTIVE: "수강중",
-    PAUSED: "일시중지",
-    FINISHED: "종료",
-};
-
 // Helper to format currency in Euro
 // 통화를 유로화 형식으로 변환하는 헬퍼 함수
 const formatCurrency = (amount) => {
@@ -49,19 +44,35 @@ const formatCurrency = (amount) => {
     }).format(amount || 0);
 };
 
-// Helper to format date string
-// 날짜 문자열 포맷팅 헬퍼 함수
-const formatDate = (dateStr) => {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("de-DE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
-};
-
 export default function CourseList() {
     const location = useLocation();
+
+    // Translation hook for localized UI text
+    // 다국어 UI 텍스트를 위한 번역 훅
+    const { t, i18n } = useTranslation();
+
+    // Language condition for style branching
+    // 언어별 스타일 분기 조건
+    const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+    const locale = isGerman ? "de-DE" : "ko-KR";
+
+    // Helper to format date string
+    // 날짜 문자열 포맷팅 헬퍼 함수
+    const formatDate = (dateStr) => {
+        if (!dateStr) return "-";
+        
+        const formatted = new Date(dateStr).toLocaleDateString(locale, {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+        });
+
+        if (locale === "ko-KR") {
+            return formatted.replace(/\s/g, "").replace(/\.$/, "");
+        }
+        
+        return formatted;
+    };
 
     // State for data and loading status
     // 데이터 및 로딩 상태 관리
@@ -74,6 +85,14 @@ export default function CourseList() {
     // View State (Tab)
     // 탭 상태 관리 (courses: 수강권, receipts: 영수증)
     const [activeTab, setActiveTab] = useState("courses");
+
+    // Course status labels per language
+    // 언어별 수강권 상태 라벨
+    const statusLabels = {
+        ACTIVE: t("course_status_active"),
+        PAUSED: t("course_status_paused"),
+        FINISHED: t("course_status_finished"),
+    };
 
     // Filter States (Year, Month, Payment, Sent Status)
     // 필터 상태 관리 (연도, 월, 결제 상태, 발송 상태)
@@ -196,7 +215,7 @@ export default function CourseList() {
         window.open(pdfUrl, "_blank");
         } catch (err) {
         console.error("PDF download failed", err);
-        alert("PDF를 불러오는 중 오류가 발생했습니다.");
+        alert(t("course_alert_pdf_error"));
         }
     };
 
@@ -223,7 +242,7 @@ export default function CourseList() {
         } catch (err) {
             console.error("Failed to update sent status", err);
             setInvoices(originalInvoices);
-            alert("상태 변경에 실패했습니다.");
+            alert(t("course_alert_status_error"));
         }
     };
 
@@ -346,24 +365,30 @@ export default function CourseList() {
     // Aggregate monthly revenue and count based on 'coursesInPeriod'
     // 'coursesInPeriod' 데이터를 기반으로 월별 매출 및 수강생 수 집계
     const chartData = useMemo(() => {
-        const monthlyData = Array.from({ length: 12 }, (_, i) => ({
-            name: `${i + 1}월`,
-            monthIndex: i + 1,
+    const monthlyData = Array.from({ length: 12 }, (_, i) => {
+        const monthIndex = i + 1;
+        // i18n.language를 사용하여 차트 라벨도 자동으로 현지화합니다.
+        const monthName = new Intl.DateTimeFormat(i18n.language, { month: 'long' }).format(new Date(2026, i, 1));
+        
+        return {
+            name: monthName, // '1월' 혹은 'Januar'가 직접 할당됨
+            monthIndex: monthIndex,
             revenue: 0,
             count: 0,
-        }));
+        };
+    });
 
-        courses.forEach((course) => {
+    courses.forEach((course) => {
         const date = new Date(course.start_date);
         if (date.getFullYear() === parseInt(selectedYear)) {
             const month = date.getMonth();
             monthlyData[month].revenue += parseFloat(course.total_fee || 0);
             monthlyData[month].count += 1;
         }
-        });
+    });
 
-        return monthlyData;
-    }, [courses, selectedYear]);
+    return monthlyData;
+}, [courses, selectedYear, i18n.language]);
 
     // --- 5. KPI Calculation ---
     // Calculate total revenue and unpaid amounts for the selected period
@@ -432,8 +457,20 @@ export default function CourseList() {
         }
     };
 
+    // Helper to build KPI title by period
+    // 기간 기준 KPI 제목 생성 헬퍼 함수
+    const getPeriodTitle = (yearKey, monthKey) => {
+        if (selectedMonth === 0) {
+            return t(yearKey, { year: selectedYear });
+        }
+
+        const monthName = new Intl.DateTimeFormat(i18n.language, { month: 'long' }).format(new Date(2026, selectedMonth - 1, 1));
+        
+        return t(monthKey, { month: monthName });
+    };
+
     return (
-        <div className="flex flex-col min-h-screen space-y-4 animate-in overflow-y-auto">
+        <div className="flex flex-col space-y-4 animate-in">
             <AddCourseModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -467,7 +504,7 @@ export default function CourseList() {
                                 setIsAllUnpaidMode(false);
                             }}
                         >
-                        수강권
+                        {t("course_tab_courses")}
                         </TabsTrigger>
                         <TabsTrigger
                         value="receipts"
@@ -481,42 +518,51 @@ export default function CourseList() {
                                 setAppliedSearch("");
                             }}
                         >
-                        영수증
+                        {t("course_tab_receipts")}
                         </TabsTrigger>
                     </TabsList>
 
                     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
-                        {/* Year Selector */}
-                        {/* 연도 선택 드롭다운 */}
+                        {/* Year filter */}
+                        {/* 연도 필터 */}
                         <div className="relative w-full md:w-auto">
                             <select
                                 value={selectedYear}
                                 onChange={handleYearChange}
-                                className="h-10 w-full md:w-28 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                                className={cn("h-10 w-full appearance-none rounded-xl border border-border bg-white dark:bg-card text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                                    isGerman ? "md:w-22 px-4" : "md:w-24 px-3.5"
+                                )}
                             >
                                 {availableYears.map((year) => (
                                 <option key={year} value={year}>
-                                    {year}년
+                                    {t("course_year_option", { year })}
                                 </option>
                                 ))}
                             </select>
                             <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                         </div>
 
-                        {/* Month Selector */}
-                        {/* 월 선택 드롭다운 */}
+                        {/* Month filter */}
+                        {/* 월 필터 */}
                         <div className="relative w-full md:w-auto">
                             <select
                                 value={selectedMonth}
                                 onChange={handleMonthChange}
-                                className="h-10 w-full md:w-26 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                                className={cn("h-10 w-full appearance-none rounded-xl border border-border bg-white dark:bg-card text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                                isGerman ? "md:w-32 px-4" : "md:w-26 px-4.5"
+                            )}
                             >
-                                <option value={0}>전체(월)</option>
-                                {Array.from({ length: 12 }, (_, i) => (
-                                    <option key={i + 1} value={i + 1}>
-                                        {i + 1}월
-                                    </option>
-                                ))}
+                                <option value={0}>{t("course_filter_all_month")}</option>
+                                {Array.from({ length: 12 }, (_, i) => {
+                                    const monthNumber = i + 1;
+                                    const monthName = new Intl.DateTimeFormat(i18n.language, { month: 'long' }).format(new Date(2026, i, 1));
+                                    
+                                    return (
+                                        <option key={monthNumber} value={monthNumber}>
+                                            {monthName}
+                                        </option>
+                                    );
+                                })}
                             </select>
                             <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                         </div>
@@ -528,11 +574,13 @@ export default function CourseList() {
                             <select
                             value={paymentFilter}
                             onChange={(e) => setPaymentFilter(e.target.value)}
-                            className="h-10 w-full md:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                            className={cn("h-10 w-full appearance-none rounded-xl border border-border bg-white dark:bg-card text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                            isGerman ? "md:w-34 px-4 md:px-3.5" : "md:w-28 px-4"
+                            )}
                             >
-                                <option value="ALL">전체(결제)</option>
-                                <option value="PAID">완납</option>
-                                <option value="UNPAID">미납</option>
+                                <option value="ALL">{t("course_filter_all_payment")}</option>
+                                <option value="PAID">{t("course_payment_paid")}</option>
+                                <option value="UNPAID">{t("course_payment_unpaid")}</option>
                             </select>
                             <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                         </div>
@@ -545,11 +593,14 @@ export default function CourseList() {
                             <select
                             value={sentFilter}
                             onChange={(e) => setSentFilter(e.target.value)}
-                            className="h-10 w-full md:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium"
+                            className={cn("h-10 w-full appearance-none rounded-xl border border-border bg-white dark:bg-card text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                            isGerman ? "md:w-38 px-4 md:px-4.5" : "md:w-28 px-4",
+                            sentFilter === "UNSENT" && (isGerman ? "px-4 md:px-3.5" : "px-4.5")
+                            )}
                             >
-                                <option value="ALL">전체(발송)</option>
-                                <option value="SENT">발송</option>
-                                <option value="UNSENT">미발송</option>
+                                <option value="ALL">{t("course_filter_all_sent")}</option>
+                                <option value="SENT">{t("course_sent_sent")}</option>
+                                <option value="UNSENT">{t("course_sent_unsent")}</option>
                             </select>
                             <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                         </div>
@@ -559,14 +610,16 @@ export default function CourseList() {
                     {/* Search Input */}
                     {/* 검색 입력 */}
                     <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-2 group">
-                        <div className="relative flex-1 w-full md:w-48">
+                        <div className={cn("relative flex-1 w-full md:w-48",
+                            isGerman ? "md:w-50" : "md:w-48"
+                        )}>
                             <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors dark:text-muted-foreground" />
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className="flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm md:text-md"
-                                placeholder="학생 이름 검색"
+                                className={cn("flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm md:text-md")}
+                                placeholder={t("course_search_placeholder")}
                             />
                         </div>
                         <Button
@@ -574,7 +627,7 @@ export default function CourseList() {
                         onClick={handleSearchClick}
                         className="w-full md:w-auto h-9 px-3 md:px-4 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer text-sm md:text-base"
                         >
-                        검색
+                            {t("course_search_button")}
                         </Button>
                     </div>
                 </div>
@@ -588,7 +641,8 @@ export default function CourseList() {
                         className="w-full xl:w-auto h-10 px-4 md:px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2 text-sm md:text-base"
                         onClick={openCreateModal}
                         >
-                        <LucideIcons.BookPlus className="w-4 h-4" /> 수강권 등록
+                            <LucideIcons.BookPlus className="w-4 h-4" />
+                            {t("course_action_add_course")}
                         </Button>
                     ) : (
                         <Button
@@ -596,7 +650,8 @@ export default function CourseList() {
                         className="w-full xl:w-auto h-10 px-4 md:px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold whitespace-nowrap cursor-pointer flex items-center justify-center gap-2 text-sm md:text-base"
                         onClick={openInvoiceModal}
                         >
-                        <LucideIcons.Receipt className="w-4 h-4" /> 영수증 작성
+                                <LucideIcons.Receipt className="w-4 h-4" />
+                                {t("course_action_add_invoice")}
                         </Button>
                     )}
                 </div>
@@ -609,15 +664,16 @@ export default function CourseList() {
                 <div className="col-span-1 md:col-span-2 lg:col-span-4 flex flex-col gap-2 md:gap-3">
                     {/* 1. 총 수익 (Revenue) */}
                     <div className="flex-1 bg-white dark:bg-card border-2 border-primary px-3 md:px-5 py-1.5 md:py-3 rounded-xl shadow-sm">
-                        <p className="text-[11px] md:text-sm lg:text-md font-semibold text-primary uppercase tracking-wider mb-0.5 md:mb-1">
-                            {selectedMonth === 0
-                                ? `${selectedYear}년 총 수익`
-                                : `${selectedMonth}월 수익`}
+                        <p className={cn("text-[11px] md:text-sm lg:text-md font-semibold text-primary mb-0.5 md:mb-1",
+                            isGerman ? "tracking-normal" : "tracking-wider")}>
+                            {getPeriodTitle("course_kpi_revenue_year", "course_kpi_revenue_month")}
                         </p>
                         <div className="flex justify-around md:justify-between md:items-end gap-2 md:gap-3 mt-2 md:mt-3">
                             <div className="flex gap-1 items-center bg-primary/10 text-primary px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-medium w-fit">
                                 <LucideIcons.CreditCard className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
-                                <span className="whitespace-nowrap">총 수강 {filteredCourses.length}건</span>
+                                <span className="whitespace-nowrap">
+                                    {t("course_kpi_total_courses", { count: filteredCourses.length })}
+                                </span>
                             </div>
                             <h3 className="text-base md:text-2xl font-bold text-primary tracking-tight">
                                 {formatCurrency(totalRevenue)}
@@ -627,36 +683,38 @@ export default function CourseList() {
 
                     {/* 총 수업 시간 (Total Hours) */}
                     <div className="flex-1 bg-white dark:bg-card border-2 border-accent px-3 md:px-5 py-1.5 md:py-3 rounded-xl shadow-sm">
-                        <p className="text-[11px] md:text-sm lg:text-md font-semibold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider mb-0.5 md:mb-1">
-                            {selectedMonth === 0
-                                ? `${selectedYear}년 총 수업 시간`
-                                : `${selectedMonth}월 수업 시간`}
+                        <p className={cn("text-[11px] md:text-sm lg:text-md font-semibold text-[#4a7a78] dark:text-accent-foreground mb-0.5 md:mb-1",
+                            isGerman ? "tracking-normal" : "tracking-wider")}>
+                            {getPeriodTitle("course_kpi_hours_year", "course_kpi_hours_month")}
                         </p>
                         <div className="flex justify-around md:justify-between md:items-end gap-2 md:gap-3 mt-2 md:mt-3">
                             <div className="flex gap-1 items-center bg-accent/20 text-[#4a7a78] dark:text-accent-foreground px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-medium w-fit">
                                 <LucideIcons.BarChart className="w-3 h-3 md:w-4 md:h-4 shrink-0 text-[#4a7a78] dark:text-accent-foreground" />
-                                <span className="whitespace-nowrap">건당 평균 {avgHoursPerCourse}시간</span>
+                                <span className="whitespace-nowrap">
+                                    {t("course_kpi_avg_hours_per_course", { value: avgHoursPerCourse })}
+                                </span>
                             </div>
                             <h3 className="text-base md:text-2xl font-bold text-[#4a7a78] dark:text-accent-foreground tracking-tight">
                                 {Number.isInteger(totalHours)
                                 ? totalHours
                                 : totalHours.toFixed(1)}
-                                시간
+                                {t("course_hour_text")}
                             </h3>
                         </div>
                     </div>
 
                     {/* 평균 시간당 수익 (Hourly Rate) */}
                     <div className="flex-1 bg-white dark:bg-card border-2 border-warning px-3 md:px-5 py-1.5 md:py-3 rounded-xl shadow-sm">
-                        <p className="text-[11px] md:text-sm lg:text-md font-semibold text-[#b8a05e] dark:text-warning uppercase tracking-wider mb-0.5 md:mb-1">
-                            {selectedMonth === 0
-                                ? `${selectedYear}년 평균 시간당 수익`
-                                : `${selectedMonth}월 평균 시간당 수익`}
+                        <p className={cn("text-[11px] md:text-sm lg:text-md font-semibold text-[#b8a05e] dark:text-warning mb-0.5 md:mb-1",
+                            isGerman ? "tracking-normal" : "tracking-wider")}>
+                            {getPeriodTitle("course_kpi_hourly_year", "course_kpi_hourly_month")}
                         </p>
                         <div className="flex justify-around md:justify-between md:items-end gap-2 md:gap-3 mt-2 md:mt-3">
                             <div className="flex gap-1 items-center bg-warning/20 text-[#b8a05e] dark:text-warning px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-medium w-fit">
                                 <LucideIcons.Coins className="w-3 h-3 md:w-4 md:h-4 shrink-0 text-[#b8a05e] dark:text-warning" />
-                                <span className="whitespace-nowrap">최고 시급 {formatCurrency(maxHourlyRate)}</span>
+                                <span className="whitespace-nowrap">
+                                    {t("course_kpi_max_hourly", { value: formatCurrency(maxHourlyRate) })}
+                                </span>
                             </div>
                             <h3 className="text-base md:text-2xl font-bold text-[#b8a05e] dark:text-warning tracking-tight">
                                 {formatCurrency(avgHourlyRate)}/h
@@ -671,7 +729,7 @@ export default function CourseList() {
                     <div className="flex justify-between items-center gap-2 sm:gap-3 mb-3 md:mb-4 pl-1">
                         <h3 className="text-xs md:text-sm font-bold text-slate-800 dark:text-foreground flex items-center gap-2">
                             <LucideIcons.BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
-                            {selectedYear}년 현황
+                            {t("course_chart_title", { year: selectedYear })}
                         </h3>
 
                         {/* Chart Toggle Buttons */}
@@ -686,7 +744,7 @@ export default function CourseList() {
                                     : "text-slate-500 dark:text-muted-foreground hover:bg-card/40 hover:font-semibold hover:text-primary dark:hover:bg-secondary/50 dark:hover:text-foreground",
                                 )}
                             >
-                                수익
+                                {t("course_chart_revenue")}
                             </button>
                             <button
                                 onClick={() => setChartMode("COUNT")}
@@ -697,7 +755,7 @@ export default function CourseList() {
                                     : "text-slate-500 dark:text-muted-foreground hover:bg-card/40 hover:font-semibold hover:text-primary dark:hover:bg-secondary/50 dark:hover:text-foreground",
                                 )}
                             >
-                                수강생
+                                {t("course_chart_students")}
                             </button>
                         </div>
                     </div>
@@ -749,7 +807,7 @@ export default function CourseList() {
                                     boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
                                     fontSize: "11px",
                                     }}
-                                    formatter={(value) => [formatCurrency(value), "수익"]}
+                                    formatter={(value) => [formatCurrency(Number(value) || 0), t("course_chart_revenue")]}
                                 />
                                 <Bar dataKey="revenue" radius={[4, 4, 0, 0]} barSize={20}>
                                     {chartData.map((entry, index) => (
@@ -807,7 +865,9 @@ export default function CourseList() {
                                     boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
                                     fontSize: "11px",
                                     }}
-                                    formatter={(value) => [`${value}명`, "수강생"]}
+                                    formatter={(value) => [
+                                        `${t("course_currency_symbol")}${value.toLocaleString("de-DE")}`
+                                    ]}
                                 />
                                 <Line
                                     type="monotone"
@@ -839,30 +899,30 @@ export default function CourseList() {
                 )}
                 >
                     <table className="w-full text-md table-fixed min-w-150">
-                        <thead className="text-[10px] md:text-base text-slate-500 dark:text-muted-foreground uppercase">
+                        <thead className="text-[10px] md:text-base text-slate-500 dark:text-muted-foreground">
                             <tr>
                                 {activeTab === "courses" ? (
                                     <>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[18%]">
-                                        학생
+                                            {t("course_table_student")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[22%]">
-                                        수강 기간
+                                            {t("course_table_period_course")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[8%]">
-                                        시간
+                                            {t("course_table_hours")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                                        시간당 금액
+                                            {t("course_table_hourly_rate")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[14%]">
-                                        금액
+                                            {t("course_table_amount")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[13%]">
-                                        상태
+                                            {t("course_table_status")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[13%]">
-                                        결제
+                                            {t("course_table_payment")}
                                         </th>
                                     </>
                                 ) : (
@@ -870,25 +930,25 @@ export default function CourseList() {
                                     // 영수증 테이블 헤더
                                     <>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                        번호
+                                            {t("course_invoice_number")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                        학생
+                                            {t("course_table_student")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                                        발행일
+                                            {t("course_invoice_issue_date")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                                        납부기한
+                                            {t("course_invoice_due_date")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[26%]">
-                                        기간
+                                            {t("course_invoice_period")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
-                                        발송
+                                            {t("course_sent_sent")}
                                         </th>
                                         <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
-                                        파일
+                                            {t("course_invoice_file")}
                                         </th>
                                     </>
                                 )}
@@ -899,7 +959,7 @@ export default function CourseList() {
 
                 <div
                 ref={tableBodyRef}
-                className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+                className="h-75 sm:h-125 overflow-y-auto custom-scrollbar"
                 >
                     <table
                         className={cn(
@@ -923,15 +983,15 @@ export default function CourseList() {
                                 // Course List
                                 // 수강권 목록
                                 filteredCourses.length === 0 ? (
-                                <tr>
+                                <tr className="h-full">
                                     <td
-                                    colSpan="7"
-                                    className="px-6 py-12 text-center text-slate-400 text-sm"
+                                        colSpan="7"
+                                        className="px-6 py-12 text-center text-sm h-full align-middle"
                                     >
-                                        <div className="flex flex-col justify-center items-center gap-2">
-                                            <LucideIcons.SearchX className="w-6 h-6 opacity-50" />
+                                        <div className="flex flex-col justify-center items-center h-full gap-2 text-muted-foreground/70">
+                                            <LucideIcons.SearchX className="w-8 h-8" />
                                             <p className="font-semibold">
-                                            해당 기간에 등록된 데이터가 없습니다.
+                                                {t("course_empty_courses")}
                                             </p>
                                         </div>
                                     </td>
@@ -952,7 +1012,7 @@ export default function CourseList() {
                                     >
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-800 dark:text-foreground truncate w-[18%] group-hover:text-primary text-xs md:text-sm">
                                             <span className="font-bold">
-                                            {getStudentName(course.student)}
+                                                {getStudentName(course.student)}
                                             </span>
                                         </td>
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[22%] text-xs md:text-sm">
@@ -960,7 +1020,7 @@ export default function CourseList() {
                                             {formatDate(course.end_date)}
                                         </td>
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[8%] text-xs md:text-sm">
-                                            {Number(course.total_hours)}h
+                                            {Number(course.total_hours)}{t("course_hour_suffix")}
                                         </td>
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%] text-xs md:text-sm">
                                             {formatCurrency(course.hourly_rate)}
@@ -976,7 +1036,7 @@ export default function CourseList() {
                                                     statusStyles[course.status],
                                                     )}
                                                 >
-                                                    {STATUS_LABELS[course.status]}
+                                                    {statusLabels[course.status]}
                                                 </Badge>
                                             </div>
                                         </td>
@@ -984,13 +1044,13 @@ export default function CourseList() {
                                             <div className="flex justify-center items-center w-full">
                                                 {course.is_paid ? (
                                                     <span className="inline-flex items-center gap-0.5 md:gap-1 text-[9px] md:text-[11px] font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded-xl border bg-accent/20 text-[#4a7a78] dark:text-accent-foreground border-accent/50">
-                                                    <LucideIcons.CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
-                                                    완납
+                                                        <LucideIcons.CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
+                                                        {t("course_payment_paid")}
                                                     </span>
                                                 ) : (
                                                     <span className="inline-flex items-center gap-0.5 md:gap-1 text-[9px] md:text-[11px] font-bold text-destructive bg-destructive/10 px-1.5 md:px-2 py-0.5 rounded-xl border border-destructive/20">
-                                                    <LucideIcons.XCircle className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
-                                                    미납
+                                                        <LucideIcons.XCircle className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
+                                                        {t("course_payment_unpaid")}
                                                     </span>
                                                 )}
                                             </div>
@@ -1002,15 +1062,15 @@ export default function CourseList() {
                             // Invoice List
                             // 영수증 목록
                             filteredInvoices.length === 0 ? (
-                                <tr>
+                                <tr className="h-full"> 
                                     <td
                                         colSpan="7"
-                                        className="px-6 py-12 text-center text-slate-400 text-sm"
+                                        className="px-6 py-12 text-center text-sm h-full align-middle"
                                     >
-                                        <div className="flex flex-col justify-center items-center gap-2">
-                                            <LucideIcons.SearchX className="w-6 h-6 opacity-50" />
+                                        <div className="flex flex-col justify-center items-center h-full gap-2 text-muted-foreground/70">
+                                            <LucideIcons.SearchX className="w-8 h-8" />
                                             <p className="font-semibold">
-                                                해당 기간에 발행된 영수증이 없습니다.
+                                                {t("course_empty_invoices")}
                                             </p>
                                         </div>
                                     </td>

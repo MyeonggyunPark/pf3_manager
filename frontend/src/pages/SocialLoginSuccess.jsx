@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { Loader2, PartyPopper } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../api";
 import Button from "../components/ui/Button";
 
 // Welcome Modal Component
 // 환영 모달 컴포넌트
 const WelcomeModal = ({ isOpen, onClose, userName }) => {
+  const { t } = useTranslation();
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -20,22 +23,23 @@ const WelcomeModal = ({ isOpen, onClose, userName }) => {
         </div>
 
         <h3 className="text-xl font-bold text-[#4a7a78] dark:text-accent mb-2">
-          회원가입 완료
+          {t("social_login_signup_complete_title")}
         </h3>
 
         <p className="text-slate-400 dark:text-muted-foreground text-center mb-6 text-sm leading-relaxed">
-          환영합니다, <strong>{userName}</strong>님!
+          {t("social_login_welcome_prefix")} <strong>{userName}</strong>
+          {t("social_login_welcome_suffix")}
           <br />
-          소셜 계정으로 회원가입이 완료되었습니다.
+          {t("social_login_welcome_desc_line1")}
           <br />
-          이제 서비스를 이용하실 수 있습니다.
+          {t("social_login_welcome_desc_line2")}
         </p>
 
         <Button
           onClick={onClose}
           className="w-full h-11 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
         >
-          메인 화면으로
+          {t("social_login_go_main")}
         </Button>
       </div>
     </div>,
@@ -46,6 +50,7 @@ const WelcomeModal = ({ isOpen, onClose, userName }) => {
 // Social Login Redirect Handler
 // 소셜 로그인 성공 후 처리 핸들러
 export default function SocialLoginSuccess() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -53,7 +58,7 @@ export default function SocialLoginSuccess() {
   // 모달 및 로딩 상태
   const [showModal, setShowModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(true);
-  const [userName, setUserName] = useState("회원");
+  const [userName, setUserName] = useState(t("social_login_member_default"));
 
   // Verify session on component mount
   // 컴포넌트 마운트 시 세션 검증 수행
@@ -141,10 +146,10 @@ export default function SocialLoginSuccess() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-background transition-colors duration-300">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
         <h2 className="text-xl font-bold text-slate-700 dark:text-foreground">
-          로그인 확인 중...
+          {t("social_login_checking_title")}
         </h2>
         <p className="text-slate-500 dark:text-muted-foreground mt-2 text-sm">
-          잠시만 기다려주세요.
+          {t("social_login_checking_desc")}
         </p>
       </div>
     );

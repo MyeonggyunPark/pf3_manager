@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -12,6 +12,7 @@ import {
   ChevronDown,
   FileText,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../../api";
 import Button from "../ui/Button";
 
@@ -152,6 +153,14 @@ export default function AddMockExamModal({
   onSuccess,
   examData = null,
 }) {
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+
   // UI State Management (Loading, Delete Confirmation)
   // UI 상태 관리 (로딩, 삭제 확인)
   const [isLoading, setIsLoading] = useState(false);
@@ -185,16 +194,19 @@ export default function AddMockExamModal({
 
   // Initial Form State
   // 초기 폼 상태 정의
-  const initialFormState = {
-    student: "",
-    exam_standard: "",
-    exam_date: "",
-    exam_mode: "",
-    source: "",
-    total_score: 0,
-    grade: "",
-    memo: "",
-  };
+  const initialFormState = useMemo(
+    () => ({
+      student: "",
+      exam_standard: "",
+      exam_date: "",
+      exam_mode: "",
+      source: "",
+      total_score: 0,
+      grade: "",
+      memo: "",
+    }),
+    [],
+  );
 
   const [formData, setFormData] = useState(initialFormState);
 
@@ -222,7 +234,7 @@ export default function AddMockExamModal({
         ]);
 
         if (resStudents) setStudents(resStudents.data);
-        else setSubmitError("학생 목록을 불러오는데 실패했습니다.");
+        else setSubmitError(t("mock_modal_error_students_load"));
 
         if (resStandards) {
           const sortedStandards = resStandards.data.sort((a, b) =>
@@ -232,14 +244,14 @@ export default function AddMockExamModal({
         } else {
           setSubmitError((prev) =>
             prev
-              ? prev + " / 시험 기준 로딩 실패"
-              : "시험 기준을 불러오는데 실패했습니다.",
+              ? `${prev} / ${t("mock_modal_error_standards_load_short")}`
+              : t("mock_modal_error_standards_load"),
           );
         }
       };
       loadData();
     }
-  }, [isOpen]);
+  }, [isOpen, t]);
 
   // --- 2. Populate Form for Edit Mode ---
   // 수정 모드 시 폼 데이터 채우기
@@ -303,7 +315,7 @@ export default function AddMockExamModal({
         setSelectedFiles([]);
       }
     }
-  }, [isOpen, examData]);
+  }, [isOpen, examData, initialFormState]);
 
   // --- 3. Update Selected Standard Data ---
   // 선택된 시험 기준 데이터 업데이트
@@ -488,7 +500,7 @@ export default function AddMockExamModal({
     } catch (err) {
       console.error("Delete file failed:", err);
       // 에러 메시지는 상단 submitError에 표시하거나, 여기서는 간단히 로그만
-      setSubmitError("파일 삭제 중 오류가 발생했습니다.");
+      setSubmitError(t("mock_modal_error_file_delete"));
     } finally {
       setIsFileDeleting(false);
     }
@@ -563,7 +575,7 @@ export default function AddMockExamModal({
       handleClose();
     } catch (e) {
       console.error("Delete error:", e);
-      setSubmitError("삭제 실패");
+      setSubmitError(t("mock_modal_error_delete"));
     } finally {
       setIsDeleting(false);
     }
@@ -579,11 +591,11 @@ export default function AddMockExamModal({
     // Validation
     // 유효성 검사
     const newErrors = {};
-    if (!formData.student) newErrors.student = "학생을 선택해주세요.";
+    if (!formData.student) newErrors.student = t("mock_modal_error_student");
     if (!formData.exam_standard)
-      newErrors.exam_standard = "시험 종류를 선택해주세요.";
-    if (!formData.exam_date) newErrors.exam_date = "응시일을 입력해주세요.";
-    if (!formData.exam_mode) newErrors.exam_mode = "응시 유형을 선택해주세요.";
+      newErrors.exam_standard = t("mock_modal_error_exam_standard");
+    if (!formData.exam_date) newErrors.exam_date = t("mock_modal_error_exam_date");
+    if (!formData.exam_mode) newErrors.exam_mode = t("mock_modal_error_exam_mode");
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -754,13 +766,17 @@ export default function AddMockExamModal({
 
         // Show generic error message at top
         // 상단에 공통 에러 메시지 표시
-        setSubmitError("입력 값을 확인해주세요.");
+        setSubmitError(t("mock_modal_error_check_input"));
       } else {
         // Handle General Errors (Server Error, Permission, etc.)
         // 일반 에러 처리 (서버 오류, 권한 등)
         setSubmitError(
           responseData?.detail ||
-            `모의고사 결과 ${isEditMode ? "수정" : "등록"}에 실패했습니다.`,
+            t("mock_modal_error_save", {
+              action: isEditMode
+                ? t("mock_modal_action_update_noun")
+                : t("mock_modal_action_create_noun"),
+            }),
         );
       }
     } finally {
@@ -781,7 +797,7 @@ export default function AddMockExamModal({
 
   const InputLabel = ({ label, required, hasError }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 mb-1.5 block ${
+      className={`text-xs font-bold tracking-wider pl-1 mb-1.5 block ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
@@ -819,7 +835,7 @@ export default function AddMockExamModal({
   const groupSectionsByCategory = (sections) => {
     const groups = {};
     sections.forEach((sec) => {
-      const category = sec.category || "Uncategorized";
+      const category = sec.category || t("mock_modal_uncategorized");
       if (!groups[category]) {
         groups[category] = [];
       }
@@ -839,12 +855,12 @@ export default function AddMockExamModal({
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
-              삭제 확인
+              {t("delete_modal_title")}
             </h3>
             <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
-              정말로 삭제하시겠습니까? <br />
+              {t("delete_modal_question")} <br />
               <span className="text-destructive mt-1 block font-medium">
-                이 작업은 되돌릴 수 없습니다.
+                {t("delete_modal_desc_highlight_irreversible")}
               </span>
             </p>
             <div className="flex gap-3 w-full max-w-xs">
@@ -853,7 +869,7 @@ export default function AddMockExamModal({
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               >
-                취소
+                {t("delete_modal_cancel")}
               </Button>
               <Button
                 type="button"
@@ -864,7 +880,7 @@ export default function AddMockExamModal({
                 {isDeleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "삭제"
+                  t("delete_modal_delete")
                 )}
               </Button>
             </div>
@@ -879,12 +895,12 @@ export default function AddMockExamModal({
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
             <h3 className="text-lg font-bold text-slate-800 dark:text-foreground mb-2">
-              파일 삭제
+              {t("mock_modal_file_delete_title")}
             </h3>
             <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
-              정말로 삭제하시겠습니까? <br />
+              {t("delete_modal_question")} <br />
               <span className="text-destructive mt-1 block font-medium">
-                이 작업은 되돌릴 수 없습니다.
+                {t("delete_modal_desc_highlight_irreversible")}
               </span>
             </p>
             <div className="flex gap-3 w-full max-w-xs">
@@ -893,7 +909,7 @@ export default function AddMockExamModal({
                 onClick={() => setFileToDelete(null)}
                 className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
               >
-                취소
+                {t("delete_modal_cancel")}
               </Button>
               <Button
                 type="button"
@@ -904,7 +920,7 @@ export default function AddMockExamModal({
                 {isFileDeleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "삭제"
+                  t("delete_modal_delete")
                 )}
               </Button>
             </div>
@@ -916,12 +932,14 @@ export default function AddMockExamModal({
         <div className="flex justify-between px-6 py-4 border-b border-slate-100 dark:border-border shrink-0 bg-white dark:bg-card z-10">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
-              {isEditMode ? "모의고사 결과 수정" : "모의고사 결과 입력"}
+              {isEditMode
+                ? t("mock_modal_title_edit")
+                : t("mock_modal_title_add")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
-                ? "수정이 필요한 모의고사 결과를 변경해주세요."
-                : "등록할 새로운 모의고사 결과를 입력하세요."}
+                ? t("mock_modal_desc_edit")
+                : t("mock_modal_desc_add")}
             </p>
           </div>
           <button
@@ -951,7 +969,7 @@ export default function AddMockExamModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <InputLabel
-                    label="학생"
+                    label={t("mock_modal_field_student")}
                     hasError={!!errors.student}
                     required
                   />
@@ -967,7 +985,7 @@ export default function AddMockExamModal({
                       }`}
                     >
                       <option value="" disabled hidden>
-                        학생을 선택하세요.
+                        {t("mock_modal_placeholder_student")}
                       </option>
                       {students.map((student) => (
                         <option
@@ -985,7 +1003,7 @@ export default function AddMockExamModal({
                   </div>
                   {students.length === 0 && (
                     <p className="text-xs text-destructive mt-1 ml-1 font-medium">
-                      * 등록된 수강중인 학생이 없습니다.
+                      * {t("mock_modal_students_empty")}
                     </p>
                   )}
                   <ErrorMessage message={errors.student} />
@@ -993,7 +1011,7 @@ export default function AddMockExamModal({
 
                 <div>
                   <InputLabel
-                    label="응시일"
+                    label={t("mock_modal_field_exam_date")}
                     hasError={!!errors.exam_date}
                     required
                   />
@@ -1016,7 +1034,7 @@ export default function AddMockExamModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <InputLabel
-                    label="시험 종류"
+                    label={t("mock_modal_field_exam_standard")}
                     hasError={!!errors.exam_standard}
                     required
                   />
@@ -1032,7 +1050,7 @@ export default function AddMockExamModal({
                       }`}
                     >
                       <option value="" disabled hidden>
-                        시험 종류를 선택하세요.
+                        {t("mock_modal_placeholder_exam_standard")}
                       </option>
                       {examStandards.map((standard) => (
                         <option
@@ -1053,31 +1071,31 @@ export default function AddMockExamModal({
 
                 <div>
                   <InputLabel
-                    label="응시 유형"
+                    label={t("mock_modal_field_exam_mode")}
                     hasError={!!errors.exam_mode}
                     required
                   />
                   <div className="flex gap-2">
                     <SelectionChip
-                      label="Gesamt"
+                      label={t("exam_mode_full")}
                       value="FULL"
                       selectedValue={formData.exam_mode}
                       onClick={handleModeChange}
-                      className="cursor-pointer"
+                      className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
                     />
                     <SelectionChip
-                      label="Schriftlich"
+                      label={t("exam_mode_written")}
                       value="WRITTEN"
                       selectedValue={formData.exam_mode}
                       onClick={handleModeChange}
-                      className="cursor-pointer"
+                      className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
                     />
                     <SelectionChip
-                      label="Mündlich"
+                      label={t("exam_mode_oral")}
                       value="ORAL"
                       selectedValue={formData.exam_mode}
                       onClick={handleModeChange}
-                      className="cursor-pointer"
+                      className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
                     />
                   </div>
                   <ErrorMessage message={errors.exam_mode} />
@@ -1086,13 +1104,13 @@ export default function AddMockExamModal({
             </div>
 
             <div>
-              <InputLabel label="시험 출처" />
+              <InputLabel label={t("mock_modal_field_source")} />
               <input
                 type="text"
                 name="source"
                 value={formData.source}
                 onChange={handleChange}
-                placeholder="모의고사 출처"
+                placeholder={t("mock_modal_placeholder_source")}
                 autoComplete="off"
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium text-sm placeholder:text-slate-400 dark:placeholder:text-muted-foreground/50"
               />
@@ -1107,7 +1125,7 @@ export default function AddMockExamModal({
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                 <div className="h-px bg-slate-100 dark:bg-border w-full" />
                 <h3 className="text-sm font-bold text-slate-500 dark:text-muted-foreground flex items-center gap-2">
-                  상세 결과 입력
+                  {t("mock_modal_detail_title")}
                 </h3>
 
                 <div className="grid grid-cols-1 gap-6">
@@ -1137,11 +1155,11 @@ export default function AddMockExamModal({
                                 <MessageCircle className="w-5 h-5" />
                               )}
                               {mod.module_type === "WRITTEN"
-                                ? "Schriftlich"
-                                : "Mündlich"}
+                                ? t("exam_mode_written")
+                                : t("exam_mode_oral")}
                             </h4>
                             <span className="text-xs font-medium text-muted-foreground bg-white dark:bg-card px-2 py-1 rounded border border-slate-300 dark:border-border">
-                              Max. {mod.max_score}점
+                              {t("mock_modal_max_score", { value: mod.max_score })}
                             </span>
                           </div>
 
@@ -1149,7 +1167,7 @@ export default function AddMockExamModal({
                             {Object.entries(groupedSections).map(
                               ([category, sections]) => (
                                 <div key={category} className="space-y-2">
-                                  <h5 className="text-xs font-bold text-slate-500 dark:text-muted-foreground uppercase tracking-wide px-1">
+                                  <h5 className="text-xs font-bold text-slate-500 dark:text-muted-foreground tracking-wide px-1">
                                     {category}
                                   </h5>
 
@@ -1167,14 +1185,14 @@ export default function AddMockExamModal({
                                             {sec.is_question_based
                                               ? `${parseFloat(
                                                   sec.points_per_question,
-                                                )}점 x ${
+                                                )}${t("mock_modal_points_unit")} x ${
                                                   sec.question_end_num -
                                                   sec.question_start_num +
                                                   1
-                                                }문항`
-                                              : `Max. ${parseFloat(
+                                                }${t("mock_modal_questions_unit")}`
+                                              : `${t("mock_modal_max_prefix")} ${parseFloat(
                                                   sec.section_max_score,
-                                                )}점`}
+                                                )}${t("mock_modal_points_unit")}`}
                                           </span>
                                         </div>
 
@@ -1298,7 +1316,7 @@ export default function AddMockExamModal({
                                               max={sec.section_max_score}
                                             />
                                             <span className="text-sm text-slate-500 dark:text-muted-foreground">
-                                              / {sec.section_max_score} 점
+                                              / {sec.section_max_score} {t("mock_modal_points_unit")}
                                             </span>
                                           </div>
                                         )}
@@ -1310,7 +1328,7 @@ export default function AddMockExamModal({
                             )}
                             {Object.keys(groupedSections).length === 0 && (
                               <div className="text-xs text-slate-400 dark:text-muted-foreground text-center py-2 font-medium">
-                                등록된 섹션이 없습니다.
+                                {t("mock_modal_sections_empty")}
                               </div>
                             )}
                           </div>
@@ -1323,14 +1341,16 @@ export default function AddMockExamModal({
               <div className="bg-slate-50 dark:bg-muted/30 rounded-xl border border-dashed border-slate-200 dark:border-border p-12 text-center text-slate-400 dark:text-muted-foreground text-sm flex flex-col items-center gap-2">
                 <AlertTriangle className="w-8 h-8 text-slate-300 dark:text-muted-foreground/40" />
                 <p className="font-medium">
-                  상세 결과 입력 양식
-                  <br />( <strong>시험 종류</strong>와 {""}
-                  <strong>응시 유형</strong>을 선택해주세요. )
+                  {t("mock_modal_detail_empty_line1")}
+                  <br />(
+                  <strong>{t("mock_modal_field_exam_standard")}</strong>
+                  {t("mock_modal_detail_empty_joiner")}
+                  <strong>{t("mock_modal_field_exam_mode")}</strong>
+                  {t("mock_modal_detail_empty_suffix")}
                 </p>
                 {formData.exam_standard && !selectedStandardData && (
                   <p className="text-xs text-destructive font-medium">
-                    선택한 시험의 상세 데이터를 불러오는 중이거나 데이터가
-                    없습니다.
+                    {t("mock_modal_detail_loading_or_missing")}
                   </p>
                 )}
               </div>
@@ -1340,7 +1360,7 @@ export default function AddMockExamModal({
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 items-end">
                   <div>
-                    <InputLabel label="점수" />
+                    <InputLabel label={t("mock_modal_field_score")} />
                     <div className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 flex items-center overflow-hidden cursor-not-allowed">
                       <span
                         className={`text-sm font-bold truncate w-full text-end ${formData.total_score > 0 ? "text-primary dark:text-primary" : "text-slate-400 dark:text-muted-foreground/40"}`}
@@ -1348,24 +1368,24 @@ export default function AddMockExamModal({
                         {formData.total_score}
                       </span>
                       <span className="text-xs text-slate-400 dark:text-muted-foreground/40 font-medium w-full text-end pl-1">
-                        점
+                        {t("mock_modal_points_unit")}
                       </span>
                     </div>
                   </div>
                   <div className="cursor-not-allowed">
-                    <InputLabel label="등급" />
+                    <InputLabel label={t("mock_modal_field_grade")} />
                     <input
                       name="grade"
                       value={formData.grade}
                       readOnly
                       className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 font-bold focus:outline-none text-sm pointer-events-none text-center text-primary dark:text-primary placeholder:text-slate-400"
-                      placeholder="자동 입력"
+                      placeholder={t("mock_modal_placeholder_grade_auto")}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <InputLabel label="시험지 파일" />
+                  <InputLabel label={t("mock_modal_field_files")} />
                   <div className="space-y-3">
                     <div className="relative w-full">
                       <input
@@ -1382,7 +1402,7 @@ export default function AddMockExamModal({
                         <span className="flex items-center space-x-2">
                           <UploadCloud className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
                           <span className="text-sm font-medium text-slate-400 dark:text-muted-foreground group-hover:text-primary transition-colors">
-                            파일 업로드
+                            {t("mock_modal_upload")}
                           </span>
                         </span>
                       </label>
@@ -1390,7 +1410,7 @@ export default function AddMockExamModal({
 
                     {existingFiles.length > 0 && (
                       <div className="space-y-2">
-                        <InputLabel label="기존 파일" />
+                        <InputLabel label={t("mock_modal_existing_files")} />
                         {existingFiles.map((file) => (
                           <div
                             key={file.id}
@@ -1418,7 +1438,7 @@ export default function AddMockExamModal({
                                 handleDeleteExistingFileClick(file.id)
                               }
                               className="p-1.5 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors cursor-pointer"
-                              title="파일 삭제"
+                              title={t("mock_modal_file_delete_title")}
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -1430,7 +1450,7 @@ export default function AddMockExamModal({
                     {/* 새로 추가할 파일 목록 */}
                     {selectedFiles.length > 0 && (
                       <div className="space-y-2">
-                        <InputLabel label="추가 파일" />
+                        <InputLabel label={t("mock_modal_new_files")} />
                         {selectedFiles.map((file, index) => (
                           <div
                             key={`new-${index}`}
@@ -1451,7 +1471,7 @@ export default function AddMockExamModal({
                               type="button"
                               onClick={() => removeFile(index)}
                               className="p-1.5 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors cursor-pointer"
-                              title="파일 삭제"
+                              title={t("mock_modal_file_delete_title")}
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -1464,14 +1484,14 @@ export default function AddMockExamModal({
               </div>
 
               <div>
-                <InputLabel label="메모" />
+                <InputLabel label={t("mock_modal_field_memo")} />
                 <textarea
                   name="memo"
                   value={formData.memo}
                   onChange={handleChange}
                   rows={5}
                   className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400 h-33"
-                  placeholder="추가사항 / 특이사항"
+                  placeholder={t("mock_modal_placeholder_memo")}
                   autoComplete="off"
                 />
               </div>
@@ -1496,7 +1516,7 @@ export default function AddMockExamModal({
             onClick={handleClose}
             className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
           >
-            취소
+            {t("mock_modal_cancel")}
           </Button>
           <Button
             type="button"
@@ -1509,12 +1529,14 @@ export default function AddMockExamModal({
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {isEditMode ? "수정 중..." : "저장 중..."}
+                {isEditMode
+                  ? t("mock_modal_saving_edit")
+                  : t("mock_modal_saving_add")}
               </>
             ) : isEditMode ? (
-              "수정"
+              t("mock_modal_action_edit")
             ) : (
-              "등록"
+              t("mock_modal_action_add")
             )}
           </Button>
         </div>

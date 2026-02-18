@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../api";
 import { cn } from "../lib/utils";
 import {
@@ -34,34 +35,40 @@ const statusStyles = {
         "border-destructive/60 bg-destructive/30 hover:shadow-md dark:border-destructive/40 dark:bg-destructive/10",
 };
 
-const TODO_CATEGORIES = [
-    {
-        id: "PREP",
-        label: "수업 준비",
-        icon: LucideIcons.BookOpen,
-        color: "text-primary bg-primary/10",
-    },
-    {
-        id: "ADMIN",
-        label: "행정 및 회계",
-        icon: LucideIcons.FileText,
-        color: "text-primary bg-primary/10",
-    },
-    {
-        id: "STUDENT",
-        label: "학생 관리",
-        icon: LucideIcons.Users,
-        color: "text-primary bg-primary/10",
-    },
-    {
-        id: "PERSONAL",
-        label: "개인 업무",
-        icon: LucideIcons.StickyNote,
-        color: "text-primary bg-primary/10",
-    },
-];
-
 export default function Schedule() {
+    // Translation hook for localized UI text
+    // 다국어 UI 텍스트를 위한 번역 훅
+    const { t } = useTranslation();
+
+    // Define TODO categories with translation keys
+    // 번역 키를 사용한 할 일 카테고리 정의
+    const TODO_CATEGORIES = [
+        {
+            id: "PREP",
+            labelKey: "schedule_category_prep",
+            icon: LucideIcons.BookOpen,
+            color: "text-primary bg-primary/10",
+        },
+        {
+            id: "ADMIN",
+            labelKey: "schedule_category_admin",
+            icon: LucideIcons.FileText,
+            color: "text-primary bg-primary/10",
+        },
+        {
+            id: "STUDENT",
+            labelKey: "schedule_category_student",
+            icon: LucideIcons.Users,
+            color: "text-primary bg-primary/10",
+        },
+        {
+            id: "PERSONAL",
+            labelKey: "schedule_category_personal",
+            icon: LucideIcons.StickyNote,
+            color: "text-primary bg-primary/10",
+        },
+    ];
+
     const [viewMode, setViewMode] = useState("weekly");
     const [currentDate, setCurrentDate] = useState(new Date());
     const [allLessons, setAllLessons] = useState([]);
@@ -249,7 +256,7 @@ export default function Schedule() {
         };
 
         return {
-            text: `마감`,
+            text: t("schedule_due_overdue"),
             color: "bg-slate-600 text-white border-slate-700 font-medium dark:bg-slate-800",
         };
     };
@@ -276,9 +283,9 @@ export default function Schedule() {
     };
 
     const priorityLabels = {
-        1: "중요",
-        2: "보통",
-        3: "낮음",
+        1: t("schedule_priority_high"),
+        2: t("schedule_priority_medium"),
+        3: t("schedule_priority_low"),
     };
 
     return (
@@ -308,7 +315,7 @@ export default function Schedule() {
                             setCurrentDate(new Date());
                             }}
                         >
-                            이번 주
+                            {t("schedule_tab_weekly")}
                         </TabsTrigger>
                         <TabsTrigger
                             value="monthly"
@@ -318,7 +325,7 @@ export default function Schedule() {
                             setCurrentDate(new Date());
                             }}
                         >
-                            이번 달
+                            {t("schedule_tab_monthly")}
                         </TabsTrigger>
                     </TabsList>
                     
@@ -357,7 +364,7 @@ export default function Schedule() {
                             onClick={openCreateModal}
                         >
                             <LucideIcons.CalendarPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> 
-                            수업 추가
+                            {t("schedule_action_add_lesson")}
                         </Button>
                     </div>
                 </div>
@@ -397,7 +404,7 @@ export default function Schedule() {
                                         </h3>
                                         {dayLessons.length > 0 && (
                                             <Badge variant="secondary" className="bg-primary/10 text-primary">
-                                                {dayLessons.length}개 수업
+                                                {t("schedule_lessons_count", { count: dayLessons.length })}
                                             </Badge>
                                         )}
                                     </div>
@@ -405,7 +412,7 @@ export default function Schedule() {
                                 <CardContent className={cn("p-4", RESPONSIVE_GAP.sm)}>
                                     {dayLessons.length === 0 ? (
                                         <p className={cn("text-muted-foreground", RESPONSIVE_TEXT.sm)}>
-                                            예정된 수업이 없습니다
+                                            {t("schedule_no_lessons")}
                                         </p>
                                     ) : (
                                         <div className="space-y-3">
@@ -582,7 +589,7 @@ export default function Schedule() {
                                                 {dateLabel}
                                             </h3>
                                             <Badge variant="secondary" className="bg-primary/10 text-primary">
-                                                {dayLessons.length}개 수업
+                                                {t("schedule_lessons_count", { count: dayLessons.length })}
                                             </Badge>
                                         </div>
                                     </CardHeader>
@@ -724,12 +731,12 @@ export default function Schedule() {
         <div className="mt-6 sm:mt-8">
             <Card className="shadow-lg border-none bg-card text-card-foreground">
                 <CardHeader className={cn(
-                    "pb-3 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
+                    "pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
                     RESPONSIVE_PADDING.sm
                 )}>
                     <TabsList className="w-auto">
                         <TabsTrigger className={cn("cursor-default py-1", RESPONSIVE_TEXT.sm)}>
-                            할 일
+                            {t("schedule_todos_title")}
                         </TabsTrigger>
                     </TabsList>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -742,7 +749,7 @@ export default function Schedule() {
                             )}
                         >
                             <LucideIcons.ListPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> 
-                            업무 추가
+                            {t("schedule_action_add_todo")}
                         </Button>
                     </div>
                 </CardHeader>
@@ -765,14 +772,14 @@ export default function Schedule() {
                                             <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
                                         </div>
                                         <span className={cn("font-bold text-card-foreground", RESPONSIVE_TEXT.sm)}>
-                                            {category.label}
+                                            {t(category.labelKey)}
                                         </span>
                                     </div>
 
                                     <div className="flex flex-col gap-2 sm:gap-3 h-80 custom-scrollbar p-1 pr-2">
                                         {categoryTodos.length === 0 ? (
-                                            <div className="text-center py-8 border-2 border-dashed border-border rounded-xl bg-muted/30">
-                                                <p className={cn("text-muted-foreground", RESPONSIVE_TEXT.xs)}>비어 있음</p>
+                                            <div className="text-center py-8 border-2 border-dashed border-border rounded-xl h-full flex items-center justify-center bg-muted/30">
+                                                <p className={cn("text-muted-foreground", RESPONSIVE_TEXT.xs)}>{t("schedule_empty_category")}</p>
                                             </div>
                                         ) : (
                                             categoryTodos.map((todo) => {

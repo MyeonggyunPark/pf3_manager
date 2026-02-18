@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../api";
 import { cn } from "../lib/utils";
 import {
@@ -60,12 +61,9 @@ const statusStyles = {
   FINISHED:
     "bg-success/20 text-[#5f6e63] border-success/50 hover:bg-success/20 dark:text-success-foreground",
 };
-const STATUS_LABELS = {
-  ACTIVE: "수강중",
-  PAUSED: "일시중지",
-  FINISHED: "종료",
-};
 
+// Exam mode styles and labels
+// 시험 유형 스타일 및 라벨
 const examResultStyles = {
   PASSED:
     "bg-accent/20 text-[#4a7a78] border-accent/50 hover:bg-accent/20 dark:text-accent-foreground",
@@ -74,17 +72,14 @@ const examResultStyles = {
   WAITING: "bg-muted/50 text-muted-foreground border-border hover:bg-muted/50",
 };
 
-const EXAM_MODE_LABELS = {
-  FULL: "Gesamt",
-  WRITTEN: "Schriftlich",
-  ORAL: "Mündlich",
-};
-
+// Exam mode labels
+// 시험 유형 라벨
 const LEVEL_OPTIONS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 // FilePopover Component - Responsive (Modal on Mobile, Popover on Desktop)
 // 파일 팝오버 컴포넌트 - 반응형 (모바일: 모달, 데스크톱: 팝오버)
 const FilePopover = ({ attachments }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 648);
@@ -173,10 +168,12 @@ const FilePopover = ({ attachments }) => {
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 max-w-full mx-auto">
                 <div className="p-1 flex flex-col max-h-60 overflow-y-auto custom-scrollbar">
                   <div className="px-3 py-2 text-xs font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-700 mb-1">
-                    첨부파일 목록 ({attachments.length})
+                    {t("student_attachment_list", {
+                      count: attachments.length,
+                    })}
                   </div>
                   {attachments.map((file, index) => {
-                    let fileName = "파일";
+                    let fileName = t("student_file_default");
                     if (file.original_name) fileName = file.original_name;
                     else if (file.file) {
                       try {
@@ -185,7 +182,7 @@ const FilePopover = ({ attachments }) => {
                         );
                       } catch (e) {
                         console.log("Error decoding file name:", e);
-                        fileName = "Unknown File";
+                        fileName = t("student_file_unknown");
                       }
                     }
 
@@ -228,10 +225,12 @@ const FilePopover = ({ attachments }) => {
 
             <div className="p-1 flex flex-col max-h-60 overflow-y-auto custom-scrollbar">
               <div className="px-3 py-2 text-xs font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-700 mb-1">
-                첨부파일 목록 ({attachments.length})
+                {t("student_attachment_list", {
+                  count: attachments.length,
+                })}
               </div>
               {attachments.map((file, index) => {
-                let fileName = "파일";
+                let fileName = t("student_file_default");
                 if (file.original_name) fileName = file.original_name;
                 else if (file.file) {
                   try {
@@ -240,7 +239,7 @@ const FilePopover = ({ attachments }) => {
                     );
                   } catch (e) {
                     console.log("Error decoding file name:", e);
-                    fileName = "Unknown File";
+                    fileName = t("student_file_unknown");
                   }
                 }
 
@@ -268,29 +267,61 @@ const FilePopover = ({ attachments }) => {
   );
 };
 
-// Format date string to German locale (DD.MM.YYYY)
-// 날짜 문자열을 독일 로케일(일.월.년) 형식으로 변환
-const formatDate = (dateString) => {
-  if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("de-DE", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-};
-
-// Format number to Euro currency style
-// 숫자를 유로 통화 형식으로 변환
-const formatCurrency = (amount) => {
-  if (amount === undefined || amount === null) return "-";
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-};
-
 export default function StudentList() {
   const location = useLocation();
+
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+  const locale = isGerman ? "de-DE" : "ko-KR";
+
+  const statusLabels = {
+    ACTIVE: t("student_status_active"),
+    PAUSED: t("student_status_paused"),
+    FINISHED: t("student_status_finished"),
+  };
+
+  const examModeLabels = {
+    FULL: t("student_exam_mode_full"),
+    WRITTEN: t("student_exam_mode_written"),
+    ORAL: t("student_exam_mode_oral"),
+  };
+
+  const examResultLabels = {
+    PASSED: t("student_exam_result_passed"),
+    FAILED: t("student_exam_result_failed"),
+    WAITING: t("student_exam_result_waiting"),
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+
+    const formatted = new Date(dateString).toLocaleDateString(locale, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    if (locale === "ko-KR") {
+      return formatted
+        .replace(/\s/g, "")
+        .replace(/\.$/, "");
+    }
+
+    return formatted;
+  };
+
+  const formatCurrency = (amount) => {
+    if (amount === undefined || amount === null) return "-";
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "EUR",
+    }).format(amount);
+  };
 
   // Ref and State for scroll detection
   // 스크롤 감지를 위한 Ref와 State
@@ -546,13 +577,14 @@ export default function StudentList() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className={cn(
-                  "h-10 w-full sm:w-32 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                  "h-10 w-full appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 md:px-4 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                  isGerman ? "sm:w-32" : "sm:w-28",
                 )}
               >
-                <option value="">전체(상태)</option>
-                <option value="ACTIVE">수강중</option>
-                <option value="PAUSED">일시중지</option>
-                <option value="FINISHED">종료</option>
+                <option value="">{t("student_filter_all_status")}</option>
+                <option value="ACTIVE">{statusLabels.ACTIVE}</option>
+                <option value="PAUSED">{statusLabels.PAUSED}</option>
+                <option value="FINISHED">{statusLabels.FINISHED}</option>
               </select>
               <LucideIcons.ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
@@ -564,10 +596,11 @@ export default function StudentList() {
                 value={levelFilter}
                 onChange={(e) => setLevelFilter(e.target.value)}
                 className={cn(
-                  "h-10 w-full sm:w-29 appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                  "h-10 w-full appearance-none rounded-xl border border-border bg-white dark:bg-card px-3 text-sm md:text-md focus:outline-none focus:border-primary cursor-pointer text-foreground font-medium",
+                  isGerman ? "sm:w-29" : "sm:w-27",
                 )}
               >
-                <option value="">전체(레벨)</option>
+                <option value="">{t("student_filter_all_level")}</option>
                 {LEVEL_OPTIONS.map((level) => (
                   <option key={level} value={level}>
                     {level}
@@ -580,17 +613,21 @@ export default function StudentList() {
             {/* Search Input */}
             {/* 검색 입력 */}
             <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto gap-2 group">
-              <div className="relative w-full sm:w-40 md:w-48">
+              <div
+                className={cn(
+                  "relative w-full sm:w-40 md:w-48",
+                  isGerman ? "md:w-50" : "md:w-48",
+                )}
+              >
                 <LucideIcons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors dark:text-muted-foreground" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
                   className={cn(
-                    "flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400",
-                    RESPONSIVE_TEXT.sm,
+                    "flex h-10 w-full rounded-xl px-3 py-1 pl-10 focus:outline-none border border-border bg-white dark:bg-card focus:border-primary transition-all outline-none font-medium text-slate-800 dark:text-foreground placeholder:text-slate-400 text-sm md:text-md",
                   )}
-                  placeholder="학생 이름 입력"
+                  placeholder={t("student_search_placeholder")}
                 />
               </div>
               <Button
@@ -601,7 +638,7 @@ export default function StudentList() {
                 )}
                 onClick={handleSearchClick}
               >
-                검색
+                {t("student_search_button")}
               </Button>
             </div>
           </div>
@@ -615,7 +652,8 @@ export default function StudentList() {
           )}
           onClick={openCreateModal}
         >
-          <LucideIcons.UserPlus className="w-4 h-4" /> 학생 등록
+          <LucideIcons.UserPlus className="w-4 h-4" />{" "}
+          {t("student_action_add_student")}
         </Button>
       </div>
 
@@ -632,7 +670,9 @@ export default function StudentList() {
             {students.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground/70 gap-2">
                 <LucideIcons.SearchX className="w-8 h-8" />
-                <p className="font-semibold text-sm">검색된 학생이 없습니다.</p>
+                <p className="font-semibold text-sm">
+                  {t("student_empty_search")}
+                </p>
               </div>
             ) : (
               students.map((s) => (
@@ -682,7 +722,7 @@ export default function StudentList() {
                           statusStyles[s.status],
                         )}
                       >
-                        {STATUS_LABELS[s.status]}
+                        {statusLabels[s.status]}
                       </Badge>
                     </div>
                   </div>
@@ -714,7 +754,9 @@ export default function StudentList() {
                   className="flex items-center gap-2 text-slate-600 dark:text-muted-foreground hover:text-primary dark:hover:text-primary transition-colors cursor-pointer"
                 >
                   <LucideIcons.ChevronLeft className="w-5 h-5" />
-                  <span className="font-semibold text-sm">학생 목록으로</span>
+                  <span className="font-semibold text-sm">
+                    {t("student_back_to_list")}
+                  </span>
                 </button>
               </div>
 
@@ -764,7 +806,7 @@ export default function StudentList() {
                               statusStyles[activeStudent.status],
                             )}
                           >
-                            {STATUS_LABELS[activeStudent.status]}
+                            {statusLabels[activeStudent.status]}
                           </Badge>
                         </div>
                         <div
@@ -775,12 +817,18 @@ export default function StudentList() {
                         >
                           {activeStudent.age && (
                             <>
-                              <span>{activeStudent.age}세</span>
+                              <span>
+                                {t("student_age_years", {
+                                  age: activeStudent.age,
+                                })}
+                              </span>
                               <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-border" />
                             </>
                           )}
                           <span>
-                            등록일 - {formatDate(activeStudent.created_at)}
+                            {t("student_registered_on", {
+                              date: formatDate(activeStudent.created_at),
+                            })}
                           </span>
                         </div>
                       </div>
@@ -793,7 +841,8 @@ export default function StudentList() {
                         RESPONSIVE_TEXT.sm,
                       )}
                     >
-                      <LucideIcons.Edit3 className="w-4 h-4 mr-2" /> 정보 수정
+                      <LucideIcons.Edit3 className="w-4 h-4 mr-2" />{" "}
+                      {t("student_action_edit_info")}
                     </Button>
                   </div>
 
@@ -803,11 +852,11 @@ export default function StudentList() {
                       <div className="w-full">
                         <p
                           className={cn(
-                            "font-semibold text-muted-foreground uppercase tracking-wider mb-1",
+                            "font-semibold text-muted-foreground tracking-wider mb-1",
                             "text-[10px] md:text-xs",
                           )}
                         >
-                          현재 레벨
+                          {t("student_current_level")}
                         </p>
                         <p className="text-lg md:text-[22px] font-bold text-slate-800 dark:text-foreground text-right pr-8 md:pr-12">
                           {activeStudent.current_level}
@@ -817,8 +866,8 @@ export default function StudentList() {
 
                     <div className="flex-1 bg-primary/5 border border-primary/10 rounded-xl p-4 shadow-sm">
                       <div className="w-full">
-                        <p className="text-xs font-semibold text-primary/70 uppercase tracking-wider mb-1">
-                          목표 레벨
+                        <p className="text-xs font-semibold text-primary/70 tracking-wider mb-1">
+                          {t("student_target_level")}
                         </p>
                         <p className="text-lg md:text-[22px] font-bold text-primary text-right pr-8 md:pr-12">
                           {activeStudent.target_level}
@@ -828,11 +877,11 @@ export default function StudentList() {
 
                     <div className="flex-1 bg-primary/5 border border-primary/10 rounded-xl p-4 shadow-sm">
                       <div className="w-full">
-                        <p className="text-xs font-semibold text-primary/70 uppercase tracking-wider mb-1">
-                          목표 시험
+                        <p className="text-xs font-semibold text-primary/70 tracking-wider mb-1">
+                          {t("student_target_exam")}
                         </p>
                         <p className="text-lg md:text-[22px] font-bold text-primary text-right pr-6 md:pr-9">
-                          {EXAM_MODE_LABELS[activeStudent.target_exam_mode] ||
+                          {examModeLabels[activeStudent.target_exam_mode] ||
                             activeStudent.target_exam_mode}
                         </p>
                       </div>
@@ -855,7 +904,7 @@ export default function StudentList() {
                             : "text-muted-foreground",
                         )}
                       >
-                        {activeStudent.memo || "추가사항 / 특이사항"}
+                        {activeStudent.memo || t("student_memo_placeholder")}
                       </p>
                     </div>
 
@@ -884,7 +933,7 @@ export default function StudentList() {
                           </div>
                         ) : (
                           <span className="text-sm font-medium text-muted-foreground flex items-center">
-                            등록된 영수증 정보가 없습니다.
+                            {t("student_billing_empty")}
                           </span>
                         )}
                       </div>
@@ -915,7 +964,7 @@ export default function StudentList() {
                     )}
                   >
                     <LucideIcons.CreditCard className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
-                    수강 이력
+                    {t("student_tab_courses")}
                     <Badge
                       variant="secondary"
                       className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-slate-100 dark:bg-secondary/50 text-slate-500 dark:text-muted-foreground"
@@ -936,7 +985,7 @@ export default function StudentList() {
                     )}
                   >
                     <LucideIcons.FileEdit className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
-                    모의고사
+                    {t("student_tab_mock_exams")}
                     <Badge
                       variant="secondary"
                       className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-slate-100 dark:bg-secondary/50 text-slate-500 dark:text-muted-foreground"
@@ -957,7 +1006,7 @@ export default function StudentList() {
                     )}
                   >
                     <LucideIcons.GraduationCap className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
-                    정규 시험
+                    {t("student_tab_official_exams")}
                     <Badge
                       variant="secondary"
                       className="ml-1 px-1.5 py-0 h-4 text-[10px] bg-slate-100 dark:bg-secondary/50 text-slate-500 dark:text-muted-foreground"
@@ -990,25 +1039,25 @@ export default function StudentList() {
                             )}
                           >
                             <table className="w-full text-sm table-fixed min-w-150">
-                              <thead className="text-[10px] md:text-xs text-slate-500 dark:text-muted-foreground uppercase">
+                              <thead className="text-[10px] md:text-xs text-slate-500 dark:text-muted-foreground">
                                 <tr>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[29%]">
-                                    기간
+                                    {t("student_course_col_period")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[14%]">
-                                    총 시간
+                                    {t("student_course_col_total_hours")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                    시간당 금액
+                                    {t("student_course_col_hourly_rate")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                    총 금액
+                                    {t("student_course_col_total_fee")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                                    수강 상태
+                                    {t("student_course_col_status")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                    결제
+                                    {t("student_course_col_payment")}
                                   </th>
                                 </tr>
                               </thead>
@@ -1019,8 +1068,18 @@ export default function StudentList() {
                             ref={tableBodyRef}
                             className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
                           >
-                            <table className="w-full text-sm table-fixed min-w-150">
-                              <tbody className="divide-y divide-slate-50 dark:divide-border/50">
+                            <table
+                              className={cn(
+                                "w-full text-sm table-fixed min-w-150",
+                                studentCourses.length === 0 ? "h-full" : "",
+                              )}
+                            >
+                              <tbody
+                                className={cn(
+                                  "divide-y divide-slate-50 dark:divide-border/50",
+                                  studentCourses.length === 0 ? "h-full" : "",
+                                )}
+                              >
                                 {studentCourses.length > 0 ? (
                                   studentCourses.map((course) => (
                                     <tr
@@ -1051,7 +1110,7 @@ export default function StudentList() {
                                               statusStyles[course.status],
                                             )}
                                           >
-                                            {STATUS_LABELS[course.status]}
+                                            {statusLabels[course.status]}
                                           </Badge>
                                         </div>
                                       </td>
@@ -1060,12 +1119,12 @@ export default function StudentList() {
                                           {course.is_paid ? (
                                             <span className="inline-flex items-center gap-0.5 md:gap-1 text-[9px] md:text-[11px] font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded-xl border bg-accent/20 text-[#4a7a78] dark:text-accent-foreground border-accent/50">
                                               <LucideIcons.CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
-                                              완납
+                                              {t("student_payment_paid")}
                                             </span>
                                           ) : (
                                             <span className="inline-flex items-center gap-0.5 md:gap-1 text-[9px] md:text-[11px] font-bold text-destructive bg-destructive/10 px-1.5 md:px-2 py-0.5 rounded-xl border border-destructive/20">
                                               <LucideIcons.XCircle className="w-2.5 h-2.5 md:w-3 md:h-3" />{" "}
-                                              미납
+                                              {t("student_payment_unpaid")}
                                             </span>
                                           )}
                                         </div>
@@ -1073,12 +1132,17 @@ export default function StudentList() {
                                     </tr>
                                   ))
                                 ) : (
-                                  <tr>
+                                  <tr className="h-full">
                                     <td
                                       colSpan="6"
-                                      className="px-6 py-12 text-center text-slate-400 text-sm"
+                                      className="text-sm h-full align-middle"
                                     >
-                                      등록된 수강 이력이 없습니다.
+                                      <div className="flex flex-col justify-center items-center gap-2 text-muted-foreground/70">
+                                        <LucideIcons.SearchX className="w-8 h-8" />
+                                        <p className="font-semibold">
+                                          {t("student_empty_courses")}
+                                        </p>
+                                      </div>
                                     </td>
                                   </tr>
                                 )}
@@ -1098,25 +1162,25 @@ export default function StudentList() {
                             )}
                           >
                             <table className="w-full text-sm table-fixed min-w-150">
-                              <thead className="text-[10px] md:text-xs text-slate-500 dark:text-muted-foreground uppercase">
+                              <thead className="text-[10px] md:text-xs text-slate-500 dark:text-muted-foreground">
                                 <tr>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                    응시일
+                                    {t("student_exam_col_date")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[30%]">
-                                    시험명
+                                    {t("student_exam_col_name")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                    응시 유형
+                                    {t("student_exam_col_mode")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                    점수
+                                    {t("student_exam_col_score")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                    등급
+                                    {t("student_exam_col_grade")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[10%]">
-                                    파일
+                                    {t("student_exam_col_file")}
                                   </th>
                                 </tr>
                               </thead>
@@ -1126,8 +1190,18 @@ export default function StudentList() {
                             ref={tableBodyRef}
                             className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
                           >
-                            <table className="w-full text-sm table-fixed min-w-150">
-                              <tbody className="divide-y divide-slate-50 dark:divide-border/50">
+                            <table
+                              className={cn(
+                                "w-full text-sm table-fixed min-w-150",
+                                studentMockExams.length === 0 ? "h-full" : "",
+                              )}
+                            >
+                              <tbody
+                                className={cn(
+                                  "divide-y divide-slate-50 dark:divide-border/50",
+                                  studentMockExams.length === 0 ? "h-full" : "",
+                                )}
+                              >
                                 {studentMockExams.length > 0 ? (
                                   studentMockExams.map((exam) => (
                                     <tr
@@ -1137,7 +1211,7 @@ export default function StudentList() {
                                       }
                                       className="hover:bg-slate-50 dark:hover:bg-muted/10 transition-colors cursor-pointer"
                                     >
-                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%] text-xs md:text-sm">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%] text-xs md:text-sm whitespace-nowrap">
                                         {formatDate(exam.exam_date)}
                                       </td>
                                       <td className="px-2 py-3 md:py-4 text-center w-[30%] align-middle">
@@ -1158,7 +1232,7 @@ export default function StudentList() {
                                             variant="default"
                                             className="text-[11px] border border-primary/10 rounded-md px-2 py-0.5 justify-center hover:bg-primary/10"
                                           >
-                                            {EXAM_MODE_LABELS[exam.exam_mode] ||
+                                            {examModeLabels[exam.exam_mode] ||
                                               exam.exam_mode}
                                           </Badge>
                                         </div>
@@ -1202,12 +1276,17 @@ export default function StudentList() {
                                     </tr>
                                   ))
                                 ) : (
-                                  <tr>
+                                  <tr className="h-full">
                                     <td
                                       colSpan="6"
-                                      className="px-6 py-12 text-center text-slate-400 text-sm"
+                                      className="text-center text-sm h-full align-middle"
                                     >
-                                      등록된 모의고사 기록이 없습니다.
+                                      <div className="flex flex-col justify-center items-center gap-2 text-muted-foreground/70">
+                                        <LucideIcons.SearchX className="w-8 h-8" />
+                                        <p className="font-semibold">
+                                          {t("student_empty_mock_exams")}
+                                        </p>
+                                      </div>
                                     </td>
                                   </tr>
                                 )}
@@ -1227,25 +1306,25 @@ export default function StudentList() {
                             )}
                           >
                             <table className="w-full text-sm table-fixed min-w-150">
-                              <thead className="text-[10px] md:text-xs text-slate-500 dark:text-muted-foreground uppercase">
+                              <thead className="text-[10px] md:text-xs text-slate-500 dark:text-muted-foreground">
                                 <tr>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                    응시일
+                                    {t("student_exam_col_date")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[30%]">
-                                    시험명
+                                    {t("student_exam_col_name")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[15%]">
-                                    응시 유형
+                                    {t("student_exam_col_mode")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[14%]">
-                                    점수
+                                    {t("student_exam_col_score")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[14%]">
-                                    등급
+                                    {t("student_exam_col_grade")}
                                   </th>
                                   <th className="px-2 md:px-4 py-2 md:py-3 font-semibold text-center w-[12%]">
-                                    결과
+                                    {t("student_exam_col_result")}
                                   </th>
                                 </tr>
                               </thead>
@@ -1255,8 +1334,18 @@ export default function StudentList() {
                             ref={tableBodyRef}
                             className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
                           >
-                            <table className="w-full text-sm table-fixed min-w-150">
-                              <tbody className="divide-y divide-slate-50 dark:divide-border/50">
+                            <table
+                              className={cn(
+                                "w-full text-sm table-fixed min-w-150",
+                                studentExams.length === 0 ? "h-full" : "",
+                              )}
+                            >
+                              <tbody
+                                className={cn(
+                                  "divide-y divide-slate-50 dark:divide-border/50",
+                                  studentExams.length === 0 ? "h-full" : "",
+                                )}
+                              >
                                 {studentExams.length > 0 ? (
                                   studentExams.map((exam) => (
                                     <tr
@@ -1264,7 +1353,7 @@ export default function StudentList() {
                                       onClick={() => openEditExamModal(exam)}
                                       className="hover:bg-slate-50 dark:hover:bg-muted/10 transition-colors cursor-pointer"
                                     >
-                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%] text-xs md:text-sm">
+                                      <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[15%] text-xs md:text-sm whitespace-nowrap">
                                         {formatDate(exam.exam_date)}
                                       </td>
                                       <td className="px-2 py-3 md:py-4 text-center font-bold text-slate-800 dark:text-card-foreground truncate w-[30%] text-xs md:text-sm">
@@ -1277,8 +1366,8 @@ export default function StudentList() {
                                             variant="default"
                                             className="text-[11px] border border-primary/10 rounded-md px-2 py-0.5 justify-center hover:bg-primary/10"
                                           >
-                                            {EXAM_MODE_LABELS[exam.exam_mode] ||
-                                              "Gesamt"}
+                                            {examModeLabels[exam.exam_mode] ||
+                                              examModeLabels.FULL}
                                           </Badge>
                                         </div>
                                       </td>
@@ -1317,27 +1406,31 @@ export default function StudentList() {
                                         <div className="flex justify-center items-center w-full">
                                           <Badge
                                             className={cn(
-                                              "text-[12px] px-2 py-0.5 border font-medium shadow-none justify-center min-w-12.5",
+                                              "text-[12px] px-2 py-0.5 border font-medium shadow-none justify-center",
                                               examResultStyles[exam.status],
+                                              isGerman
+                                                ? "text-center"
+                                                : "min-w-12.5",
                                             )}
                                           >
-                                            {exam.status === "PASSED"
-                                              ? "합격"
-                                              : exam.status === "FAILED"
-                                                ? "불합격"
-                                                : "대기"}
+                                            {examResultLabels[exam.status]}
                                           </Badge>
                                         </div>
                                       </td>
                                     </tr>
                                   ))
                                 ) : (
-                                  <tr>
+                                  <tr className="h-full">
                                     <td
                                       colSpan="6"
-                                      className="px-6 py-12 text-center text-slate-400 text-sm"
+                                      className="text-center text-sm h-full align-middle"
                                     >
-                                      등록된 시험 결과가 없습니다.
+                                      <div className="flex flex-col justify-center items-center gap-2 text-muted-foreground/70">
+                                        <LucideIcons.SearchX className="w-8 h-8" />
+                                        <p className="font-semibold">
+                                          {t("student_empty_official_exams")}
+                                        </p>
+                                      </div>
                                     </td>
                                   </tr>
                                 )}
@@ -1359,12 +1452,14 @@ export default function StudentList() {
 
               <div className="text-center space-y-2">
                 <h3 className="text-xl font-semibold text-primary">
-                  선택된 학생이 없습니다.
+                  {t("student_empty_title")}
                 </h3>
                 <p className="text-slate-500 dark:text-muted-foreground max-w-xs mx-auto leading-relaxed">
-                  좌측 목록에서 학생을 선택하면
+                  {t("student_empty_desc_line1")}
                   <br />
-                  선택된 학생의 <strong>상세 정보</strong>를 확인할 수 있습니다.
+                  {t("student_empty_desc_line2_prefix")}{" "}
+                  <strong>{t("student_empty_desc_highlight")}</strong>{" "}
+                  {t("student_empty_desc_line2_suffix")}
                 </p>
               </div>
             </div>

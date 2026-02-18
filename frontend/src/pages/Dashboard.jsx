@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
+import i18n from "i18next";
+import { useTranslation } from "react-i18next";
 import api from "../api";
 import { cn } from "../lib/utils";
 import { 
@@ -24,6 +26,14 @@ import AddTodoModal from "../components/modals/AddTodoModal";
 export default function Dashboard() {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const navigate = useNavigate();
+    
+    // Translation hook for localized UI text
+    // 다국어 UI 텍스트를 위한 번역 훅
+    const { t } = useTranslation();
+
+    // Language condition for style branching
+    // 언어별 스타일 분기 조건
+    const isGerman = i18n.resolvedLanguage?.startsWith("de");
 
     // Initialize stats with default values to prevent undefined errors
     // undefined 에러 방지를 위해 통계 상태 초기값 설정
@@ -203,8 +213,8 @@ export default function Dashboard() {
     const displayLessons = activeTab === "today" ? todayLessons : tomorrowLessons;
     const displayDate = activeTab === "today" ? todayDate : tomorrowDate;
     const emptyMessage = activeTab === "today" 
-        ? "오늘 예정된 수업이 없습니다." 
-        : "내일 예정된 수업이 없습니다.";
+        ? t("dashboard_lessons_empty_today") 
+        : t("dashboard_lessons_empty_tomorrow");
 
     // Calculate D-Day based on date only
     // 날짜 기준으로 D-Day 계산
@@ -253,7 +263,7 @@ export default function Dashboard() {
             return { text: `D-${diffDays}`, color: "bg-warning/30 text-yellow-500 border-warning/30 dark:text-warning" };
         if (diffDays > 0)
             return { text: `D-${diffDays}`, color: "bg-slate-50 text-slate-400 border-slate-100 dark:bg-muted dark:text-muted-foreground dark:border-border" };
-        return { text: `마감`, color: "bg-slate-600 text-white border-slate-700 font-medium dark:bg-slate-800" };
+        return { text: t("dashboard_due_overdue"), color: "bg-slate-600 text-white border-slate-700 font-medium dark:bg-slate-800" };
     };
 
     // Format todo date string (YYYY-MM-DD -> DD.MM.YYYY)
@@ -303,9 +313,9 @@ export default function Dashboard() {
     // Priority labels
     // 우선순위 라벨 정의
     const priorityLabels = {
-        1: "중요",
-        2: "보통",
-        3: "낮음",
+        1: t("dashboard_priority_high"),
+        2: t("dashboard_priority_medium"),
+        3: t("dashboard_priority_low"),
     };
     // Priority badge colors
     // 우선순위 배지 색상 정의
@@ -380,7 +390,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2">
                         <TabsList className="text-sm font-bold flex items-center dark:bg-muted/50">
                             <TabsTrigger className="cursor-default" value="upcoming" activeValue="upcoming">
-                                예정된 정규 시험    
+                                {t("dashboard_exam_upcoming_title")}    
                             </TabsTrigger>
                         </TabsList>
                         <Badge
@@ -397,7 +407,7 @@ export default function Dashboard() {
                             className="h-7 sm:h-8 text-xs rounded-full px-2.5 sm:px-3 text-muted-foreground/70 cursor-pointer hover:bg-muted"
                             onClick={() => navigate("/exams", { state: { tab: "official" } })}
                         >
-                            전체 보기
+                            {t("dashboard_view_all")}
                         </Button>
                     )}
                 </div>
@@ -445,7 +455,7 @@ export default function Dashboard() {
                                 className="relative flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-white dark:bg-card border border-slate-100 dark:border-border shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-muted/50 transition-all cursor-pointer group"
                                 >
                                 {/* Left: Date Box */}
-                                {/* 좌측: 날짜 박스 */}
+                                {/* 측: 날짜 박스 */}
                                 <div
                                     className={cn(
                                     "flex flex-col items-center justify-center min-w-11 sm:min-w-12.5 h-11 sm:h-12.5 rounded-lg border",
@@ -510,7 +520,7 @@ export default function Dashboard() {
             <div className="w-full rounded-xl border-none bg-white dark:bg-card p-8 flex flex-col items-center justify-center text-center text-muted-foreground/70 gap-2">
                 <LucideIcons.SearchX className="w-8 h-8" />
                 <h3 className="text-sm font-semibold">
-                    예정된 정규 시험이 없습니다.
+                    {t("dashboard_exam_empty")}
                 </h3>
             </div>
         )}
@@ -526,10 +536,10 @@ export default function Dashboard() {
                         <div className="flex items-center">
                             <TabsList className="dark:bg-muted/50">
                                 <TabsTrigger value="today" activeValue={activeTab} onClick={() => setActiveTab("today")}>
-                                    오늘의 수업
+                                    {t("dashboard_lessons_today")}
                                 </TabsTrigger>
                                 <TabsTrigger value="tomorrow" activeValue={activeTab} onClick={() => setActiveTab("tomorrow")}>
-                                    내일의 수업
+                                    {t("dashboard_lessons_tomorrow")}
                                 </TabsTrigger>
                             </TabsList>
                         </div>
@@ -584,7 +594,7 @@ export default function Dashboard() {
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-muted-foreground mt-0.5">{lesson.memo || "메모 없음"}</p>
+                                            <p className="text-sm text-muted-foreground mt-0.5">{lesson.memo || t("dashboard_no_memo")}</p>
                                         </div>
                                     </div>
                                     <div className="p-2">
@@ -602,9 +612,9 @@ export default function Dashboard() {
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 px-4">
                         <TabsList className="dark:bg-muted/50">
                             <TabsTrigger className="cursor-default flex gap-2" value="urgent" activeValue="urgent">
-                                할 일
+                                {t("dashboard_todos_title")}
                                 <span className="text-[8px] px-1 py-0.5 rounded bg-destructive text-white">
-                                    중요
+                                    {t("dashboard_priority_high")}
                                 </span>
                             </TabsTrigger>
                         </TabsList>
@@ -614,14 +624,14 @@ export default function Dashboard() {
                             className="h-7 sm:h-8 text-xs rounded-full px-2.5 sm:px-3 text-muted-foreground/70 cursor-pointer hover:bg-muted"
                             onClick={() => navigate("/schedule")}
                         >
-                            전체 보기
+                            {t("dashboard_view_all")}
                         </Button>
                     </CardHeader>
                     <CardContent className="h-110 overflow-y-auto custom-scrollbar px-4 space-y-3">
                         {urgentTodos.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-muted-foreground/70 gap-2 pb-2">
                                 <LucideIcons.SearchX className="w-8 h-8" />
-                                <h3 className="text-sm font-semibold">중요 업무가 없습니다.</h3>
+                                <h3 className="text-sm font-semibold">{t("dashboard_todos_empty_urgent")}</h3>
                             </div>
                         ) : (
                             urgentTodos.map(todo => {
@@ -724,13 +734,13 @@ export default function Dashboard() {
                         className="flex-1 flex flex-col justify-between bg-white dark:bg-card border-2 border-primary p-4 md:p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-primary/5 transition-all hover:shadow-md"
                     >
                         <p className={cn(RESPONSIVE_TEXT.xs, "font-semibold text-primary uppercase tracking-wider mb-2")}>
-                            이번 달 예상 수익
+                            {t("dashboard_revenue_estimated_month")}
                         </p>
                         <div className="flex justify-between items-center">
                             <div className="flex gap-1 items-center bg-primary/10 text-primary px-3 py-2 rounded-full">
                                 <div className="flex flex-col gap-1 w-21">
                                     <div className="flex justify-between text-xs font-bold text-primary/80">
-                                        <span>입금 상태</span>
+                                        <span>{t("dashboard_payment_progress")}</span>
                                         <span>{revenuePercentage}%</span>
                                     </div>
                                     <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
@@ -754,20 +764,23 @@ export default function Dashboard() {
                         className="flex-1 flex flex-col justify-between bg-white dark:bg-card border-2 border-accent p-4 md:p-5 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-accent/5 transition-all hover:shadow-md"
                     >
                         <p className={cn(RESPONSIVE_TEXT.xs, "font-semibold text-[#4a7a78] dark:text-accent-foreground uppercase tracking-wider mb-2")}>
-                            현재 수강중 학생 
+                            {t("dashboard_active_students")}
                         </p>
                         <div className="flex justify-between items-center">
-                            <div className="flex bg-accent/20 text-[#4a7a78] dark:text-accent-foreground px-3 py-2 rounded-full">
-                                <span className="text-xs mr-1">인당 평균 수업</span>
+                            <div className={cn("flex bg-accent/20 text-[#4a7a78] dark:text-accent-foreground px-3 py-2 rounded-full",
+                                isGerman ? "flex-col text-center pl-4" : "flex-row",
+                            )}>
+                                <span className="text-xs mr-1">{t("dashboard_avg_lessons_per_student")}</span>
                                 <span className="text-xs font-semibold">
                                     {stats?.active_students > 0 
                                         ? (stats.monthly_lesson_count / stats.active_students).toFixed(1) 
-                                        : 0}회
+                                        : 0}{t("dashboard_times_suffix")}
                                 </span>
                             </div>
 
                             <h3 className={cn(RESPONSIVE_TEXT.xl, "font-extrabold text-[#4a7a78] dark:text-accent-foreground")}>
-                                총 {stats?.active_students || 0}명
+                                <span className={cn(isGerman ? "hidden" : "block")}>{t("dashboard_total_students", { count: stats?.active_students || 0 })}</span>
+                                <span className={cn(isGerman ? "block text-center" : "hidden")}>{t("dashboard_total_students", { count: stats?.active_students || 0 })}</span>
                             </h3>
                         </div>
                     </div>
@@ -776,24 +789,30 @@ export default function Dashboard() {
                         <CardContent className="p-4 md:p-5 space-y-2.5 md:space-y-3">
                             <Button
                                 variant="secondary"
-                                className={cn("w-full justify-center bg-white text-primary hover:bg-white/90 gap-2 cursor-pointer shadow-md", RESPONSIVE_TEXT.sm, "h-10 md:h-11")}
+                                className={cn("w-full bg-white text-primary hover:bg-white/90 gap-2 cursor-pointer shadow-md", RESPONSIVE_TEXT.sm, "h-10 md:h-11",
+                                    isGerman ? "justify-start": "justify-center"
+                                )}
                                 onClick={() => setIsStudentModalOpen(true)}
                             >
-                                <LucideIcons.UserPlus className="mr-1 h-5 w-5" /> 학생 등록
+                                <LucideIcons.UserPlus className="ml-0.5 sm:ml-0 mr-1 h-5 w-5" /> {t("dashboard_action_add_student")}
                             </Button>
                             <Button
                                 variant="secondary"
-                                className={cn("w-full justify-center gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm", RESPONSIVE_TEXT.sm, "h-10 md:h-11")}
+                                className={cn("w-full gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm", RESPONSIVE_TEXT.sm, "h-10 md:h-11",
+                                    isGerman ? "justify-start": "justify-center"
+                                )}
                                 onClick={openCreateModal}
                             >
-                                <LucideIcons.CalendarPlus className="mr-1 h-5 w-5" /> 수업 추가
+                                <LucideIcons.CalendarPlus className="mr-1 h-5 w-5" /> {t("dashboard_action_add_lesson")}
                             </Button>
                             <Button
                                 variant="secondary"
-                                className={cn("w-full justify-center gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm", RESPONSIVE_TEXT.sm, "h-10 md:h-11")}
+                                className={cn("w-full gap-2 cursor-pointer bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm", RESPONSIVE_TEXT.sm, "h-10 md:h-11",
+                                    isGerman ? "justify-start": "justify-center"
+                                )}
                                 onClick={openCreateTodoModal}
                             >
-                                <LucideIcons.ListPlus className="mr-1 h-5 w-5" /> 업무 추가
+                                <LucideIcons.ListPlus className="mr-1 h-5 w-5" /> {t("dashboard_action_add_todo")}
                             </Button>
                         </CardContent>
                     </Card>

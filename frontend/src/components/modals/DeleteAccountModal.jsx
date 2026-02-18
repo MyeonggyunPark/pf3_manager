@@ -1,6 +1,9 @@
 import { createPortal } from "react-dom";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import Button from "../ui/Button";
+import { cn } from "../../lib/utils";
+
 
 export default function DeleteAccountModal({
   isOpen,
@@ -8,6 +11,14 @@ export default function DeleteAccountModal({
   onConfirm,
   isDeleting,
 }) {
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+
   // Prevent unnecessary DOM rendering when inactive
   // 비활성 시 불필요한 DOM 렌더링 방지
   if (!isOpen) return null;
@@ -23,20 +34,21 @@ export default function DeleteAccountModal({
           </div>
 
           <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
-            삭제 확인
+            {t("delete_modal_title")}
           </h3>
 
           <div className="text-sm text-center text-slate-500 dark:text-muted-foreground mb-8">
-            정말로 삭제하시겠습니까?
+            {t("delete_modal_question")}
             <div className="mt-1">
-              모든 데이터가{" "}
+              {t("delete_modal_desc_prefix")}{" "}
               <span className="text-destructive font-medium">
-                영구적으로 삭제
+                {t("delete_modal_desc_highlight_delete")}
+                <br className={cn(isGerman ? "block" : "hidden")} />
               </span>
-              되며
-              <br />
+              {t("delete_modal_desc_mid")}
+              <br className={cn(isGerman ? "hidden" : "block")} />
               <span className="text-destructive font-medium">
-                이 작업은 되돌릴 수 없습니다.
+                {t("delete_modal_desc_highlight_irreversible")}
               </span>
             </div>
           </div>
@@ -50,7 +62,7 @@ export default function DeleteAccountModal({
               disabled={isDeleting}
               className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
             >
-              취소
+              {t("delete_modal_cancel")}
             </Button>
 
             {/* Visual feedback for pending deletion state */}
@@ -63,7 +75,7 @@ export default function DeleteAccountModal({
               {isDeleting ? (
                 <LucideIcons.Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                "삭제"
+                t("delete_modal_delete")
               )}
             </Button>
           </div>

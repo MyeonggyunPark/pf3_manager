@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../api";
 import Button from "../components/ui/Button";
 
@@ -49,7 +50,8 @@ const FloatingInput = ({ label, id, error, className, ...props }) => (
 // Password Reset Confirmation Page
 // 비밀번호 재설정 확인 및 변경 페이지
 export default function PasswordResetConfirm() {
-  
+  const { t } = useTranslation();
+
   // Extract UID and Token from URL (Sent via Email)
   // 이메일로 전달된 URL에서 UID와 토큰 추출
   const { uid, token } = useParams();
@@ -80,9 +82,9 @@ export default function PasswordResetConfirm() {
     setGlobalError("");
 
     const newErrors = {};
-    if (!newPassword1) newErrors.newPassword1 = "새 비밀번호를 입력해주세요.";
+    if (!newPassword1) newErrors.newPassword1 = t("reset_error_new_password");
     if (!newPassword2)
-      newErrors.newPassword2 = "새 비밀번호 확인을 입력해주세요.";
+      newErrors.newPassword2 = t("reset_error_confirm_password");
 
     // Frontend Validation: Complexity Check (Upper + Special + 8 chars)
     // 프론트엔드 유효성 검사: 복잡성 확인 (대문자 + 특수문자 + 8자)
@@ -90,8 +92,7 @@ export default function PasswordResetConfirm() {
       const hasUpperCase = /[A-Z]/.test(newPassword1);
       const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword1);
       if (newPassword1.length < 8 || !hasUpperCase || !hasSpecialChar) {
-        newErrors.newPassword1 =
-          "영문 대문자, 특수문자 포함 8자 이상이어야 합니다.";
+        newErrors.newPassword1 = t("reset_error_password_rule");
         if (newPassword2) newErrors.newPassword2 = newErrors.newPassword1;
       }
     }
@@ -99,7 +100,7 @@ export default function PasswordResetConfirm() {
     // Frontend Validation: Password Mismatch Check
     // 프론트엔드 유효성 검사: 비밀번호 불일치 확인
     if (!newErrors.newPassword1 && newPassword1 !== newPassword2) {
-      newErrors.newPassword2 = "비밀번호가 일치하지 않습니다.";
+      newErrors.newPassword2 = t("reset_error_password_mismatch");
     }
 
     // Stop submission if validation fails
@@ -137,11 +138,11 @@ export default function PasswordResetConfirm() {
       // Error Handling: Invalid link or expired token
       // 에러 처리: 유효하지 않은 링크 또는 만료된 토큰
       if (err.response?.data?.detail) {
-        setGlobalError("유효하지 않은 링크이거나 만료되었습니다.");
+        setGlobalError(t("reset_error_invalid_or_expired"));
       } else if (err.response?.data?.token) {
-        setGlobalError("이미 사용된 링크이거나 유효하지 않습니다.");
+        setGlobalError(t("reset_error_used_or_invalid"));
       } else {
-        setGlobalError("비밀번호 변경에 실패했습니다. 다시 시도해주세요.");
+        setGlobalError(t("reset_error_failed"));
       }
     } finally {
       setIsLoading(false);
@@ -159,12 +160,12 @@ export default function PasswordResetConfirm() {
               <LucideIcons.CheckCircle2 className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-bold text-[#4a7a78] dark:text-success mb-2">
-              비밀번호 변경 완료
+              {t("reset_success_title")}
             </h2>
             <p className="text-slate-400 dark:text-muted-foreground text-sm mb-8 leading-relaxed">
-              비밀번호가 성공적으로 변경되었습니다.
+              {t("reset_success_desc_line1")}
               <br />
-              새로운 비밀번호로 로그인해주세요.
+              {t("reset_success_desc_line2")}
             </p>
             <Button
               onClick={() => {
@@ -179,7 +180,7 @@ export default function PasswordResetConfirm() {
               }}
               className="w-full h-12 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
             >
-              로그인 화면으로
+              {t("reset_go_login")}
             </Button>
           </div>
         ) : (
@@ -188,10 +189,10 @@ export default function PasswordResetConfirm() {
           /* 입력 폼 화면 */
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-foreground mb-2">
-              비밀번호 재설정
+              {t("reset_title")}
             </h2>
             <p className="text-slate-400 dark:text-muted-foreground text-sm mb-6">
-              새로운 비밀번호로 비밀번호를 재설정해주세요.
+              {t("reset_desc")}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -203,7 +204,7 @@ export default function PasswordResetConfirm() {
               <FloatingInput
                 id="new-pw1"
                 type="password"
-                label="새 비밀번호"
+                label={t("reset_new_password_label")}
                 value={newPassword1}
                 onChange={handleInputChange(setNewPassword1, "newPassword1")}
                 error={errors.newPassword1}
@@ -212,7 +213,7 @@ export default function PasswordResetConfirm() {
               <FloatingInput
                 id="new-pw2"
                 type="password"
-                label="새 비밀번호 확인"
+                label={t("reset_confirm_password_label")}
                 value={newPassword2}
                 onChange={handleInputChange(setNewPassword2, "newPassword2")}
                 error={errors.newPassword2}
@@ -223,7 +224,7 @@ export default function PasswordResetConfirm() {
                 className="w-full h-11 shadow-lg shadow-primary/20 hover:shadow-primary/30 cursor-pointer"
                 isLoading={isLoading}
               >
-                비밀번호 변경
+                {t("reset_submit")}
               </Button>
             </form>
           </div>

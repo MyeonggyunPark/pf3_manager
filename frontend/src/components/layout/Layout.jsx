@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import * as LucideIcons from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn, getIcon } from "../../lib/utils";
 import {
   RESPONSIVE_PADDING,
@@ -35,6 +36,7 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
 
   // User information state persisted from localStorage
   // localStorage에서 유지되는 유저 정보 상태
@@ -88,24 +90,23 @@ export default function Layout() {
   const getPageInfo = () => {
     const path = location.pathname;
 
-    if (path === "/")
-      return { title: "Dashboard", desc: "실시간 수업 현황 및 주요 지표" };
+    if (path === "/") return { title: "Dashboard", desc: t("desc_dashboard") };
     if (path.startsWith("/schedule"))
-      return { title: "Terminkalender", desc: "주간 및 월간 수업 일정 관리" };
+      return { title: "Terminkalender", desc: t("desc_schedule") };
     if (path.startsWith("/students"))
-      return { title: "Schülerverwaltung", desc: "학생 정보 및 이력 관리" };
+      return { title: "Schülerverwaltung", desc: t("desc_students") };
     if (path.startsWith("/courses"))
       return {
         title: "Vertragsübersicht",
-        desc: "수강권 등록 현황 및 결제 상태",
+        desc: t("desc_courses"),
       };
     if (path.startsWith("/exams"))
       return {
         title: "Testergebnisse",
-        desc: "모의고사 및 정규 시험 분석 리포트",
+        desc: t("desc_exams"),
       };
     if (path.startsWith("/settings"))
-      return { title: "Einstellungen", desc: "개인 프로필 및 시스템 설정" };
+      return { title: "Einstellungen", desc: t("desc_settings") };
 
     return { title: "MS Planer", desc: "" };
   };
@@ -241,42 +242,42 @@ export default function Layout() {
         <nav className="flex-1 px-3 space-y-1 mt-2">
           <SidebarItem
             icon="layout-dashboard"
-            label="대시보드"
+            label={t("sidebar_dashboard")}
             active={isActive("/")}
             onClick={() => navigate("/")}
           />
           <SidebarItem
             icon="calendar-days"
-            label="일정 관리"
+            label={t("sidebar_schedule")}
             active={isActive("/schedule")}
             onClick={() => navigate("/schedule")}
           />
           <SidebarItem
             icon="users"
-            label="학생 관리"
+            label={t("sidebar_students")}
             active={isActive("/students")}
             onClick={() => navigate("/students")}
           />
           <SidebarItem
             icon="CreditCard"
-            label="수강 관리"
+            label={t("sidebar_courses")}
             active={isActive("/courses")}
             onClick={() => navigate("/courses")}
           />
           <SidebarItem
             icon="graduation-cap"
-            label="시험 관리"
+            label={t("sidebar_exams")}
             active={isActive("/exams")}
             onClick={() => navigate("/exams")}
           />
           <div className="pt-4 pb-1 px-3">
             <p className="text-[10px] uppercase text-white/50 font-bold tracking-wider opacity-70 dark:text-muted-foreground">
-              System
+              {t("sidebar_system")}
             </p>
           </div>
           <SidebarItem
             icon="settings"
-            label="설정"
+            label={t("sidebar_settings")}
             active={isActive("/settings")}
             onClick={() => navigate("/settings")}
           />
@@ -310,7 +311,7 @@ export default function Layout() {
                 "text-white/60 hover:bg-white/10 hover:text-white hover:scale-110 dark:text-muted-foreground dark:hover:bg-primary/10",
                 "active:scale-90 active:bg-white/20 active:duration-75",
               )}
-              title="로그아웃"
+              title={t("logout")}
             >
               <LucideIcons.LogOut className="w-5.5 h-5.5" />
             </button>
@@ -359,42 +360,42 @@ export default function Layout() {
             <nav className="flex-1 px-3 space-y-1 mt-2">
               <SidebarItem
                 icon="layout-dashboard"
-                label="대시보드"
+                label={t("sidebar_dashboard")}
                 active={isActive("/")}
                 onClick={() => navigate("/")}
               />
               <SidebarItem
                 icon="calendar-days"
-                label="일정 관리"
+                label={t("sidebar_schedule")}
                 active={isActive("/schedule")}
                 onClick={() => navigate("/schedule")}
               />
               <SidebarItem
                 icon="users"
-                label="학생 관리"
+                label={t("sidebar_students")}
                 active={isActive("/students")}
                 onClick={() => navigate("/students")}
               />
               <SidebarItem
                 icon="CreditCard"
-                label="수강 관리"
+                label={t("sidebar_courses")}
                 active={isActive("/courses")}
                 onClick={() => navigate("/courses")}
               />
               <SidebarItem
                 icon="graduation-cap"
-                label="시험 관리"
+                label={t("sidebar_exams")}
                 active={isActive("/exams")}
                 onClick={() => navigate("/exams")}
               />
               <div className="pt-4 pb-1 px-3">
                 <p className="text-[10px] uppercase text-white/50 font-bold tracking-wider opacity-70 dark:text-muted-foreground">
-                  System
+                  {t("sidebar_system")}
                 </p>
               </div>
               <SidebarItem
                 icon="settings"
-                label="설정"
+                label={t("sidebar_settings")}
                 active={isActive("/settings")}
                 onClick={() => navigate("/settings")}
               />
@@ -421,7 +422,7 @@ export default function Layout() {
                     "text-white/60 hover:bg-white/10 hover:text-white hover:scale-110 dark:text-muted-foreground dark:hover:bg-primary/10",
                     "active:scale-90 active:bg-white/20 active:duration-75",
                   )}
-                  title="로그아웃"
+                  title={t("logout")}
                 >
                   <LucideIcons.LogOut className="w-5.5 h-5.5" />
                 </button>
@@ -496,7 +497,7 @@ export default function Layout() {
                 )}
               >
                 <div className="p-4 border-b border-border">
-                  <h4 className="font-bold text-sm">알림</h4>
+                  <h4 className="font-bold text-sm">{t("notifications")}</h4>
                 </div>
                 <div className="p-2 space-y-1">
                   {totalNotifications > 0 ? (
@@ -518,12 +519,10 @@ export default function Layout() {
                           </div>
                           <div className="space-y-1">
                             <p className="text-sm font-medium text-destructive">
-                              수강료 미납 알림
+                              {t("unpaid_alert_title")}
                             </p>
                             <p className="text-xs text-destructive/80">
-                              현재{" "}
-                              <span className="font-bold">{unpaidCount}명</span>
-                              의 학생이 미납 상태입니다.
+                              {t("unpaid_alert_desc", { count: unpaidCount })}
                             </p>
                           </div>
                         </div>
@@ -546,12 +545,10 @@ export default function Layout() {
                           </div>
                           <div className="space-y-1">
                             <p className="text-sm font-medium text-destructive">
-                              영수증 미발송 알림
+                              {t("unsent_alert_title")}
                             </p>
                             <p className="text-xs text-destructive/80">
-                              현재{" "}
-                              <span className="font-bold">{unsentCount}건</span>
-                              의 영수증이 미발송 상태입니다.
+                              {t("unsent_alert_desc", { count: unsentCount })}
                             </p>
                           </div>
                         </div>
@@ -559,7 +556,7 @@ export default function Layout() {
                     </>
                   ) : (
                     <div className="p-8 text-center text-sm text-muted-foreground">
-                      새로운 알림이 없습니다.
+                      {t("no_notifications")}
                     </div>
                   )}
                 </div>

@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../../api";
 import Button from "../ui/Button";
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("de-DE", {
+const formatCurrency = (amount, locale = "de-DE") => {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "EUR",
   }).format(amount || 0);
@@ -17,6 +18,14 @@ export default function AddCourseModal({
   onSuccess,
   courseData = null,
 }) {
+  // Translation hook for localized UI text
+  // 다국어 UI 텍스트를 위한 번역 훅
+  const { t, i18n } = useTranslation();
+
+  // Language condition for style branching
+  // 언어별 스타일 분기 조건
+  const isGerman = i18n?.resolvedLanguage?.startsWith("de") || false;
+
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -35,16 +44,19 @@ export default function AddCourseModal({
 
   // Initial Form State
   // 초기 폼 상태 정의
-  const initialFormState = {
-    student: "",
-    start_date: "",
-    end_date: "",
-    total_hours: "",
-    hourly_rate: "",
-    status: "",
-    is_paid: false,
-    memo: "",
-  };
+  const initialFormState = useMemo(
+    () => ({
+      student: "",
+      start_date: "",
+      end_date: "",
+      total_hours: "",
+      hourly_rate: "",
+      status: "",
+      is_paid: false,
+      memo: "",
+    }),
+    [],
+  );
 
   const [formData, setFormData] = useState(() => {
     if (courseData) {
@@ -81,12 +93,12 @@ export default function AddCourseModal({
           setStudents(activeStudents);
         } catch (err) {
           console.error("Failed to load students:", err);
-          setSubmitError("학생 목록을 불러오는데 실패했습니다.");
+          setSubmitError(t("course_modal_error_students_load"));
         }
       };
       fetchStudents();
     }
-  }, [isOpen]);
+  }, [isOpen, t]);
 
   // Populate data on Edit Mode
   // 수정 모드 시 데이터 채우기
@@ -117,7 +129,7 @@ export default function AddCourseModal({
 
       return () => clearTimeout(timer);
     }
-  }, [isOpen, courseData]);
+  }, [isOpen, courseData, initialFormState]);
 
   if (!isOpen) return null;
 
@@ -161,7 +173,7 @@ export default function AddCourseModal({
       handleClose();
     } catch (err) {
       console.error("Delete Failed:", err);
-      setSubmitError("삭제 중 오류가 발생했습니다.");
+      setSubmitError(t("course_modal_error_delete"));
       setShowDeleteConfirm(false);
     } finally {
       setIsDeleting(false);
@@ -176,18 +188,19 @@ export default function AddCourseModal({
     // Validation Logic
     // 유효성 검사 로직
     const newErrors = {};
-    if (!formData.student) newErrors.student = "학생을 선택해주세요.";
-    if (!formData.status) newErrors.status = "수강 상태를 선택해주세요.";
-    if (!formData.start_date) newErrors.start_date = "시작일을 입력해주세요.";
-    if (!formData.end_date) newErrors.end_date = "종료일을 입력해주세요.";
+    if (!formData.student) newErrors.student = t("course_modal_error_student");
+    if (!formData.status) newErrors.status = t("course_modal_error_status");
+    if (!formData.start_date)
+      newErrors.start_date = t("course_modal_error_start_date");
+    if (!formData.end_date) newErrors.end_date = t("course_modal_error_end_date");
     if (!formData.total_hours)
-      newErrors.total_hours = "총 시간을 입력해주세요.";
+      newErrors.total_hours = t("course_modal_error_total_hours");
     if (!formData.hourly_rate)
-      newErrors.hourly_rate = "시간당 금액을 입력해주세요.";
+      newErrors.hourly_rate = t("course_modal_error_hourly_rate");
 
     if (formData.start_date && formData.end_date) {
       if (new Date(formData.end_date) < new Date(formData.start_date)) {
-        newErrors.end_date = "종료일은 시작일보다 늦어야 합니다.";
+        newErrors.end_date = t("course_modal_error_end_date_order");
       }
     }
 
@@ -238,13 +251,17 @@ export default function AddCourseModal({
 
         // Show generic error message at top
         // 상단에 공통 에러 메시지 표시
-        setSubmitError("입력 값을 확인해주세요.");
+        setSubmitError(t("course_modal_error_check_input"));
       } else {
         // Handle General Errors (Server Error, Permission, etc.)
         // 일반 에러 처리 (서버 오류, 권한 등)
         setSubmitError(
           responseData?.detail ||
-            `수강권 ${isEditMode ? "변경" : "등록"}에 실패했습니다.`,
+            t("course_modal_error_save", {
+              action: isEditMode
+                ? t("course_modal_action_update_noun")
+                : t("course_modal_action_create_noun"),
+            }),
         );
       }
     } finally {
@@ -267,7 +284,7 @@ export default function AddCourseModal({
   // 조건부 에러 스타일링이 적용된 라벨 헬퍼 컴포넌트
   const InputLabel = ({ label, required, hasError }) => (
     <label
-      className={`text-xs font-bold uppercase tracking-wider pl-1 block mb-1.5 ${
+      className={`text-xs font-bold tracking-wider pl-1 block mb-1.5 ${
         hasError
           ? "text-destructive"
           : "text-slate-500 dark:text-muted-foreground"
@@ -310,12 +327,12 @@ export default function AddCourseModal({
               <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
-              삭제 확인
+              {t("delete_modal_title")}
             </h3>
             <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
-              정말로 삭제하시겠습니까? <br />
+              {t("delete_modal_question")} <br />
               <span className="text-destructive mt-1 block font-medium">
-                이 작업은 되돌릴 수 없습니다.
+                {t("delete_modal_desc_highlight_irreversible")}
               </span>
             </p>
             <div className="flex w-full max-w-xs gap-3">
@@ -324,7 +341,7 @@ export default function AddCourseModal({
                 className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
                 onClick={() => setShowDeleteConfirm(false)}
               >
-                취소
+                {t("delete_modal_cancel")}
               </Button>
               <Button
                 className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold cursor-pointer"
@@ -334,7 +351,7 @@ export default function AddCourseModal({
                 {isDeleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "삭제"
+                  t("delete_modal_delete")
                 )}
               </Button>
             </div>
@@ -345,12 +362,14 @@ export default function AddCourseModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
-              {isEditMode ? "수강권 정보 수정" : "수강권 등록"}
+              {isEditMode
+                ? t("course_modal_title_edit")
+                : t("course_modal_title_add")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-muted-foreground mt-0.5">
               {isEditMode
-                ? "수정이 필요한 수강권 정보를 변경해주세요."
-                : "등록할 새로운 수강권의 정보를 입력하세요."}
+                ? t("course_modal_desc_edit")
+                : t("course_modal_desc_add")}
             </p>
           </div>
           <button
@@ -372,7 +391,11 @@ export default function AddCourseModal({
           {/* Row 1: Student & Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <InputLabel label="학생" hasError={!!errors.student} required />
+              <InputLabel
+                label={t("course_modal_field_student")}
+                hasError={!!errors.student}
+                required
+              />
               <div className="relative">
                 <select
                   name="student"
@@ -386,7 +409,7 @@ export default function AddCourseModal({
                   }`}
                 >
                   <option value="" disabled hidden>
-                    학생을 선택하세요.
+                    {t("course_modal_placeholder_student")}
                   </option>
                   {students.map((student) => (
                     <option
@@ -404,7 +427,7 @@ export default function AddCourseModal({
               </div>
               {students.length === 0 && (
                 <p className="text-xs text-destructive mt-1 ml-1 font-medium">
-                  * 등록된 수강중인 학생이 없습니다.
+                  * {t("course_modal_students_empty")}
                 </p>
               )}
               <ErrorMessage message={errors.student} />
@@ -412,31 +435,31 @@ export default function AddCourseModal({
 
             <div>
               <InputLabel
-                label="수강 상태"
+                label={t("course_modal_field_status")}
                 hasError={!!errors.status}
                 required
               />
               <div className="grid grid-cols-3 gap-2">
                 <SelectionChip
-                  label="진행중"
+                  label={t("course_status_active")}
                   value="ACTIVE"
                   selectedValue={formData.status}
                   onClick={(v) => handleValueChange("status", v)}
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
                 />
                 <SelectionChip
-                  label="일시중지"
+                  label={t("course_status_paused")}
                   value="PAUSED"
                   selectedValue={formData.status}
                   onClick={(v) => handleValueChange("status", v)}
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
                 />
                 <SelectionChip
-                  label="종료"
+                  label={t("course_status_finished")}
                   value="FINISHED"
                   selectedValue={formData.status}
                   onClick={(v) => handleValueChange("status", v)}
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${isGerman ? "text-xs" : ""}`}
                 />
               </div>
               <ErrorMessage message={errors.status} />
@@ -447,7 +470,7 @@ export default function AddCourseModal({
           <div className="grid grid-cols-2 gap-6">
             <div>
               <InputLabel
-                label="시작일"
+                label={t("course_modal_field_start_date")}
                 hasError={!!errors.start_date}
                 required
               />
@@ -468,7 +491,7 @@ export default function AddCourseModal({
             </div>
             <div>
               <InputLabel
-                label="종료일"
+                label={t("course_modal_field_end_date")}
                 hasError={!!errors.end_date}
                 required
               />
@@ -494,7 +517,7 @@ export default function AddCourseModal({
             {/* 1. Total Hours */}
             <div className="col-span-6 sm:col-span-3">
               <InputLabel
-                label="총 시간 (h)"
+                label={t("course_modal_field_total_hours")}
                 hasError={!!errors.total_hours}
                 required
               />
@@ -513,7 +536,7 @@ export default function AddCourseModal({
             {/* 2. Hourly Rate */}
             <div className="col-span-6 sm:col-span-3">
               <InputLabel
-                label="시간당 (€)"
+                label={t("course_modal_field_hourly_rate")}
                 hasError={!!errors.hourly_rate}
                 required
               />
@@ -530,17 +553,20 @@ export default function AddCourseModal({
 
             {/* 3. Total Fee (Read Only) */}
             <div className="col-span-6 sm:col-span-3">
-              <InputLabel label="총 금액" hasError={false} />
+              <InputLabel label={t("course_modal_field_total_fee")} hasError={false} />
               <div className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-100 dark:bg-muted/50 flex items-center justify-center overflow-hidden cursor-not-allowed">
                 <span className="text-sm font-bold text-primary truncate">
-                  {formatCurrency(calculatedTotalFee)}
+                  {formatCurrency(
+                    calculatedTotalFee,
+                    isGerman ? "de-DE" : "ko-KR",
+                  )}
                 </span>
               </div>
             </div>
 
             {/* 4. Payment Status (Redesigned Toggle) */}
             <div className="col-span-6 sm:col-span-3">
-              <InputLabel label="결제 상태" hasError={false} />
+              <InputLabel label={t("course_modal_field_payment_status")} hasError={false} />
               <div
                 onClick={() => handleValueChange("is_paid", !formData.is_paid)}
                 className={`relative w-full h-10 rounded-lg cursor-pointer flex items-center px-1 border border-transparent ${
@@ -553,7 +579,7 @@ export default function AddCourseModal({
                     !formData.is_paid ? "opacity-100" : "opacity-0"
                   }`}
                 >
-                  미납
+                  {t("course_payment_unpaid")}
                 </span>
 
                 {/* Text Layer: 완납 */}
@@ -562,7 +588,7 @@ export default function AddCourseModal({
                     formData.is_paid ? "opacity-100" : "opacity-0"
                   }`}
                 >
-                  완납
+                  {t("course_payment_paid")}
                 </span>
 
                 {/* Sliding Circle */}
@@ -578,14 +604,14 @@ export default function AddCourseModal({
 
           {/* Row 5: Memo */}
           <div>
-            <InputLabel label="메모" hasError={false} />
+            <InputLabel label={t("course_modal_field_memo")} hasError={false} />
             <textarea
               name="memo"
               value={formData.memo}
               onChange={handleChange}
               rows={2}
               className="w-full p-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/30 dark:bg-muted focus:bg-white dark:focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none text-sm text-slate-800 dark:text-foreground placeholder:text-slate-400"
-              placeholder="추가사항 / 특이사항"
+              placeholder={t("course_modal_placeholder_memo")}
               autoComplete="off"
             />
           </div>
@@ -612,7 +638,7 @@ export default function AddCourseModal({
               onClick={handleClose}
               disabled={isLoading}
             >
-              취소
+              {t("course_modal_cancel")}
             </Button>
             <Button
               type="submit"
@@ -621,12 +647,12 @@ export default function AddCourseModal({
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 저장 중...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("course_modal_saving")}
                 </>
               ) : isEditMode ? (
-                "수정"
+                t("course_modal_action_edit")
               ) : (
-                "등록"
+                t("course_modal_action_add")
               )}
             </Button>
           </div>
