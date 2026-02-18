@@ -631,7 +631,9 @@ export default function Dashboard() {
                         {urgentTodos.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-muted-foreground/70 gap-2 pb-2">
                                 <LucideIcons.SearchX className="w-8 h-8" />
-                                <h3 className="text-sm font-semibold">{t("dashboard_todos_empty_urgent")}</h3>
+                                <h3 className="text-sm font-semibold text-center">
+                                    {t("dashboard_todos_empty_urgent")}
+                                </h3>
                             </div>
                         ) : (
                             urgentTodos.map(todo => {

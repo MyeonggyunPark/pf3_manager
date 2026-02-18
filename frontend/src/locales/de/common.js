@@ -40,7 +40,7 @@ const deCommon = {
   dashboard_priority_low: "Niedrig",
   dashboard_exam_upcoming_title: "Geplante offizielle Prüfungen",
   dashboard_view_all: "Alle anzeigen",
-  dashboard_exam_empty: "Es sind keine offiziellen Prüfungen geplant.",
+  dashboard_exam_empty: "Keine offiziellen Prüfungen geplant.",
   dashboard_lessons_today: "Heute",
   dashboard_lessons_tomorrow: "Morgen",
   dashboard_no_memo: "Keine Notiz",
