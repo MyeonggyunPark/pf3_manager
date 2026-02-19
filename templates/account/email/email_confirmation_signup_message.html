@@ -19,7 +19,7 @@
                 </div>
                 <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px">MS Planer</h1>
                 <p style="color: #C1D0E6; font-size: 14px; margin-top: 5px; margin-bottom: 0">
-                    Smart Management System
+                    {% trans "Smart Management System" %}
                 </p>
             </div>
             <div style="padding: 50px 30px; text-align: center; background-color: #ffffff">
@@ -27,11 +27,9 @@
                     {% trans "Bitte bestätigen Sie Ihre E-Mail-Adresse." %}
                 </h2>
                 <p style="color: #555555; font-size: 16px; line-height: 1.6; margin-bottom: 40px; word-break: keep-all">
-                    {% blocktrans with username=user.username %}
-                    Hallo <strong>{{ username }}</strong>!
-                    <br>
-                    Vielen Dank für Ihre Registrierung bei MS Planer.
-                    <br>
+                    {% blocktrans trimmed with username=user.username %}
+                    Hallo <strong>{{ username }}</strong>! <br>
+                    Vielen Dank für Ihre Registrierung bei MS Planer. <br>
                     Bitte klicken Sie auf den Button unten, um die Registrierung abzuschließen.
                     {% endblocktrans %}
                 </p>
