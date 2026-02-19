@@ -73,10 +73,19 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    const isAccountDeletionFlow =
+      typeof window !== "undefined" &&
+      window.__ACCOUNT_DELETION_FLOW__ === true;
 
     // Handle 401 Unauthorized (Session/Token expired)
     // 401 미인증 에러 처리 (토큰 만료 등)
     if (error.response && error.response.status === 401) {
+
+      // During account-deletion flow, avoid global 401 redirect race.
+      // 계정 삭제 플로우 중에는 전역 401 리다이렉트 레이스를 방지합니다.
+      if (isAccountDeletionFlow) {
+        return Promise.reject(error);
+      }
       
       // Prevent handling on Social Login Success page
       // 소셜 로그인 성공 페이지에서는 처리 방지

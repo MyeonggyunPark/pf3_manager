@@ -19,6 +19,17 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     리다이렉트 URL과 이메일 인증 URL 생성을 담당합니다.
     """
 
+    def send_mail(self, template_prefix, email, context):
+        """
+        Inject backend base URL into allauth email templates so static asset URLs
+        can be generated as absolute links.
+        """
+        backend_base_url = getattr(
+            settings, "BACKEND_BASE_URL", "http://127.0.0.1:8000"
+        ).rstrip("/")
+        context["backend_base_url"] = backend_base_url
+        return super().send_mail(template_prefix, email, context)
+
     def get_email_confirmation_url(self, request, emailconfirmation):
         # Override to generate a Frontend-compatible verification link
         # 프론트엔드 호환 인증 링크를 생성하도록 재정의

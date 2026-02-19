@@ -585,9 +585,19 @@ class CustomPasswordResetSerializer(PasswordResetSerializer):
         return PasswordResetForm
 
     def get_email_options(self):
+        frontend_base_url = getattr(
+            settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173"
+        ).rstrip("/")
+        backend_base_url = getattr(
+            settings, "BACKEND_BASE_URL", "http://127.0.0.1:8000"
+        ).rstrip("/")
         return {
             "email_template_name": "registration/password_reset_email.html",
             "html_email_template_name": "registration/password_reset_email.html",
+            "extra_email_context": {
+                "backend_base_url": backend_base_url,
+                "frontend_base_url": frontend_base_url,
+            },
         }
 
     def save(self):
@@ -603,6 +613,14 @@ class CustomPasswordResetSerializer(PasswordResetSerializer):
             "request": request,
             "email_template_name": "registration/password_reset_email.html",
             "html_email_template_name": "registration/password_reset_email.html",
+            "extra_email_context": {
+                "frontend_base_url": getattr(
+                    settings, "FRONTEND_BASE_URL", "http://127.0.0.1:5173"
+                ).rstrip("/"),
+                "backend_base_url": getattr(
+                    settings, "BACKEND_BASE_URL", "http://127.0.0.1:8000"
+                ).rstrip("/")
+            },
         }
 
         if request:

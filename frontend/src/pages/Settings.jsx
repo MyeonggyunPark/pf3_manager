@@ -165,12 +165,14 @@ export default function Settings() {
   // 계정 삭제 프로세스 처리
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
+    window.__ACCOUNT_DELETION_FLOW__ = true;
     try {
       await api.delete("/api/auth/user/");
       setShowDeleteConfirm(false);
       setShowSuccessModal(true);
     } catch (e) {
       console.error("Delete failed", e);
+      window.__ACCOUNT_DELETION_FLOW__ = false;
       setShowDeleteConfirm(false);
       setShowErrorModal(true);
     } finally {
@@ -181,6 +183,7 @@ export default function Settings() {
   // Final Cleanup and Redirect
   // 최종 정리 및 리다이렉트 (성공 모달에서 확인 버튼 클릭 시 호출)
   const handleFinalRedirect = () => {
+    window.__ACCOUNT_DELETION_FLOW__ = false;
     // Remove only auth/session-related keys.
     // Keep user preferences (theme/language) so UI mode does not unexpectedly change.
     [
