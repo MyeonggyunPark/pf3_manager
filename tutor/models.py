@@ -813,9 +813,14 @@ class Invoice(models.Model):
         max_length=50, unique=True, help_text=_("Vollständige Rechnungsnummer (z.B. RE-10012601)")
     )
 
+    class PriceModeChoices(models.TextChoices):
+        BRUTTO = "BRUTTO", _("Brutto")
+        NETTO = "NETTO", _("Netto")
+
     # Dates, Snapshot Data, Content, Financials, etc.
     # 날짜 정보, 스냅샷 데이터, 내용, 재무 정보 등
     created_at = models.DateTimeField(auto_now_add=True, help_text=_("Rechnungsdatum"))
+    invoice_date = models.DateField(_("Rechnungsdatum Eingabe"), null=True, blank=True)
     delivery_date_start = models.DateField(
         _("Leistungszeitraum Start"), null=True, blank=True
     )
@@ -834,6 +839,7 @@ class Invoice(models.Model):
 
     recipient_name = models.CharField(_("Empfänger Name"), max_length=100)
     recipient_address = models.CharField(_("Empfänger Adresse"), max_length=255)
+    reference_number = models.CharField(_("Referenznummer"), max_length=100, blank=True, default="")
 
     subject = models.CharField(_("Betreff"), max_length=200, default="Rechnung")
     header_text = models.TextField(
@@ -872,6 +878,18 @@ class Invoice(models.Model):
         _("Versendet"),
         default=False,
         help_text=_("Wurde die Rechnung bereits versendet?")
+    )
+
+    price_mode = models.CharField(
+        max_length=10,
+        choices=PriceModeChoices.choices,
+        default=PriceModeChoices.BRUTTO,
+    )
+
+    is_finalized = models.BooleanField(
+        _("Finalisiert"),
+        default=False,
+        help_text=_("Entwurf gespeichert oder final bestätigt"),
     )
 
     is_small_business = models.BooleanField(

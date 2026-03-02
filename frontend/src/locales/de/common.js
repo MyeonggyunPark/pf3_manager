@@ -378,6 +378,12 @@ const deCommon = {
   invoice_editor_max_table: "Maximal 6 x 6",
   invoice_editor_delete_table: "Tabelle löschen",
 
+  // [DeleteReceiptModal]
+  // [영수증 삭제 모달]
+  invoice_draft_delete_title: "Entwurf löschen",
+  invoice_draft_delete_question: "Möchten Sie diesen Rechnungsentwurf wirklich löschen?",
+  invoice_draft_delete_desc: "Dieser Vorgang kann nicht rückgängig gemacht werden.",
+
   // [ChangePasswordModal]
   // [비밀번호 변경 모달]
   change_pw_title: "Passwort ändern",

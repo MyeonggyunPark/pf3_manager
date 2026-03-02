@@ -44,6 +44,18 @@ const formatCurrency = (amount) => {
     }).format(amount || 0);
 };
 
+// Extract invoice sequence for sorting.
+// Prioritize the stored numeric sequence, then fall back to the first 4 digits in the code.
+const getInvoiceSequence = (invoice) => {
+    if (invoice?.invoice_number) {
+        return Number(invoice.invoice_number) || 0;
+    }
+
+    const code = invoice?.full_invoice_code || "";
+    const match = code.match(/(\d{4})/);
+    return match ? Number(match[1]) : 0;
+};
+
 export default function CourseList() {
     const location = useLocation();
 
@@ -123,6 +135,7 @@ export default function CourseList() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
 
     // Ref and State for scroll detection
     // 스크롤 감지를 위한 Ref와 State
@@ -303,7 +316,7 @@ export default function CourseList() {
     const filteredInvoices = useMemo(() => {
         return invoices
         .filter((invoice) => {
-            const dateStr = invoice.date || invoice.created_at;
+            const dateStr = invoice.invoice_date || invoice.created_at;
             const invoiceDate = new Date(dateStr);
             const matchesYear =
             invoiceDate.getFullYear() === parseInt(selectedYear);
@@ -326,8 +339,7 @@ export default function CourseList() {
             return matchesYear && matchesMonth && matchesSearch && matchesSent;
         })
         .sort(
-            (a, b) =>
-            new Date(b.date || b.created_at) - new Date(a.date || a.created_at),
+            (a, b) => getInvoiceSequence(b) - getInvoiceSequence(a),
         );
     }, [invoices, selectedYear, selectedMonth, appliedSearch, sentFilter]);
 
@@ -420,6 +432,12 @@ export default function CourseList() {
     };
 
     const openInvoiceModal = () => {
+        setSelectedInvoice(null);
+        setIsInvoiceModalOpen(true);
+    };
+
+    const openInvoiceEditModal = (invoice) => {
+        setSelectedInvoice(invoice);
         setIsInvoiceModalOpen(true);
     };
 
@@ -466,8 +484,12 @@ export default function CourseList() {
             {/* Invoice Create Modal */}
             <InvoiceCreateModal
                 isOpen={isInvoiceModalOpen}
-                onClose={() => setIsInvoiceModalOpen(false)}
+                onClose={() => {
+                    setIsInvoiceModalOpen(false);
+                    setSelectedInvoice(null);
+                }}
                 onSuccess={handleSuccess}
+                invoiceData={selectedInvoice}
             />
 
             {/* --- Top Control Bar --- */}
@@ -1079,7 +1101,7 @@ export default function CourseList() {
                                         {invoice.student_name || "Unknown"}
                                         </td>
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%] text-xs md:text-sm">
-                                        {formatDate(invoice.date || invoice.created_at)}
+                                        {formatDate(invoice.invoice_date || invoice.created_at)}
                                         </td>
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center text-slate-500 dark:text-muted-foreground w-[12%] text-xs md:text-sm">
                                         {formatDate(invoice.due_date)}
@@ -1093,12 +1115,23 @@ export default function CourseList() {
                                         <td className="px-2 md:px-4 py-3 md:py-4 text-center w-[10%]">
                                         <div className="flex justify-center items-center w-full">
                                             <button
-                                            onClick={(e) => handleToggleSent(e, invoice)}
+                                            onClick={(e) =>
+                                                invoice.is_finalized
+                                                    ? handleToggleSent(e, invoice)
+                                                    : e.stopPropagation()
+                                            }
+                                            disabled={!invoice.is_finalized}
                                             className={cn(
-                                                "w-4 md:w-5 h-4 md:h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
+                                                "w-4 md:w-5 h-4 md:h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0",
+                                                invoice.is_finalized
+                                                    ? "cursor-pointer"
+                                                    : "cursor-not-allowed opacity-45",
                                                 invoice.is_sent
-                                                ? "bg-accent border-accent text-white"
-                                                : "border-border bg-card hover:border-accent hover:bg-accent/10",
+                                                    ? "bg-accent border-accent text-white"
+                                                    : "border-border bg-card",
+                                                invoice.is_finalized &&
+                                                    !invoice.is_sent &&
+                                                    "hover:border-accent hover:bg-accent/10",
                                             )}
                                             >
                                             {invoice.is_sent && (
@@ -1111,10 +1144,20 @@ export default function CourseList() {
                                         <Button
                                             variant=""
                                             size="icon"
-                                            className="h-7 md:h-8 w-7 md:w-8 transition-colors cursor-pointer text-primary/50 hover:text-primary"
-                                            onClick={(e) => handleDownloadPdf(e, invoice.id)}
+                                            className={cn(
+                                                "h-7 md:h-8 w-7 md:w-8 transition-colors cursor-pointer text-primary/50 hover:text-primary"
+                                            )}
+                                            onClick={(e) =>
+                                                invoice.is_finalized
+                                                    ? handleDownloadPdf(e, invoice.id)
+                                                    : openInvoiceEditModal(invoice)
+                                            }
                                         >
-                                            <LucideIcons.FileText className="w-4 md:w-5 h-4 md:h-5" />
+                                            {invoice.is_finalized ? (
+                                                <LucideIcons.FileText className="w-4 md:w-5 h-4 md:h-5" />
+                                            ) : (
+                                                <LucideIcons.FilePenLine className="w-4 md:w-5 h-4 md:h-5" />
+                                            )}
                                         </Button>
                                         </td>
                                     </tr>

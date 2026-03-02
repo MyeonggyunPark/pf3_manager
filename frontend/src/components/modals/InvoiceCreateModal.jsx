@@ -11,6 +11,7 @@ import {
   Loader2,
   Plus,
   FileText,
+  AlertTriangle,
   X,
 } from "lucide-react";
 import Button from "../ui/Button";
@@ -18,6 +19,7 @@ import Input from "../ui/Input";
 import { cn } from "../../lib/utils";
 import api from "../../api";
 import AddStudentModal from "./AddStudentModal";
+import { useTranslation } from "react-i18next";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Underline as UnderlineExtension } from "@tiptap/extension-underline";
@@ -33,6 +35,13 @@ const UNIT_MAPPING = {
   Std: "HOUR",
   "Tag(e)": "DAY",
   pauschal: "FLAT_RATE",
+};
+
+const UNIT_LABEL_MAPPING = {
+  PIECE: "Stk",
+  HOUR: "Std",
+  DAY: "Tag(e)",
+  FLAT_RATE: "pauschal",
 };
 
 // Format currency to Euro
@@ -322,10 +331,18 @@ const TiptapEditor = ({ value, onChange }) => {
   );
 };
 
-export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
+export default function InvoiceCreateModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  invoiceData = null,
+}) {
+  const { t } = useTranslation();
   const [students, setStudents] = useState([]);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [selectedStudentForEdit, setSelectedStudentForEdit] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Invoice Data States
   // 영수증 데이터 상태 관리
@@ -371,6 +388,8 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
+  const isEditMode = Boolean(invoiceData?.id);
+  const isDraftEditMode = Boolean(invoiceData?.id && !invoiceData?.is_finalized);
 
   // Reset form to initial state
   // 폼 초기화 함수
@@ -393,6 +412,8 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
     setGlobalAdjustments([]);
     setIsPreviewLoading(false);
     setIsSubmitting(false);
+    setShowDeleteConfirm(false);
+    setIsDeleting(false);
     setErrors({});
     setSubmitError(null);
   }, [templateBase]);
@@ -401,6 +422,123 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
     resetForm();
     onClose();
   };
+
+  const hydrateDraftInvoice = useCallback(
+    (draftInvoice, profileData, nextNumberData) => {
+      const fallbackTaxConfig = {
+        is_small_business: draftInvoice?.is_small_business ?? false,
+        vat_rate: draftInvoice?.is_small_business ? 0 : 19,
+      };
+      const resolvedTaxConfig =
+        draftInvoice?.is_small_business !== undefined
+          ? fallbackTaxConfig
+          : nextNumberData?.tax_config || fallbackTaxConfig;
+      const resolvedPriceMode =
+        draftInvoice?.price_mode ||
+        profileData?.price_input_type ||
+        "BRUTTO";
+
+      let parsedRecipientAddress = initialRecipientAddress;
+      try {
+        parsedRecipientAddress = draftInvoice?.recipient_address
+          ? JSON.parse(draftInvoice.recipient_address)
+          : initialRecipientAddress;
+      } catch {
+        parsedRecipientAddress = initialRecipientAddress;
+      }
+
+      const globalTaxRate = resolvedTaxConfig.is_small_business ? 0 : 0.19;
+      const mappedItems =
+        draftInvoice?.items?.length > 0
+          ? draftInvoice.items.map((item, index) => {
+              const taxRate = Number(item.vat_rate || 0) / 100;
+              const displayPrice =
+                resolvedPriceMode === "BRUTTO"
+                  ? Number(item.unit_price || 0) * (1 + taxRate)
+                  : Number(item.unit_price || 0);
+              const displayDiscount =
+                item.discount_unit === "CURRENCY" &&
+                resolvedPriceMode === "BRUTTO"
+                  ? Number(item.discount_value || 0) * (1 + taxRate)
+                  : Number(item.discount_value || 0);
+
+              return {
+                id: item.id || `${draftInvoice.id}-item-${index}`,
+                name: item.description || "",
+                quantity:
+                  item.unit === "FLAT_RATE"
+                    ? ""
+                    : String(Number(item.quantity || 0) || ""),
+                unit: UNIT_LABEL_MAPPING[item.unit] || "Stk",
+                price: displayPrice ? String(displayPrice) : "",
+                tax: Number(item.vat_rate ?? resolvedTaxConfig.vat_rate),
+                discount: displayDiscount ? String(displayDiscount) : "",
+                discountUnit:
+                  item.discount_unit === "CURRENCY" ? "EUR" : "%",
+              };
+            })
+          : [{ ...initialItems[0], id: Date.now() }];
+
+      const mappedAdjustments =
+        draftInvoice?.adjustments?.map((adj, index) => {
+          const displayValue =
+            adj.unit === "CURRENCY" && resolvedPriceMode === "BRUTTO"
+              ? Number(adj.value || 0) * (1 + globalTaxRate)
+              : Number(adj.value || 0);
+
+          return {
+            id: adj.id || `${draftInvoice.id}-adj-${index}`,
+            type: adj.type || "DISCOUNT",
+            label: adj.label || "",
+            value: displayValue ? String(displayValue) : "",
+            unit: adj.unit === "CURRENCY" ? "EUR" : "%",
+          };
+        }) || [];
+
+      const savedInvoiceDate =
+        draftInvoice?.invoice_date ||
+        draftInvoice?.created_at?.split("T")[0] ||
+        new Date().toISOString().split("T")[0];
+      const savedDueDate = draftInvoice?.due_date || "";
+      const hasPeriodMode = Boolean(draftInvoice?.delivery_date_end);
+
+      setTaxConfig(resolvedTaxConfig);
+      setPriceMode(resolvedPriceMode);
+      setInvoiceNumber(
+        draftInvoice?.full_invoice_code || nextNumberData?.next_number || "",
+      );
+      setRecipientId(draftInvoice?.student || "");
+      setRecipientAddress({
+        street: parsedRecipientAddress.street || "",
+        zip: parsedRecipientAddress.zip || "",
+        city: parsedRecipientAddress.city || "",
+        country: parsedRecipientAddress.country || "",
+      });
+      setInvoiceDate(savedInvoiceDate);
+      setIsPeriodMode(hasPeriodMode);
+      setDeliveryDate(hasPeriodMode ? "" : draftInvoice?.delivery_date_start || "");
+      setPeriodStart(hasPeriodMode ? draftInvoice?.delivery_date_start || "" : "");
+      setPeriodEnd(hasPeriodMode ? draftInvoice?.delivery_date_end || "" : "");
+      setRefNumber(draftInvoice?.reference_number || "");
+      setDueDate(savedDueDate);
+      setDueDays(
+        savedDueDate ? calculateDiffDays(savedInvoiceDate, savedDueDate) : "",
+      );
+      setSubject(
+        draftInvoice?.subject ||
+          `Rechnung Nr. ${draftInvoice?.full_invoice_code || nextNumberData?.next_number || ""}`,
+      );
+      setTemplateBase(profileData?.default_intro_text || "");
+      setIntroText(draftInvoice?.header_text || profileData?.default_intro_text || "");
+      setFooterText(
+        draftInvoice?.footer_text ||
+          "Bitte überweisen Sie den Rechnungsbetrag unter Angabe der Rechnungsnummer auf das unten angegebene Konto.\nDer Rechnungsbetrag ist bis zum [%ZAHLUNGSZIEL%] fällig.\n\nMit freundlichen Grüßen\n[%KONTAKTPERSON%]",
+      );
+      setItems(mappedItems);
+      setGlobalAdjustments(mappedAdjustments);
+    },
+    [],
+  );
 
   // Fetch initial data (students, next invoice number, business profile)
   // 초기 데이터 조회 (학생 목록, 다음 송장 번호, 사업자 프로필)
@@ -413,29 +551,45 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
           api.get("/api/business-profile/"),
         ]);
 
+        const currentStudentId = invoiceData?.student;
+        const currentStudent = studentsRes.data.find(
+          (student) => student.id === currentStudentId,
+        );
         const activeStudents = studentsRes.data.filter(
           (student) => student.status === "ACTIVE",
         );
-        setStudents(activeStudents);
-
-        setInvoiceNumber(nextNumRes.data.next_number);
-        setSubject(`Rechnung Nr. ${nextNumRes.data.next_number}`);
-
-        const config = nextNumRes.data.tax_config;
-        setTaxConfig(config);
-
-        setItems((prevItems) =>
-          prevItems.map((item) => ({
-            ...item,
-            tax: config.is_small_business ? 0 : 19,
-          })),
+        const selectableStudents =
+          currentStudent && currentStudent.status !== "ACTIVE"
+            ? [currentStudent, ...activeStudents]
+            : activeStudents;
+        const dedupedStudents = selectableStudents.filter(
+          (student, index, arr) =>
+            arr.findIndex((candidate) => candidate.id === student.id) === index,
         );
+        setStudents(dedupedStudents);
 
-        const fetchedTemplate = profileRes.data.default_intro_text;
-        const finalTemplate = fetchedTemplate || "";
+        const fetchedTemplate = profileRes.data.default_intro_text || "";
 
-        setTemplateBase(finalTemplate);
-        setIntroText(finalTemplate);
+        if (invoiceData?.id) {
+          hydrateDraftInvoice(invoiceData, profileRes.data, nextNumRes.data);
+        } else {
+          setInvoiceNumber(nextNumRes.data.next_number);
+          setSubject(`Rechnung Nr. ${nextNumRes.data.next_number}`);
+
+          const config = nextNumRes.data.tax_config;
+          setTaxConfig(config);
+          setPriceMode(profileRes.data.price_input_type || "BRUTTO");
+
+          setItems((prevItems) =>
+            prevItems.map((item) => ({
+              ...item,
+              tax: config.is_small_business ? 0 : 19,
+            })),
+          );
+
+          setTemplateBase(fetchedTemplate);
+          setIntroText(fetchedTemplate);
+        }
       } catch (err) {
         console.error("Failed to load data:", err);
       }
@@ -448,7 +602,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
     return () => {
       resetForm();
     };
-  }, [isOpen, resetForm]);
+  }, [hydrateDraftInvoice, invoiceData, isOpen, resetForm]);
 
   // Calculate totals for a single item line
   // 개별 품목 라인의 총액 계산
@@ -726,6 +880,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
       : "Unbekannt";
 
     return {
+      ...(invoiceData?.id ? { id: invoiceData.id } : {}),
       student: recipientId ? recipientId : null,
       recipient_name: recipientNameStr,
       recipient_address: JSON.stringify(recipientAddress),
@@ -734,6 +889,8 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
       delivery_date_start: (isPeriodMode ? periodStart : deliveryDate) || null,
       delivery_date_end: (isPeriodMode ? periodEnd : null) || null,
       due_date: dueDate || null,
+      reference_number: refNumber,
+      price_mode: priceMode,
       subject: subject,
       header_text: introText,
       footer_text: footerText,
@@ -795,6 +952,8 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
     deliveryDate,
     periodEnd,
     dueDate,
+    refNumber,
+    invoiceData,
     subject,
     introText,
     footerText,
@@ -834,9 +993,8 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
     setIsSubmitting(true);
     try {
       const payload = getInvoicePayload();
-      console.log("Submitting Payload:", payload);
-
-      await api.post("/api/invoices/create_full/", payload);
+      await api.post("/api/invoices/save_draft/", payload);
+      handleCloseModal();
       onSuccess();
     } catch (err) {
       console.error("Submission failed", err);
@@ -873,6 +1031,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
       const pdfUrl = URL.createObjectURL(pdfBlob);
       window.open(pdfUrl, "_blank");
 
+      handleCloseModal();
       onSuccess();
     } catch (err) {
       console.error("Save & Print failed", err);
@@ -886,6 +1045,31 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  const handleRequestDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!invoiceData?.id) return;
+
+    setIsDeleting(true);
+    setSubmitError(null);
+
+    try {
+      await api.delete(`/api/invoices/${invoiceData.id}/`);
+      handleCloseModal();
+      onSuccess();
+    } catch (err) {
+      console.error("Draft delete failed", err);
+      setSubmitError(
+        err.response?.data?.detail || "Der Entwurf konnte nicht gelöscht werden.",
+      );
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const DYNAMIC_GRID_CLASS = isPeriodMode
     ? "grid-cols-[35%_65%]"
     : "grid-cols-2";
@@ -895,17 +1079,68 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
   return createPortal(
     <>
       <div className="fixed inset-0 h-dvh z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-        <div className="bg-white dark:bg-card w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl border border-white/20 dark:border-border flex flex-col overflow-hidden">
+        <div className="bg-white dark:bg-card w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl border border-white/20 dark:border-border flex flex-col overflow-hidden relative">
+          {showDeleteConfirm && (
+            <div className="absolute inset-0 z-10 bg-white dark:bg-card backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95">
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle className="w-8 h-8 text-destructive" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 dark:text-foreground mb-2">
+                {t("invoice_draft_delete_title")}
+              </h3>
+              <p className="text-slate-500 dark:text-muted-foreground text-center mb-8 max-w-xs text-sm">
+                {t("invoice_draft_delete_question")}
+                <br />
+                <span className="text-destructive mt-1 block font-medium">
+                  {t("invoice_draft_delete_desc")}
+                </span>
+              </p>
+              <div className="flex w-full max-w-xs gap-3">
+                <Button
+                  type="button"
+                  className="flex-1 bg-white dark:bg-muted border border-slate-200 dark:border-border text-slate-600 dark:text-foreground hover:bg-slate-50 dark:hover:bg-muted/80 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 h-11 text-sm font-semibold cursor-pointer transition-all"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  {t("delete_modal_cancel")}
+                </Button>
+                <Button
+                  className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-11 text-sm font-semibold cursor-pointer"
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    t("delete_modal_delete")
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border bg-white dark:bg-card">
             <h2 className="text-xl font-bold text-slate-800 dark:text-foreground tracking-tight">
-              Neue Rechnung
+              {isEditMode ? "Rechnungsentwurf bearbeiten" : "Neue Rechnung"}
             </h2>
             <div className="flex items-center gap-2">
+              {isDraftEditMode && (
+                <Button
+                  type="button"
+                  className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 h-9 w-9 p-0 flex items-center justify-center shrink-0 cursor-pointer transition-all"
+                  onClick={handleRequestDelete}
+                  disabled={isPreviewLoading || isSubmitting || isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </Button>
+              )}
               <Button
                 type="button"
                 className={CANCEL_BUTTON_STYLE}
                 onClick={handlePreview}
-                disabled={isPreviewLoading || isSubmitting}
+                disabled={isPreviewLoading || isSubmitting || isDeleting}
               >
                 {isPreviewLoading ? (
                   <>
@@ -920,7 +1155,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                 type="button"
                 className={CANCEL_BUTTON_STYLE}
                 onClick={handleSubmit}
-                disabled={isPreviewLoading || isSubmitting}
+                disabled={isPreviewLoading || isSubmitting || isDeleting}
               >
                 {isSubmitting ? (
                   <>
@@ -935,7 +1170,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                 variant="default"
                 className={SUBMIT_BUTTON_STYLE}
                 onClick={handleSaveAndPrint}
-                disabled={isPreviewLoading || isSubmitting}
+                disabled={isPreviewLoading || isSubmitting || isDeleting}
               >
                 {isSubmitting ? (
                   <>
@@ -1535,6 +1770,7 @@ export default function InvoiceCreateModal({ isOpen, onClose, onSuccess }) {
                     <Input
                       className={cn(CUSTOM_INPUT_STYLE, "h-9")}
                       placeholder="Rabatt / Aufschlag beschreiben"
+                      value={adj.label}
                       onChange={(e) =>
                         handleAdjustmentChange(index, "label", e.target.value)
                       }

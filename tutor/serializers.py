@@ -795,3 +795,32 @@ class InvoiceSerializer(serializers.ModelSerializer):
         invoice.calculate_totals()
 
         return invoice
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """
+        Transactional Update for draft invoices.
+        Replaces nested items/adjustments and recalculates totals.
+        
+        드래프트 영수증을 위한 트랜잭션 수정.
+        중첩된 항목/조정 내역을 교체하고 총액을 재계산합니다.
+        """
+        items_data = validated_data.pop("items", None)
+        adjustments_data = validated_data.pop("adjustments", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if items_data is not None:
+            instance.items.all().delete()
+            for item_data in items_data:
+                InvoiceItem.objects.create(invoice=instance, **item_data)
+
+        if adjustments_data is not None:
+            instance.adjustments.all().delete()
+            for adj_data in adjustments_data:
+                InvoiceAdjustment.objects.create(invoice=instance, **adj_data)
+
+        instance.calculate_totals()
+        return instance

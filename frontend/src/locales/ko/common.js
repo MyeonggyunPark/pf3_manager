@@ -366,6 +366,12 @@ const koCommon = {
   invoice_editor_max_table: "최대 6 x 6",
   invoice_editor_delete_table: "표 삭제",
 
+  // [DeleteReceiptModal]
+  // [영수증 삭제 모달]
+  invoice_draft_delete_title: "임시저장 영수증 삭제",
+  invoice_draft_delete_question: "이 임시저장된 영수증을 정말로 삭제하시겠습니까?",
+  invoice_draft_delete_desc: "이 작업은 되돌릴 수 없습니다.",
+
   // [ChangePasswordModal]
   // [비밀번호 변경 모달]
   change_pw_title: "비밀번호 변경",

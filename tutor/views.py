@@ -901,6 +901,144 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             .prefetch_related("items", "adjustments")
         )
 
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Allow sent-status toggles for finalized invoices, but block content edits.
+        Draft invoices can still be patched if needed.
+
+        확정된 영수증은 발송 여부(is_sent)만 수정 가능하게 허용하고,
+        본문/금액 등 다른 내용 수정은 차단합니다.
+        임시저장 영수증은 필요 시 계속 수정할 수 있습니다.
+        """
+        invoice = self.get_object()
+        request_keys = set(request.data.keys())
+
+        if invoice.is_finalized and request_keys - {"is_sent"}:
+            return Response(
+                {"detail": _("Finalisierte Rechnungen können nicht mehr bearbeitet werden.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Draft invoices can be deleted. Finalized invoices are locked.
+
+        임시저장 영수증은 삭제할 수 있지만,
+        확정된 영수증은 삭제되지 않도록 보호합니다.
+        """
+        invoice = self.get_object()
+        if invoice.is_finalized:
+            return Response(
+                {"detail": _("Finalisierte Rechnungen können nicht gelöscht werden.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        self.perform_destroy(invoice)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def _get_business_profile(self, user, lock=False):
+        """
+        Retrieve the tutor's BusinessProfile.
+        Optionally applies row-level locking for safe sequence generation.
+
+        튜터의 BusinessProfile을 조회합니다.
+        필요 시 행 잠금(select_for_update)을 적용하여
+        영수증 번호 생성 시 동시성 문제를 방지합니다.
+        """
+        queryset = BusinessProfile.objects
+        if lock:
+            queryset = queryset.select_for_update()
+        return queryset.get(tutor=user)
+
+    def _build_invoice_code(self, profile):
+        """
+        Build the next invoice sequence number and full invoice code.
+        Format: RE-{Seq}{YY}{MM}
+
+        다음 영수증 시퀀스 번호와 전체 영수증 코드를 생성합니다.
+        형식은 RE-{시퀀스}{YY}{MM} 입니다.
+        """
+        seq = profile.next_invoice_number
+        yymm = datetime.now().strftime("%y%m")
+        full_code = f"RE-{seq}{yymm}"
+        return seq, full_code
+
+    def _save_invoice(self, request, finalize):
+        """
+        Shared helper for creating or updating invoices.
+        Handles both draft saves and finalization with the same validation flow.
+
+        영수증 생성/수정을 공통 처리하는 헬퍼 함수입니다.
+        동일한 검증 흐름 안에서 임시저장과 확정 저장을 모두 처리합니다.
+        """
+        user = request.user
+        data = request.data.copy()
+        invoice_id = data.get("id")
+
+        try:
+            profile = self._get_business_profile(user, lock=not invoice_id)
+        except BusinessProfile.DoesNotExist:
+            return Response(
+                {
+                    "detail": _(
+                        "Bitte vervollständigen Sie zuerst Ihr Geschäftsprofil (Einstellungen)."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        sender_data = BusinessProfileSerializer(profile).data
+        data["sender_data"] = sender_data
+        data["is_small_business"] = profile.is_small_business
+        data["is_finalized"] = finalize
+
+        if invoice_id:
+            try:
+                invoice = self.get_queryset().get(pk=invoice_id)
+            except Invoice.DoesNotExist:
+                return Response(
+                    {"detail": _("Rechnung nicht gefunden.")},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if invoice.is_finalized:
+                return Response(
+                    {"detail": _("Finalisierte Rechnungen können nicht mehr bearbeitet werden.")},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            serializer = self.get_serializer(invoice, data=data)
+            if serializer.is_valid():
+                serializer.save(
+                    sender_data=sender_data,
+                    is_small_business=profile.is_small_business,
+                    is_finalized=finalize,
+                )
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        seq, full_code = self._build_invoice_code(profile)
+        data["invoice_number"] = seq
+        data["full_invoice_code"] = full_code
+
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            serializer.save(
+                tutor=user,
+                invoice_number=seq,
+                full_invoice_code=full_code,
+                sender_data=sender_data,
+                is_small_business=profile.is_small_business,
+                is_finalized=finalize,
+            )
+            profile.next_invoice_number += 1
+            profile.save(update_fields=["next_invoice_number"])
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=False, methods=["get"])
     def next_number(self, request):
         """
@@ -941,66 +1079,27 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"])
     @transaction.atomic
+    def save_draft(self, request):
+        """
+        Create or update an invoice draft.
+        Draft invoices are editable and deletable until finalized.
+
+        영수증을 임시저장 상태로 생성하거나 수정합니다.
+        임시저장 영수증은 확정되기 전까지 계속 수정 및 삭제할 수 있습니다.
+        """
+        return self._save_invoice(request, finalize=False)
+
+    @action(detail=False, methods=["post"])
+    @transaction.atomic
     def create_full(self, request):
         """
-        Create a complete invoice with items.
-        Generates the invoice number safely on the server side.
-        Uses transaction.atomic to ensure data integrity.
+        Create or finalize an invoice with items.
+        New invoices are created finalized, existing drafts are finalized in place.
 
         완전한 영수증 생성.
-        서버 사이드에서 영수증 번호를 안전하게(중복 없이) 생성하고 저장함.
-        transaction.atomic을 사용하여 데이터 무결성을 보장함.
+        새 영수증은 확정 상태로 생성되고, 기존 임시저장은 제자리에서 확정 처리됩니다.
         """
-        user = request.user
-        data = request.data.copy()
-
-        try:
-            # Lock the profile row to prevent race conditions on invoice number
-            # 영수증 번호 동시성 문제를 방지하기 위해 프로필 행을 잠금(Lock)
-            profile = BusinessProfile.objects.select_for_update().get(tutor=user)
-        except BusinessProfile.DoesNotExist:
-            return Response(
-                {
-                    "detail": _(
-                        "Bitte vervollständigen Sie zuerst Ihr Geschäftsprofil (Einstellungen)."
-                    )
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        seq = profile.next_invoice_number
-        yymm = datetime.now().strftime("%y%m")
-        full_code = f"RE-{seq}{yymm}"
-
-        # Assign generated values
-        # 생성된 값 할당
-        data["invoice_number"] = seq
-        data["full_invoice_code"] = full_code
-        # Snapshot current profile data
-        # 현재 프로필 데이터를 스냅샷으로 저장
-        data["sender_data"] = BusinessProfileSerializer(profile).data
-
-        data["is_small_business"] = profile.is_small_business
-
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-
-            invoice = serializer.save(
-                tutor=user,
-                invoice_number=seq,
-                full_invoice_code=full_code,
-                sender_data=data["sender_data"],
-                is_small_business=data["is_small_business"],
-            )
-
-            # Increment sequence number safely
-            # 순서 번호를 안전하게 증가
-            profile.next_invoice_number += 1
-            profile.save()
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return self._save_invoice(request, finalize=True)
 
     @action(detail=False, methods=["post"])
     def preview_pdf(self, request):
@@ -1266,6 +1365,12 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
         invoice = self.get_object()
 
+        if not invoice.is_finalized:
+            return Response(
+                {"detail": _("Entwürfe können nicht als PDF geöffnet werden.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Helper: Format Number
         # 헬퍼: 숫자 포맷팅
         def format_de(value):
@@ -1377,7 +1482,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
         context = {
             "invoice_number": invoice.full_invoice_code,
-            "invoice_date": invoice.created_at.strftime("%d.%m.%Y"),
+            "invoice_date": format_date_de(invoice.invoice_date) or invoice.created_at.strftime("%d.%m.%Y"),
             "delivery_date": delivery_text,
             "subject": invoice.subject,
             "header_text": invoice.header_text,
