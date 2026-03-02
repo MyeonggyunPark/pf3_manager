@@ -52,6 +52,12 @@ const CURRENT_LEVEL_OPTIONS = ["A0", "A1", "A2", "B1", "B2", "C1"];
 // 목표 레벨: A1부터 C2(원어민 수준)까지
 const TARGET_LEVEL_OPTIONS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
+const GERMAN_STUDENT_EXAM_MODE_LABELS = {
+  FULL: "Gesamt",
+  WRITTEN: "Schriftlich",
+  ORAL: "Mündlich",
+};
+
 export default function AddStudentModal({
   isOpen,
   onClose,
@@ -555,7 +561,7 @@ export default function AddStudentModal({
                 />
                 <div className="grid grid-cols-3 gap-1.5">
                   <SelectionChip
-                    label={t("student_exam_mode_full")}
+                    label={GERMAN_STUDENT_EXAM_MODE_LABELS.FULL}
                     value="FULL"
                     selectedValue={formData.target_exam_mode}
                     onClick={(val) =>
@@ -564,7 +570,7 @@ export default function AddStudentModal({
                     className="cursor-pointer dark:hover:text-foreground"
                   />
                   <SelectionChip
-                    label={t("student_exam_mode_written")}
+                    label={GERMAN_STUDENT_EXAM_MODE_LABELS.WRITTEN}
                     value="WRITTEN"
                     selectedValue={formData.target_exam_mode}
                     onClick={(val) =>
@@ -573,7 +579,7 @@ export default function AddStudentModal({
                     className="cursor-pointer dark:hover:text-foreground"
                   />
                   <SelectionChip
-                    label={t("student_exam_mode_oral")}
+                    label={GERMAN_STUDENT_EXAM_MODE_LABELS.ORAL}
                     value="ORAL"
                     selectedValue={formData.target_exam_mode}
                     onClick={(val) =>

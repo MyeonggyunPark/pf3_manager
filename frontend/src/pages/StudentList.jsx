@@ -72,6 +72,12 @@ const examResultStyles = {
   WAITING: "bg-muted/50 text-muted-foreground border-border hover:bg-muted/50",
 };
 
+const GERMAN_STUDENT_EXAM_MODE_LABELS = {
+  FULL: "Gesamt",
+  WRITTEN: "Schriftlich",
+  ORAL: "Mündlich",
+};
+
 // Exam mode labels
 // 시험 유형 라벨
 const LEVEL_OPTIONS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -285,11 +291,7 @@ export default function StudentList() {
     FINISHED: t("student_status_finished"),
   };
 
-  const examModeLabels = {
-    FULL: t("student_exam_mode_full"),
-    WRITTEN: t("student_exam_mode_written"),
-    ORAL: t("student_exam_mode_oral"),
-  };
+  const examModeLabels = GERMAN_STUDENT_EXAM_MODE_LABELS;
 
   const examResultLabels = {
     PASSED: t("student_exam_result_passed"),
