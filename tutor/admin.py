@@ -695,3 +695,58 @@ class InvoiceAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Lock finalized invoices in admin while still allowing sent-status updates.
+        Draft invoices keep the default editable fields.
+
+        확정된 영수증은 어드민에서 발송 여부만 수정 가능하도록 잠그고,
+        임시저장 영수증은 기존처럼 기본 편집이 가능하도록 유지합니다.
+        """
+        readonly_fields = list(super().get_readonly_fields(request, obj))
+
+        if obj and obj.is_finalized:
+            readonly_fields.extend(
+                [
+                    "tutor",
+                    "student",
+                    "course_registration",
+                    "recipient_name",
+                    "recipient_address",
+                    "delivery_date_start",
+                    "delivery_date_end",
+                    "due_date",
+                    "subject",
+                    "header_text",
+                    "footer_text",
+                    "is_paid",
+                    "is_small_business",
+                ]
+            )
+
+        return tuple(dict.fromkeys(readonly_fields))
+
+    def get_inline_instances(self, request, obj=None):
+        """
+        Hide item and adjustment inlines for finalized invoices.
+        Draft invoices still show nested rows for editing.
+
+        확정된 영수증은 품목/조정 인라인을 숨기고,
+        임시저장 영수증은 기존처럼 인라인 편집을 유지합니다.
+        """
+        if obj and obj.is_finalized:
+            return []
+        return super().get_inline_instances(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        """
+        Prevent deleting finalized invoices from the admin interface.
+        Draft invoices follow the default delete permission.
+
+        어드민 화면에서 확정된 영수증 삭제를 차단하고,
+        임시저장 영수증은 기본 삭제 권한을 따릅니다.
+        """
+        if obj and obj.is_finalized:
+            return False
+        return super().has_delete_permission(request, obj)

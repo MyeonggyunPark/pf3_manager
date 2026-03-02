@@ -921,6 +921,24 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
         return super().partial_update(request, *args, **kwargs)
 
+    def update(self, request, *args, **kwargs):
+        """
+        Block full updates for finalized invoices.
+        Draft invoices can still be fully updated.
+
+        확정된 영수증에 대한 전체 수정(PUT)을 차단합니다.
+        임시저장 영수증은 계속 전체 수정할 수 있습니다.
+        """
+        invoice = self.get_object()
+
+        if invoice.is_finalized:
+            return Response(
+                {"detail": _("Finalisierte Rechnungen können nicht mehr bearbeitet werden.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().update(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         """
         Draft invoices can be deleted. Finalized invoices are locked.
