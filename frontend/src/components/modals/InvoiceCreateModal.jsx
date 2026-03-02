@@ -153,6 +153,39 @@ const ErrorMessage = ({ message }) => {
   return <p className="text-xs text-destructive mt-1 font-medium ml-1">{message}</p>;
 };
 
+const getInvoiceSubmitErrorMessage = (err, fallbackMessage) => {
+  const responseData = err?.response?.data;
+
+  if (!responseData) {
+    return fallbackMessage;
+  }
+
+  if (typeof responseData.detail === "string") {
+    return responseData.detail;
+  }
+
+  if (responseData.due_date?.length) {
+    return "Bitte geben Sie ein Zahlungsziel an.";
+  }
+
+  if (Array.isArray(responseData.items) && responseData.items.length > 0) {
+    const itemMessages = responseData.items
+      .map((itemError, index) => {
+        if (itemError?.description?.length) {
+          return `Position ${index + 1}: Bitte geben Sie eine Bezeichnung ein.`;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    if (itemMessages.length > 0) {
+      return itemMessages.join("\n");
+    }
+  }
+
+  return fallbackMessage;
+};
+
 // Tiptap Editor Component
 // 팁탭 에디터 컴포넌트 (텍스트 편집기)
 const TiptapEditor = ({ value, onChange }) => {
@@ -746,6 +779,9 @@ export default function InvoiceCreateModal({
   const handleDueDateChange = (e) => {
     const date = e.target.value;
     setDueDate(date);
+    if (errors.due_date) {
+      setErrors((prev) => ({ ...prev, due_date: null }));
+    }
     if (date && invoiceDate) {
       setDueDays(calculateDiffDays(invoiceDate, date));
     } else {
@@ -816,6 +852,9 @@ export default function InvoiceCreateModal({
   };
 
   const handleItemChange = (index, field, value) => {
+    if (errors.items) {
+      setErrors((prev) => ({ ...prev, items: null }));
+    }
     setItems((prevItems) => {
       const newItems = [...prevItems];
       newItems[index] = { ...newItems[index], [field]: value };
@@ -885,10 +924,29 @@ export default function InvoiceCreateModal({
     if (!invoiceDate) {
       newErrors.invoice_date = "Bitte geben Sie ein Rechnungsdatum an.";
     }
+    if (!dueDate) {
+      newErrors.due_date = "Bitte geben Sie ein Zahlungsziel an.";
+    }
 
     if (!deliveryDate && (!periodStart || !periodEnd)) {
       newErrors.delivery_period =
         "Bitte geben Sie ein Lieferdatum oder einen Leistungszeitraum an.";
+    }
+
+    const hasInvalidItems = items.some((item) => {
+      const requiresQuantity = item.unit !== "pauschal";
+
+      return (
+        !item.name.trim() ||
+        !item.price ||
+        Number(item.price) <= 0 ||
+        (requiresQuantity && (!item.quantity || Number(item.quantity) <= 0))
+      );
+    });
+
+    if (hasInvalidItems) {
+      newErrors.items =
+        "Bitte füllen Sie in den Positionen Bezeichnung, Menge und Preis vollständig aus.";
     }
 
     setErrors(newErrors);
@@ -1024,10 +1082,10 @@ export default function InvoiceCreateModal({
       onSuccess();
     } catch (err) {
       console.error("Submission failed", err);
-      let errorMessage = "Fehler beim Speichern der Rechnung.";
-      if (err.response && err.response.data) {
-        errorMessage += `\n${JSON.stringify(err.response.data)}`;
-      }
+      const errorMessage = getInvoiceSubmitErrorMessage(
+        err,
+        "Fehler beim Speichern der Rechnung.",
+      );
       setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -1061,10 +1119,10 @@ export default function InvoiceCreateModal({
       onSuccess();
     } catch (err) {
       console.error("Save & Print failed", err);
-      let errorMessage = "Fehler beim Speichern und Drucken.";
-      if (err.response && err.response.data) {
-        errorMessage += `\n${JSON.stringify(err.response.data)}`;
-      }
+      const errorMessage = getInvoiceSubmitErrorMessage(
+        err,
+        "Fehler beim Speichern und Drucken.",
+      );
       setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -1520,7 +1578,14 @@ export default function InvoiceCreateModal({
                   )}
                 >
                   <div className="space-y-1">
-                    <label className={LABEL_CLASS}>Zahlungsziel</label>
+                    <label
+                      className={cn(
+                        LABEL_CLASS,
+                        errors.due_date ? "text-destructive" : "",
+                      )}
+                    >
+                      Zahlungsziel <span className="text-destructive">*</span>
+                    </label>
                     <div className="relative">
                       <Input
                         type="date"
@@ -1530,6 +1595,7 @@ export default function InvoiceCreateModal({
                         onClick={(e) => e.target.showPicker()}
                       />
                     </div>
+                    <ErrorMessage message={errors.due_date} />
                   </div>
                   <div className="space-y-1">
                     <div className="h-4.5 mb-1.5"></div>
@@ -1579,7 +1645,12 @@ export default function InvoiceCreateModal({
 
             <div className="space-y-4">
               <div className="flex justify-between items-end">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-foreground">
+                <h3
+                  className={cn(
+                    "text-lg font-bold text-slate-800 dark:text-foreground",
+                    errors.items ? "text-destructive" : "",
+                  )}
+                >
                   Positionen
                 </h3>
                 <div className="flex gap-2 bg-slate-100 dark:bg-muted p-1 rounded-lg">
@@ -1609,6 +1680,7 @@ export default function InvoiceCreateModal({
                   </button>
                 </div>
               </div>
+              <ErrorMessage message={errors.items} />
 
               <div className="grid grid-cols-12 gap-3 px-1 text-sm font-bold tracking-wider text-slate-500 dark:text-muted-foreground">
                 <div className="col-span-4 pl-6">Service</div>
