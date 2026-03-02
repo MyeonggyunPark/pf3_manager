@@ -838,7 +838,11 @@ class Invoice(models.Model):
     )
 
     recipient_name = models.CharField(_("Empfänger Name"), max_length=100)
-    recipient_address = models.CharField(_("Empfänger Adresse"), max_length=255)
+    recipient_address = models.JSONField(
+        _("Empfänger Adresse"),
+        default=dict,
+        help_text=_("Strukturierte Empfängeradresse mit Straße, PLZ, Ort und Land"),
+    )
     reference_number = models.CharField(_("Referenznummer"), max_length=100, blank=True, default="")
 
     subject = models.CharField(_("Betreff"), max_length=200, default="Rechnung")

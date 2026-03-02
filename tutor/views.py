@@ -983,6 +983,29 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         full_code = f"RE-{seq}{yymm}"
         return seq, full_code
 
+    def _normalize_recipient_address(self, raw_address):
+        """
+        Normalize recipient addresses from either JSON strings or objects.
+        Returns a stable dict shape for rendering and persistence.
+
+        수신자 주소를 JSON 문자열 또는 객체 입력 모두에서 정규화합니다.
+        렌더링과 저장에 사용할 고정된 딕셔너리 형태로 반환합니다.
+        """
+        if isinstance(raw_address, str):
+            try:
+                raw_address = json.loads(raw_address)
+            except json.JSONDecodeError:
+                raw_address = {}
+        elif not isinstance(raw_address, dict):
+            raw_address = {}
+
+        return {
+            "street": str(raw_address.get("street", "") or ""),
+            "zip": str(raw_address.get("zip", "") or ""),
+            "city": str(raw_address.get("city", "") or ""),
+            "country": str(raw_address.get("country", "") or ""),
+        }
+
     def _save_invoice(self, request, finalize):
         """
         Shared helper for creating or updating invoices.
@@ -1193,10 +1216,9 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
         # Parse Recipient Address
         # 수신자 주소 파싱
-        try:
-            recipient_address = json.loads(data.get("recipient_address", "{}"))
-        except:
-            recipient_address = {}
+        recipient_address = self._normalize_recipient_address(
+            data.get("recipient_address", {})
+        )
 
         recipient_name = data.get("recipient_name", "Unbekannt")
         recipient_no = ""
@@ -1419,10 +1441,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             except BusinessProfile.DoesNotExist:
                 sender_data = {}
 
-        try:
-            r_addr = json.loads(invoice.recipient_address)
-        except (TypeError, json.JSONDecodeError):
-            r_addr = {}
+        r_addr = self._normalize_recipient_address(invoice.recipient_address)
 
         # Determine Salutation
         # 인사말 결정

@@ -1,3 +1,4 @@
+import json
 import os
 
 from django.utils.translation import gettext_lazy as _
@@ -759,6 +760,33 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "sender_data",
             "created_at",
         )
+
+    def validate_recipient_address(self, value):
+        """
+        Normalize the recipient address payload into a structured object.
+        Supports legacy JSON strings during the transition period.
+
+        수신자 주소를 구조화된 객체 형식으로 정규화합니다.
+        전환 기간 동안 기존 JSON 문자열 형식도 호환합니다.
+        """
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError as exc:
+                raise ValidationError(_("Empfängeradresse ist ungültig.")) from exc
+
+        if value is None:
+            value = {}
+
+        if not isinstance(value, dict):
+            raise ValidationError(_("Empfängeradresse muss als Objekt übergeben werden."))
+
+        return {
+            "street": str(value.get("street", "") or ""),
+            "zip": str(value.get("zip", "") or ""),
+            "city": str(value.get("city", "") or ""),
+            "country": str(value.get("country", "") or ""),
+        }
 
     @transaction.atomic
     def create(self, validated_data):

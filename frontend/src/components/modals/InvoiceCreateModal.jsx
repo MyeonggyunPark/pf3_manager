@@ -78,6 +78,37 @@ const initialRecipientAddress = {
   country: "",
 };
 
+const normalizeRecipientAddress = (rawAddress) => {
+  if (!rawAddress) {
+    return { ...initialRecipientAddress };
+  }
+
+  let resolvedAddress = rawAddress;
+
+  if (typeof resolvedAddress === "string") {
+    try {
+      resolvedAddress = JSON.parse(resolvedAddress);
+    } catch {
+      return { ...initialRecipientAddress };
+    }
+  }
+
+  if (
+    typeof resolvedAddress !== "object" ||
+    resolvedAddress === null ||
+    Array.isArray(resolvedAddress)
+  ) {
+    return { ...initialRecipientAddress };
+  }
+
+  return {
+    street: resolvedAddress.street || "",
+    zip: resolvedAddress.zip || "",
+    city: resolvedAddress.city || "",
+    country: resolvedAddress.country || "",
+  };
+};
+
 const initialItems = [
   {
     id: 1,
@@ -438,14 +469,9 @@ export default function InvoiceCreateModal({
         profileData?.price_input_type ||
         "BRUTTO";
 
-      let parsedRecipientAddress = initialRecipientAddress;
-      try {
-        parsedRecipientAddress = draftInvoice?.recipient_address
-          ? JSON.parse(draftInvoice.recipient_address)
-          : initialRecipientAddress;
-      } catch {
-        parsedRecipientAddress = initialRecipientAddress;
-      }
+      const parsedRecipientAddress = normalizeRecipientAddress(
+        draftInvoice?.recipient_address,
+      );
 
       const globalTaxRate = resolvedTaxConfig.is_small_business ? 0 : 0.19;
       const mappedItems =
@@ -883,7 +909,7 @@ export default function InvoiceCreateModal({
       ...(invoiceData?.id ? { id: invoiceData.id } : {}),
       student: recipientId ? recipientId : null,
       recipient_name: recipientNameStr,
-      recipient_address: JSON.stringify(recipientAddress),
+      recipient_address: normalizeRecipientAddress(recipientAddress),
       invoice_number: invoiceNumber,
       invoice_date: invoiceDate,
       delivery_date_start: (isPeriodMode ? periodStart : deliveryDate) || null,
