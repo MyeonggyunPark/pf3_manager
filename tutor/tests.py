@@ -252,6 +252,81 @@ class InvoiceApiTests(APITestCase):
         )
         self.assertTrue(Invoice.objects.filter(pk=finalized_response.data["id"]).exists())
 
+    def test_deleting_a_draft_resequences_following_drafts_and_next_number(self):
+        """
+        Ensure deleting a middle draft pulls later draft numbers forward and updates
+        the next available invoice number.
+
+        중간 드래프트를 삭제하면 뒤의 드래프트 번호가 앞으로 당겨지고,
+        다음 사용 가능한 영수증 번호도 함께 갱신되는지 검증합니다.
+        """
+        first_draft = self.create_draft(reference_number="REF-100")
+        second_draft = self.create_draft(reference_number="REF-200")
+        third_draft = self.create_draft(reference_number="REF-300")
+
+        self.assertEqual(first_draft.data["invoice_number"], 1005)
+        self.assertEqual(second_draft.data["invoice_number"], 1006)
+        self.assertEqual(third_draft.data["invoice_number"], 1007)
+
+        delete_response = self.client.delete(
+            f"/api/invoices/{second_draft.data['id']}/"
+        )
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+
+        remaining_first = Invoice.objects.get(pk=first_draft.data["id"])
+        remaining_third = Invoice.objects.get(pk=third_draft.data["id"])
+
+        self.assertEqual(remaining_first.invoice_number, 1005)
+        self.assertEqual(remaining_third.invoice_number, 1006)
+
+        next_number_response = self.client.get("/api/invoices/next_number/")
+        self.assertEqual(next_number_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(next_number_response.data["sequence"], 1007)
+
+    def test_deleted_draft_number_is_reused_for_the_next_new_draft(self):
+        """
+        Ensure a deleted draft number becomes available again for the next new draft.
+
+        삭제된 드래프트 번호가 다음 새 드래프트 생성 시 다시 재사용되는지 검증합니다.
+        """
+        first_draft = self.create_draft(reference_number="REF-100")
+        self.assertEqual(first_draft.data["invoice_number"], 1005)
+
+        delete_response = self.client.delete(
+            f"/api/invoices/{first_draft.data['id']}/"
+        )
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+
+        new_draft = self.create_draft(reference_number="REF-101")
+        self.assertEqual(new_draft.data["invoice_number"], 1005)
+
+    def test_finalizing_a_draft_keeps_its_reserved_invoice_number(self):
+        """
+        Ensure a saved draft keeps the same invoice number when it is finalized.
+
+        임시저장된 드래프트가 확정될 때 기존에 예약된 영수증 번호를 유지하는지 검증합니다.
+        """
+        draft_response = self.create_draft(reference_number="REF-100")
+
+        finalize_response = self.client.post(
+            "/api/invoices/create_full/",
+            self.build_payload(
+                id=draft_response.data["id"],
+                reference_number="REF-100",
+            ),
+            format="json",
+        )
+
+        self.assertEqual(finalize_response.status_code, status.HTTP_200_OK)
+
+        invoice = Invoice.objects.get(pk=draft_response.data["id"])
+        self.assertTrue(invoice.is_finalized)
+        self.assertEqual(invoice.invoice_number, 1005)
+
+        next_number_response = self.client.get("/api/invoices/next_number/")
+        self.assertEqual(next_number_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(next_number_response.data["sequence"], 1006)
+
     def test_download_pdf_blocks_drafts(self):
         """
         Ensure draft invoices cannot be opened as PDFs.

@@ -940,12 +940,15 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
         return super().update(request, *args, **kwargs)
 
+    @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         """
         Draft invoices can be deleted. Finalized invoices are locked.
+        Remaining drafts are resequenced so temporary invoice numbers stay compact.
 
         임시저장 영수증은 삭제할 수 있지만,
         확정된 영수증은 삭제되지 않도록 보호합니다.
+        삭제 후 남아 있는 드래프트 번호는 다시 당겨서 정렬합니다.
         """
         invoice = self.get_object()
         if invoice.is_finalized:
@@ -954,7 +957,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        profile = self._get_business_profile(request.user, lock=True)
+        deleted_sequence = invoice.invoice_number
         self.perform_destroy(invoice)
+        self._resequence_draft_invoices(profile, deleted_sequence)
+        self._sync_next_invoice_number(profile, deleted_sequence)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _get_business_profile(self, user, lock=False):
@@ -983,6 +990,94 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         yymm = datetime.now().strftime("%y%m")
         full_code = f"RE-{seq}{yymm}"
         return seq, full_code
+
+    def _extract_invoice_code_suffix(self, full_code):
+        """
+        Extract the YYMM suffix from an invoice code.
+        Falls back to the current month if the code is missing or malformed.
+
+        영수증 코드에서 YYMM 접미사를 추출합니다.
+        코드가 없거나 형식이 잘못된 경우 현재 월 정보를 사용합니다.
+        """
+        if isinstance(full_code, str) and len(full_code) >= 4 and full_code[-4:].isdigit():
+            return full_code[-4:]
+        return datetime.now().strftime("%y%m")
+
+    def _compose_invoice_code(self, sequence, yymm=None):
+        """
+        Compose a full invoice code from a sequence and YYMM suffix.
+
+        시퀀스 번호와 YYMM 접미사를 조합하여 전체 영수증 코드를 생성합니다.
+        """
+        return f"RE-{sequence}{yymm or datetime.now().strftime('%y%m')}"
+
+    def _find_next_available_sequence(self, profile, start_sequence):
+        """
+        Find the next unused invoice number from the given starting sequence.
+
+        지정된 시작 번호부터 사용되지 않은 다음 영수증 번호를 찾습니다.
+        """
+        used_numbers = set(
+            Invoice.objects.filter(tutor=profile.tutor).values_list("invoice_number", flat=True)
+        )
+        sequence = int(start_sequence)
+
+        while sequence in used_numbers:
+            sequence += 1
+
+        return sequence
+
+    def _resequence_draft_invoices(self, profile, start_sequence):
+        """
+        Compress draft invoice numbers from the given point while keeping finalized
+        invoice numbers fixed and preserving draft order.
+
+        지정된 번호부터 임시저장 영수증 번호를 앞으로 당겨 재정렬합니다.
+        확정 영수증 번호는 유지하고, 드래프트 간의 상대 순서는 보존합니다.
+        """
+        finalized_numbers = set(
+            Invoice.objects.filter(tutor=profile.tutor, is_finalized=True).values_list(
+                "invoice_number", flat=True
+            )
+        )
+        draft_invoices = list(
+            Invoice.objects.select_for_update()
+            .filter(
+                tutor=profile.tutor,
+                is_finalized=False,
+                invoice_number__gte=start_sequence,
+            )
+            .order_by("invoice_number", "created_at", "pk")
+        )
+
+        assigned_numbers = set()
+        next_sequence = int(start_sequence)
+
+        for draft_invoice in draft_invoices:
+            while next_sequence in finalized_numbers or next_sequence in assigned_numbers:
+                next_sequence += 1
+
+            if draft_invoice.invoice_number != next_sequence:
+                draft_invoice.invoice_number = next_sequence
+                draft_invoice.full_invoice_code = self._compose_invoice_code(
+                    next_sequence,
+                    self._extract_invoice_code_suffix(draft_invoice.full_invoice_code),
+                )
+                draft_invoice.save(update_fields=["invoice_number", "full_invoice_code"])
+
+            assigned_numbers.add(next_sequence)
+            next_sequence += 1
+
+    def _sync_next_invoice_number(self, profile, start_sequence):
+        """
+        Update the cached next invoice number after create/delete resequencing.
+
+        생성/삭제 후 재정렬 결과를 반영하여 다음 영수증 번호 캐시를 갱신합니다.
+        """
+        next_sequence = self._find_next_available_sequence(profile, start_sequence)
+        if profile.next_invoice_number != next_sequence:
+            profile.next_invoice_number = next_sequence
+            profile.save(update_fields=["next_invoice_number"])
 
     def _normalize_recipient_address(self, raw_address):
         """
@@ -1061,6 +1156,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        self._sync_next_invoice_number(profile, profile.next_invoice_number)
         seq, full_code = self._build_invoice_code(profile)
         data["invoice_number"] = seq
         data["full_invoice_code"] = full_code
@@ -1075,8 +1171,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 is_small_business=profile.is_small_business,
                 is_finalized=finalize,
             )
-            profile.next_invoice_number += 1
-            profile.save(update_fields=["next_invoice_number"])
+            self._sync_next_invoice_number(profile, seq + 1)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1093,7 +1188,10 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         """
         try:
             profile = BusinessProfile.objects.get(tutor=request.user)
-            seq = profile.next_invoice_number
+            seq = self._find_next_available_sequence(profile, profile.next_invoice_number)
+            if seq != profile.next_invoice_number:
+                profile.next_invoice_number = seq
+                profile.save(update_fields=["next_invoice_number"])
             now = datetime.now()
             # YYMM format
             # YYMM 포맷 (예: 2602)
