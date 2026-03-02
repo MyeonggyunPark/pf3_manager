@@ -930,8 +930,9 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         임시저장 영수증은 계속 전체 수정할 수 있습니다.
         """
         invoice = self.get_object()
+        is_partial = kwargs.get("partial", False)
 
-        if invoice.is_finalized:
+        if invoice.is_finalized and not is_partial:
             return Response(
                 {"detail": _("Finalisierte Rechnungen können nicht mehr bearbeitet werden.")},
                 status=status.HTTP_400_BAD_REQUEST,
