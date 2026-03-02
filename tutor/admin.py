@@ -206,7 +206,7 @@ class StudentAdmin(admin.ModelAdmin):
     )
     # Make customer_number read-only to prevent manual errors (auto-generated)
     # 고객 번호는 자동 생성되므로 실수 방지를 위해 읽기 전용으로 설정
-    # readonly_fields = ("customer_number",)
+    readonly_fields = ("customer_number",)
 
 
 @admin.register(CourseRegistration)
