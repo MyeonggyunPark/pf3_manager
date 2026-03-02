@@ -1283,12 +1283,16 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         if delivery_end:
             delivery_text = f"{delivery_start} - {delivery_end}"
 
-        # Process Items
-        # 항목(Items) 처리 및 계산
+        # Process Items and Totals using the backend calculation source of truth
+        # 항목 및 총계는 백엔드 계산 로직을 기준으로 일관되게 처리
         items = data.get("items", [])
+        adjustments_input = data.get("adjustments", [])
+        calculated = Invoice.calculate_financials(
+            items,
+            adjustments_input,
+            is_small_business=is_small_business,
+        )
         items_data = []
-
-        items_sum_decimal = Decimal("0.00")
 
         UNIT_TRANS = {
             "DAY": "Tag(e)",
@@ -1297,64 +1301,36 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             "FLAT_RATE": "pauschal",
         }
 
-        for item in items:
-            try:
-                qty = Decimal(str(item.get("quantity", 0) or 0))
-                price = Decimal(str(item.get("unit_price", 0) or 0))
-                disc_val = Decimal(str(item.get("discount_value", 0) or 0))
-                vat_rate = Decimal(str(item.get("vat_rate", 0) or 0))
-                total_p = Decimal(str(item.get("total_price", 0) or 0))
-            except:
-                qty = price = disc_val = vat_rate = total_p = Decimal(0)
-
-            items_sum_decimal += total_p
-
-            raw_unit = item.get("unit", "PIECE")
+        for item in calculated["items"]:
+            raw_unit = item["unit"]
 
             items_data.append(
                 {
-                    "description": item.get("description", ""),
-                    "quantity": format_de(qty),
+                    "description": item["description"],
+                    "quantity": format_de(item["quantity"]),
                     "unit_display": UNIT_TRANS.get(raw_unit, raw_unit),
-                    "unit_price": format_de(price),
-                    "discount_value": format_de(disc_val),
-                    "discount_unit": item.get("discount_unit", "PERCENT"),
-                    "vat_rate": format_de(vat_rate),
-                    "total_price": format_de(total_p),
+                    "unit_price": format_de(item["unit_price"]),
+                    "discount_value": format_de(item["discount_value"]),
+                    "discount_unit": item["discount_unit"],
+                    "vat_rate": format_de(item["vat_rate"]),
+                    "total_price": format_de(item["total_price"]),
                 }
             )
 
         # Process Adjustments (Discounts/Surcharges)
         # 조정 항목(할인/추가금) 처리
-        adjustments_input = data.get("adjustments", [])
         processed_adjustments = []
 
-        for adj in adjustments_input:
-            try:
-                val = Decimal(str(adj.get("value", 0) or 0))
-                amt = Decimal(str(adj.get("amount", 0) or 0))
-
-            except:
-                val = amt = Decimal(0)
-
+        for adj in calculated["adjustments"]:
             processed_adjustments.append(
                 {
-                    "label": adj.get("label", ""),
-                    "type": adj.get("type", "DISCOUNT"),
-                    "value": format_de(val),
-                    "unit": adj.get("unit", "PERCENT"),
-                    "amount": format_de(amt),
+                    "label": adj["label"],
+                    "type": adj["type"],
+                    "value": format_de(adj["value"]),
+                    "unit": adj["unit"],
+                    "amount": format_de(adj["amount"]),
                 }
             )
-
-        # Process Totals
-        # 총계 처리
-        try:
-            subtotal = Decimal(str(data.get("subtotal", 0) or 0))
-            vat_amount = Decimal(str(data.get("vat_amount", 0) or 0))
-            total_amount = Decimal(str(data.get("total_amount", 0) or 0))
-        except:
-            subtotal = vat_amount = total_amount = Decimal(0)
 
         # Context for Template
         # 템플릿에 전달할 컨텍스트
@@ -1368,10 +1344,10 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             "sender": sender_data,
             "recipient": recipient_data,
             "items": items_data,
-            "items_total": format_de(items_sum_decimal),
-            "subtotal": format_de(subtotal),
-            "vat_amount": format_de(vat_amount),
-            "total_amount": format_de(total_amount),
+            "items_total": format_de(calculated["items_total"]),
+            "subtotal": format_de(calculated["subtotal"]),
+            "vat_amount": format_de(calculated["vat_amount"]),
+            "total_amount": format_de(calculated["total_amount"]),
             "adjustments": processed_adjustments,
             "is_small_business": is_small_business,
             "due_date": formatted_due_date,

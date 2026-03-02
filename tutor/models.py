@@ -908,6 +908,117 @@ class Invoice(models.Model):
     def __str__(self):
         return f"{self.full_invoice_code} - {self.recipient_name}"
 
+    @staticmethod
+    def _to_decimal(value):
+        try:
+            return Decimal(str(value or 0))
+        except:
+            return Decimal("0.00")
+
+    @staticmethod
+    def _read_calc_value(source, field, default=None):
+        if isinstance(source, dict):
+            return source.get(field, default)
+        return getattr(source, field, default)
+
+    @classmethod
+    def calculate_financials(cls, items, adjustments, is_small_business=False):
+        """
+        Calculate invoice totals from item and adjustment data without persistence.
+        Used by both preview rendering and saved invoice recalculation.
+
+        항목/조정 데이터만으로 영수증 총액을 계산하며 DB에는 저장하지 않습니다.
+        미리보기 렌더링과 저장된 영수증 재계산에서 공통으로 사용됩니다.
+        """
+        current_subtotal = Decimal("0.00")
+        current_vat_total = Decimal("0.00")
+        calculated_items = []
+        calculated_adjustments = []
+
+        for item in items:
+            quantity = cls._to_decimal(cls._read_calc_value(item, "quantity", 0))
+            unit_price = cls._to_decimal(cls._read_calc_value(item, "unit_price", 0))
+            discount_value = cls._to_decimal(
+                cls._read_calc_value(item, "discount_value", 0)
+            )
+            vat_rate = cls._to_decimal(cls._read_calc_value(item, "vat_rate", 0))
+            discount_unit = cls._read_calc_value(item, "discount_unit", "PERCENT")
+
+            base_price = unit_price * quantity
+
+            if discount_unit == "PERCENT":
+                discounted = base_price * (1 - (discount_value / 100))
+            else:
+                discounted = base_price - discount_value
+
+            item_total = max(Decimal("0.00"), discounted)
+
+            current_subtotal += item_total
+            current_vat_total += item_total * (vat_rate / 100)
+
+            calculated_items.append(
+                {
+                    "source": item,
+                    "quantity": quantity,
+                    "unit_price": unit_price,
+                    "discount_value": discount_value,
+                    "discount_unit": discount_unit,
+                    "vat_rate": vat_rate,
+                    "total_price": item_total,
+                    "unit": cls._read_calc_value(item, "unit", "PIECE"),
+                    "description": cls._read_calc_value(item, "description", ""),
+                }
+            )
+
+        total_adj_impact = Decimal("0.00")
+
+        for adjustment in adjustments:
+            value = cls._to_decimal(cls._read_calc_value(adjustment, "value", 0))
+            unit = cls._read_calc_value(adjustment, "unit", "PERCENT")
+            adj_type = cls._read_calc_value(adjustment, "type", "DISCOUNT")
+
+            if unit == "PERCENT":
+                adj_amount = current_subtotal * (value / 100)
+            else:
+                adj_amount = value
+
+            if adj_type == "DISCOUNT":
+                total_adj_impact -= adj_amount
+
+                if current_subtotal > 0:
+                    effective_vat_rate = current_vat_total / current_subtotal
+                    current_vat_total -= adj_amount * effective_vat_rate
+            else:
+                total_adj_impact += adj_amount
+                surcharge_tax_rate = (
+                    Decimal("0.00") if is_small_business else Decimal("0.19")
+                )
+                current_vat_total += adj_amount * surcharge_tax_rate
+
+            calculated_adjustments.append(
+                {
+                    "source": adjustment,
+                    "label": cls._read_calc_value(adjustment, "label", ""),
+                    "type": adj_type,
+                    "value": value,
+                    "unit": unit,
+                    "amount": adj_amount,
+                }
+            )
+
+        final_netto = max(Decimal("0.00"), current_subtotal + total_adj_impact)
+        final_vat = max(Decimal("0.00"), current_vat_total)
+
+        return {
+            "items": calculated_items,
+            "adjustments": calculated_adjustments,
+            "items_total": current_subtotal,
+            "subtotal": final_netto,
+            "vat_amount": final_vat,
+            "total_adjustment_amount": total_adj_impact,
+            "total_amount": final_netto + final_vat,
+        }
+
     def calculate_totals(self):
         """
         Recalculate totals based on items to ensure data integrity.
@@ -917,81 +1028,26 @@ class Invoice(models.Model):
         항목이 추가되거나 수정된 후 호출됩니다.
         """
 
-        current_subtotal = Decimal("0.00")
-        current_vat_total = Decimal("0.00")
+        items = list(self.items.all())
+        adjustments = list(self.adjustments.all())
+        calculated = self.calculate_financials(
+            items, adjustments, is_small_business=self.is_small_business
+        )
 
-        # Sum up all items
-        # 모든 항목 합산
-        for item in self.items.all():
+        for item_result in calculated["items"]:
+            item = item_result["source"]
+            item.total_price = item_result["total_price"]
+            item.save(update_fields=["total_price"])
 
-            # Ensure price is handled as Netto
-            # 가격이 Netto로 처리되도록 보장
-            base_price = item.unit_price * item.quantity
+        for adjustment_result in calculated["adjustments"]:
+            adjustment = adjustment_result["source"]
+            adjustment.amount = adjustment_result["amount"]
+            adjustment.save(update_fields=["amount"])
 
-            # Apply Item Discount
-            # 항목별 개별 할인 적용
-            if item.discount_unit == "PERCENT":
-                discounted = base_price * (1 - (item.discount_value / 100))
-            else:
-                discounted = base_price - item.discount_value
-
-            item_total = max(Decimal("0.00"), discounted)
-
-            # Update item's total_price just in case
-            # 만약을 대비해 항목의 total_price 업데이트 및 저장
-            item.total_price = item_total
-            item.save()
-
-            current_subtotal += item_total
-            current_vat_total += item_total * (item.vat_rate / 100)
-
-        # Apply Global Adjustment
-        # 전체 조정(전체 할인/추가금) 적용
-        total_adj_impact = Decimal("0.00")
-
-        # Iterate through adjustment objects
-        # 조정 항목 순회 및 계산
-        for adj in self.adjustments.all():
-            adj_amount = Decimal("0.00")
-
-            if adj.unit == "PERCENT":
-                adj_amount = current_subtotal * (adj.value / 100)
-            else:
-                adj_amount = adj.value
-
-            # DB에 계산된 금액 저장
-            adj.amount = adj_amount
-            adj.save()
-
-            # Handle Discount vs Surcharge
-            # 할인(차감) vs 추가금(가산) 분기 처리
-            if adj.type == "DISCOUNT":
-                total_adj_impact -= adj_amount
-
-                # Recalculate VAT reduction proportionally
-                # 할인분에 대한 VAT 감소분 비례 계산
-                if current_subtotal > 0:
-                    effective_vat_rate = current_vat_total / current_subtotal
-                    current_vat_total -= adj_amount * effective_vat_rate
-            else:
-                total_adj_impact += adj_amount
-
-                # Calculate VAT for surcharge (Based on Small Business Status)
-                # 추가금에 대한 VAT 계산 (소규모 사업자 여부에 따라 0% 또는 19%)
-                surcharge_tax_rate = (
-                    Decimal("0.00") if self.is_small_business else Decimal("0.19")
-                )
-                current_vat_total += adj_amount * surcharge_tax_rate
-
-        # Finalize
-        # Netto에 조정 금액 반영 및 최종 합계 계산
-        final_netto = max(Decimal("0.00"), current_subtotal + total_adj_impact)
-        final_vat = max(Decimal("0.00"), current_vat_total)
-
-        self.subtotal = final_netto
-        self.vat_amount = final_vat
-        self.total_amount = final_netto + final_vat
-        self.total_adjustment_amount = total_adj_impact
+        self.subtotal = calculated["subtotal"]
+        self.vat_amount = calculated["vat_amount"]
+        self.total_amount = calculated["total_amount"]
+        self.total_adjustment_amount = calculated["total_adjustment_amount"]
         self.save()
 
 
