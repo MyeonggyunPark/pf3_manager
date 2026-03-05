@@ -201,22 +201,11 @@ export default function CourseList() {
 
     // Helper to download PDF
     // PDF 다운로드/열기 헬퍼 함수
-    const handleDownloadPdf = async (e, invoiceId) => {
+    const handleDownloadPdf = (e, invoiceId) => {
         e.stopPropagation(); // 행 클릭 이벤트 전파 방지
-        try {
-        const response = await api.get(
-            `/api/invoices/${invoiceId}/download_pdf/`,
-            {
-            responseType: "blob",
-            },
-        );
-        const pdfBlob = new Blob([response.data], { type: "application/pdf" });
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        window.open(pdfUrl, "_blank");
-        } catch (err) {
-        console.error("PDF download failed", err);
-        alert(t("course_alert_pdf_error"));
-        }
+        const apiBaseUrl = String(api.defaults.baseURL || "").replace(/\/$/, "");
+        const pdfUrl = `${apiBaseUrl}/api/invoices/${invoiceId}/download_pdf/`;
+        window.open(pdfUrl, "_blank", "noopener,noreferrer");
     };
 
     // Helper to toggle sent status

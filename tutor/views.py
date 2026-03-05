@@ -1434,6 +1434,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         # Context for Template
         # 템플릿에 전달할 컨텍스트
         context = {
+            "document_title": "preview.pdf",
             "invoice_number": data.get("invoice_number", ""),
             "invoice_date": invoice_date,
             "delivery_date": delivery_text,
@@ -1592,7 +1593,10 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 }
             )
 
+        filename = f"Rechnung_{invoice.full_invoice_code}.pdf"
+
         context = {
+            "document_title": filename,
             "invoice_number": invoice.full_invoice_code,
             "invoice_date": format_date_de(invoice.invoice_date) or invoice.created_at.strftime("%d.%m.%Y"),
             "delivery_date": delivery_text,
@@ -1615,7 +1619,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         pdf_file = HTML(string=html_string).write_pdf()
 
         response = HttpResponse(pdf_file, content_type="application/pdf")
-        filename = f"Rechnung_{invoice.full_invoice_code}.pdf"
         response["Content-Disposition"] = f'inline; filename="{filename}"'
         return response
 

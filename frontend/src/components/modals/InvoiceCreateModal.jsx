@@ -1104,16 +1104,9 @@ export default function InvoiceCreateModal({
       const payload = getInvoicePayload();
       const createRes = await api.post("/api/invoices/create_full/", payload);
       const newInvoiceId = createRes.data.id;
-      const pdfRes = await api.get(
-        `/api/invoices/${newInvoiceId}/download_pdf/`,
-        {
-          responseType: "blob",
-        },
-      );
-
-      const pdfBlob = new Blob([pdfRes.data], { type: "application/pdf" });
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      window.open(pdfUrl, "_blank");
+      const apiBaseUrl = String(api.defaults.baseURL || "").replace(/\/$/, "");
+      const pdfUrl = `${apiBaseUrl}/api/invoices/${newInvoiceId}/download_pdf/`;
+      window.open(pdfUrl, "_blank", "noopener,noreferrer");
 
       handleCloseModal();
       onSuccess();
