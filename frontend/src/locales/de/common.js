@@ -376,6 +376,17 @@ const deCommon = {
   invoice_editor_insert_table_size: "{{row}} x {{col}} Tabelle einfügen",
   invoice_editor_select_table_size: "Tabellengröße wählen",
   invoice_editor_max_table: "Maximal 6 x 6",
+  invoice_editor_clear_cells: "Ausgewählte Zellen leeren",
+  invoice_editor_merge_cells: "Zellen zusammenführen",
+  invoice_editor_split_cell: "Zelle aufteilen",
+  invoice_editor_add_row_above: "Zeile oben hinzufügen",
+  invoice_editor_add_row_below: "Zeile unten hinzufügen",
+  invoice_editor_add_col_left: "Spalte links hinzufügen",
+  invoice_editor_add_col_right: "Spalte rechts hinzufügen",
+  invoice_editor_delete_row: "Zeile löschen",
+  invoice_editor_delete_col: "Spalte löschen",
+  invoice_editor_merge_help:
+    "*Mehrere Zellen verbinden: Zellbereich per Shift+Klick oder Drag auswählen",
   invoice_editor_delete_table: "Tabelle löschen",
 
   // [DeleteReceiptModal]

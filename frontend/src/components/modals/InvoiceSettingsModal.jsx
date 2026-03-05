@@ -28,6 +28,7 @@ import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
+import { CellSelection } from "@tiptap/pm/tables";
 
 // Tiptap Editor Component
 // 팁탭 에디터 컴포넌트
@@ -35,6 +36,7 @@ const TiptapEditor = ({ value, onChange }) => {
   const { t } = useTranslation();
   const [showTableGrid, setShowTableGrid] = useState(false);
   const [hoveredCell, setHoveredCell] = useState({ row: 0, col: 0 });
+  const [, setEditorRenderTick] = useState(0);
   const gridContainerRef = useRef(null);
 
   const editor = useEditor({
@@ -64,7 +66,7 @@ const TiptapEditor = ({ value, onChange }) => {
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm max-w-none focus:outline-none min-h-[200px] p-3 text-slate-800 dark:text-foreground dark:prose-invert [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
+          "prose prose-sm max-w-none focus:outline-none min-h-[200px] p-3 text-slate-800 dark:text-foreground dark:prose-invert [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_td.selectedCell]:bg-primary/15 [&_th.selectedCell]:bg-primary/15 [&_td.selectedCell]:outline [&_td.selectedCell]:outline-1 [&_td.selectedCell]:outline-primary/60 [&_th.selectedCell]:outline [&_th.selectedCell]:outline-1 [&_th.selectedCell]:outline-primary/60",
       },
     },
   });
@@ -81,6 +83,26 @@ const TiptapEditor = ({ value, onChange }) => {
       editor.commands.setContent(value || "");
     }
   }, [value, editor]);
+
+  // Force a lightweight re-render so table action buttons react immediately
+  // to cursor/selection changes (including after row/column delete).
+  useEffect(() => {
+    if (!editor) return;
+
+    const syncToolbarState = () => {
+      setEditorRenderTick((prev) => prev + 1);
+    };
+
+    editor.on("selectionUpdate", syncToolbarState);
+    editor.on("focus", syncToolbarState);
+    editor.on("blur", syncToolbarState);
+
+    return () => {
+      editor.off("selectionUpdate", syncToolbarState);
+      editor.off("focus", syncToolbarState);
+      editor.off("blur", syncToolbarState);
+    };
+  }, [editor]);
 
   // Handle click outside for table grid
   // 테이블 그리드 외부 클릭 처리
@@ -109,6 +131,67 @@ const TiptapEditor = ({ value, onChange }) => {
       .run();
     setShowTableGrid(false);
   };
+
+  const clearSelectedTableCells = () => {
+    if (!editor) return false;
+
+    const { state, view } = editor;
+    const { selection, schema } = state;
+    const paragraph = schema.nodes.paragraph?.createAndFill();
+
+    if (!paragraph) return false;
+
+    const cellsToClear = [];
+    const pushCell = (pos, node) => {
+      const tableRole = node?.type?.spec?.tableRole;
+      if (tableRole === "cell" || tableRole === "header_cell") {
+        cellsToClear.push({ pos, node });
+      }
+    };
+
+    if (selection instanceof CellSelection) {
+      selection.forEachCell((node, pos) => {
+        pushCell(pos, node);
+      });
+    } else {
+      const { $from } = selection;
+      for (let depth = $from.depth; depth > 0; depth -= 1) {
+        const node = $from.node(depth);
+        const tableRole = node?.type?.spec?.tableRole;
+        if (tableRole === "cell" || tableRole === "header_cell") {
+          pushCell($from.before(depth), node);
+          break;
+        }
+      }
+    }
+
+    if (cellsToClear.length === 0) return false;
+
+    const tr = state.tr;
+    cellsToClear
+      .sort((a, b) => b.pos - a.pos)
+      .forEach(({ pos, node }) => {
+        const from = pos + 1;
+        const to = pos + node.nodeSize - 1;
+        tr.replaceWith(from, to, paragraph);
+      });
+
+    if (!tr.docChanged) return false;
+
+    view.dispatch(tr.scrollIntoView());
+    return true;
+  };
+
+  const isInTable = editor.isActive("table");
+  const canAddRowBefore = editor.can().addRowBefore();
+  const canAddRowAfter = editor.can().addRowAfter();
+  const canAddColumnBefore = editor.can().addColumnBefore();
+  const canAddColumnAfter = editor.can().addColumnAfter();
+  const canMergeCells = editor.can().mergeCells();
+  const canSplitCell = editor.can().splitCell();
+  const canDeleteRow = editor.can().deleteRow();
+  const canDeleteColumn = editor.can().deleteColumn();
+  const canDeleteTable = editor.can().deleteTable();
 
   return (
     <div className="border border-slate-200 dark:border-border rounded-lg overflow-hidden bg-slate-50/50 dark:bg-muted focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary transition-all relative">
@@ -181,7 +264,7 @@ const TiptapEditor = ({ value, onChange }) => {
 
           {showTableGrid && (
             <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-popover border border-slate-200 dark:border-border rounded-lg shadow-xl p-3 w-47.5 animate-in fade-in zoom-in-95">
-              <div className="mb-2 text-xs font-semibold text-slate-600 dark:text-foreground text-center">
+              <div className="mb-2 text-xs font-semibold text-slate-600 dark:text-primary text-center">
                 {hoveredCell.row > 0
                   ? t("invoice_editor_insert_table_size", {
                       row: hoveredCell.row,
@@ -223,17 +306,144 @@ const TiptapEditor = ({ value, onChange }) => {
           )}
         </div>
 
-        {editor.can().deleteTable() && (
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().deleteTable().run()}
-            className="ml-auto p-1.5 text-destructive/70 hover:text-destructive hover:underline text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-          >
-            <Trash2 className="w-3 h-3" />
-            {t("invoice_editor_delete_table")}
-          </button>
-        )}
       </div>
+
+      {isInTable && (
+        <div className="p-2 border-t border-slate-200 dark:border-border bg-slate-50 dark:bg-muted/50 space-y-2">
+          <div className="flex flex-wrap items-center gap-1">
+            <button
+              type="button"
+              onClick={clearSelectedTableCells}
+              className="p-1.5 rounded text-xs flex items-center gap-1 transition-colors text-primary dark:text-foreground hover:bg-muted-foreground/10 cursor-pointer"
+              title={t("invoice_editor_clear_cells")}
+            >
+              {t("invoice_editor_clear_cells")}
+            </button>
+            <div className="w-px h-4 bg-slate-300 dark:bg-border mx-1" />
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().mergeCells().run()}
+              disabled={!canMergeCells}
+              className={`p-1.5 rounded text-xs flex items-center gap-1 transition-colors ${
+                canMergeCells
+                  ? "text-primary dark:text-foreground hover:bg-muted-foreground/10 cursor-pointer"
+                  : "text-primary/30 dark:text-muted-foreground/60 cursor-not-allowed"
+              }`}
+              title={t("invoice_editor_merge_cells")}
+            >
+              {t("invoice_editor_merge_cells")}
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().splitCell().run()}
+              disabled={!canSplitCell}
+              className={`p-1.5 rounded text-xs flex items-center gap-1 transition-colors ${
+                canSplitCell
+                  ? "text-primary dark:text-foreground hover:bg-muted-foreground/10 cursor-pointer"
+                  : "text-primary/30 dark:text-muted-foreground/60 cursor-not-allowed"
+              }`}
+              title={t("invoice_editor_split_cell")}
+            >
+              {t("invoice_editor_split_cell")}
+            </button>
+            <div className="w-px h-4 bg-slate-300 dark:bg-border mx-1" />
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().addRowBefore().run()}
+              disabled={!canAddRowBefore}
+              className={`p-1.5 rounded text-xs flex items-center gap-1 transition-colors ${
+                canAddRowBefore
+                  ? "text-primary dark:text-foreground hover:bg-muted-foreground/10 cursor-pointer"
+                  : "text-primary/30 dark:text-muted-foreground/60 cursor-not-allowed"
+              }`}
+              title={t("invoice_editor_add_row_above")}
+            >
+              {t("invoice_editor_add_row_above")}
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().addRowAfter().run()}
+              disabled={!canAddRowAfter}
+              className={`p-1.5 rounded text-xs flex items-center gap-1 transition-colors ${
+                canAddRowAfter
+                  ? "text-primary dark:text-foreground hover:bg-muted-foreground/10 cursor-pointer"
+                  : "text-primary/30 dark:text-muted-foreground/60 cursor-not-allowed"
+              }`}
+              title={t("invoice_editor_add_row_below")}
+            >
+              {t("invoice_editor_add_row_below")}
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().addColumnBefore().run()}
+              disabled={!canAddColumnBefore}
+              className={`p-1.5 rounded text-xs flex items-center gap-1 transition-colors ${
+                canAddColumnBefore
+                  ? "text-primary dark:text-foreground hover:bg-muted-foreground/10 cursor-pointer"
+                  : "text-primary/30 dark:text-muted-foreground/60 cursor-not-allowed"
+              }`}
+              title={t("invoice_editor_add_col_left")}
+            >
+              {t("invoice_editor_add_col_left")}
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              disabled={!canAddColumnAfter}
+              className={`p-1.5 rounded text-xs flex items-center gap-1 transition-colors ${
+                canAddColumnAfter
+                  ? "text-primary dark:text-foreground hover:bg-muted-foreground/10 cursor-pointer"
+                  : "text-primary/30 dark:text-muted-foreground/60 cursor-not-allowed"
+              }`}
+              title={t("invoice_editor_add_col_right")}
+            >
+              {t("invoice_editor_add_col_right")}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1">
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().deleteRow().run()}
+              disabled={!canDeleteRow}
+              className={`p-1.5 rounded text-xs flex items-center gap-1 transition-colors ${
+                canDeleteRow
+                  ? "text-destructive hover:bg-destructive/10 cursor-pointer"
+                  : "text-slate-400 dark:text-muted-foreground/60 cursor-not-allowed"
+              }`}
+              title={t("invoice_editor_delete_row")}
+            >
+              {t("invoice_editor_delete_row")}
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().deleteColumn().run()}
+              disabled={!canDeleteColumn}
+              className={`p-1.5 rounded text-xs flex items-center gap-1 transition-colors ${
+                canDeleteColumn
+                  ? "text-destructive hover:bg-destructive/10 cursor-pointer"
+                  : "text-slate-400 dark:text-muted-foreground/60 cursor-not-allowed"
+              }`}
+              title={t("invoice_editor_delete_col")}
+            >
+              {t("invoice_editor_delete_col")}
+            </button>
+            {canDeleteTable && (
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().deleteTable().run()}
+                className="p-1.5 rounded text-destructive hover:bg-destructive/10 text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                title={t("invoice_editor_delete_table")}
+              >
+                {t("invoice_editor_delete_table")}
+              </button>
+            )}
+            <span className="ml-auto text-[11px] text-slate-500 dark:text-muted-foreground">
+              {t("invoice_editor_merge_help")}
+            </span>
+          </div>
+        </div>
+      )}
 
       <EditorContent editor={editor} className="bg-white dark:bg-card" />
     </div>

@@ -364,6 +364,16 @@ const koCommon = {
   invoice_editor_insert_table_size: "{{row}} x {{col}} 표 삽입",
   invoice_editor_select_table_size: "표 크기 선택",
   invoice_editor_max_table: "최대 6 x 6",
+  invoice_editor_clear_cells: "선택 셀 비우기",
+  invoice_editor_merge_cells: "셀 병합",
+  invoice_editor_split_cell: "셀 분할",
+  invoice_editor_add_row_above: "행 위 추가",
+  invoice_editor_add_row_below: "행 아래 추가",
+  invoice_editor_add_col_left: "열 왼쪽 추가",
+  invoice_editor_add_col_right: "열 오른쪽 추가",
+  invoice_editor_delete_row: "행 삭제",
+  invoice_editor_delete_col: "열 삭제",
+  invoice_editor_merge_help: "*여러 셀 병합: Shift+클릭 또는 드래그로 셀 영역 선택",
   invoice_editor_delete_table: "표 삭제",
 
   // [DeleteReceiptModal]
