@@ -852,3 +852,24 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
         instance.calculate_totals()
         return instance
+
+
+class InvoiceTemplateCandidateSerializer(serializers.ModelSerializer):
+    """
+    Lightweight serializer for invoice template loading candidates.
+    Used to list previous finalized invoices per student in the create modal.
+
+    영수증 템플릿 불러오기 후보 목록용 경량 시리얼라이저입니다.
+    생성 모달에서 학생별 과거 확정 영수증 목록 표시에 사용됩니다.
+    """
+
+    class Meta:
+        model = Invoice
+        fields = (
+            "id",
+            "full_invoice_code",
+            "invoice_date",
+            "created_at",
+            "subject",
+            "total_amount",
+        )

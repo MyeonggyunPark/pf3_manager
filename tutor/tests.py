@@ -53,6 +53,17 @@ class InvoiceApiTests(APITestCase):
             city="Koeln",
             country="Deutschland",
         )
+        self.other_student = Student.objects.create(
+            tutor=self.tutor,
+            name="Julia Nebenkunde",
+            current_level="A2",
+            target_level="B1",
+            billing_name="Julia Nebenkunde",
+            street="Nebenstrasse 9",
+            postcode="80331",
+            city="Muenchen",
+            country="Deutschland",
+        )
 
     def build_payload(self, **overrides):
         """
@@ -326,6 +337,49 @@ class InvoiceApiTests(APITestCase):
         next_number_response = self.client.get("/api/invoices/next_number/")
         self.assertEqual(next_number_response.status_code, status.HTTP_200_OK)
         self.assertEqual(next_number_response.data["sequence"], 1006)
+
+    def test_template_candidates_returns_only_finalized_invoices_for_student(self):
+        """
+        Ensure template candidate API returns only finalized invoices
+        for the requested student.
+
+        템플릿 후보 API가 요청 학생에 대해 확정 영수증만 반환하는지 검증합니다.
+        """
+        self.create_draft(reference_number="REF-DRAFT")
+        finalized_response = self.create_finalized(reference_number="REF-FINAL")
+        self.create_finalized(
+            student=self.other_student.id,
+            recipient_name=self.other_student.billing_name,
+            recipient_address={
+                "street": self.other_student.street,
+                "zip": self.other_student.postcode,
+                "city": self.other_student.city,
+                "country": self.other_student.country,
+            },
+            reference_number="REF-OTHER",
+        )
+
+        response = self.client.get(
+            "/api/invoices/template_candidates/",
+            {"student": self.student.id},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], finalized_response.data["id"])
+        self.assertIn("full_invoice_code", response.data[0])
+        self.assertIn("total_amount", response.data[0])
+
+    def test_template_candidates_without_student_returns_empty_list(self):
+        """
+        Ensure template candidate API returns an empty list when student is missing.
+
+        student 파라미터가 없으면 빈 배열을 반환하는지 검증합니다.
+        """
+        response = self.client.get("/api/invoices/template_candidates/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
 
     def test_download_pdf_blocks_drafts(self):
         """

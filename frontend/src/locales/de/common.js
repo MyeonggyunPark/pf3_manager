@@ -388,6 +388,14 @@ const deCommon = {
   invoice_editor_merge_help:
     "*Mehrere Zellen verbinden: Zellbereich per Shift+Klick oder Drag auswählen",
   invoice_editor_delete_table: "Tabelle löschen",
+  invoice_template_load_label: "Daten aus vorheriger Rechnung laden",
+  invoice_template_load_loading: "Rechnungsvorlagen werden geladen...",
+  invoice_template_load_empty:
+    "Für diesen Empfänger gibt es noch keine finalisierte Rechnung.",
+  invoice_template_load_select_placeholder: "Vorlage auswählen",
+  invoice_template_load_apply: "Daten laden",
+  invoice_template_load_error:
+    "Die Vorlagendaten konnten nicht geladen werden. Bitte erneut versuchen.",
 
   // [DeleteReceiptModal]
   // [영수증 삭제 모달]

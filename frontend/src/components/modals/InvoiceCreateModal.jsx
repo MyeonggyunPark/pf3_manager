@@ -655,6 +655,11 @@ export default function InvoiceCreateModal({
   const [priceMode, setPriceMode] = useState("BRUTTO");
 
   const [globalAdjustments, setGlobalAdjustments] = useState([]);
+  const [templateCandidates, setTemplateCandidates] = useState([]);
+  const [selectedTemplateInvoiceId, setSelectedTemplateInvoiceId] = useState("");
+  const [isLoadingTemplateCandidates, setIsLoadingTemplateCandidates] =
+    useState(false);
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
 
   const [taxConfig, setTaxConfig] = useState({
     is_small_business: false,
@@ -662,7 +667,7 @@ export default function InvoiceCreateModal({
   });
 
   const [footerText, setFooterText] = useState(
-    "Bitte überweisen Sie den Rechnungsbetrag unter Angabe der Rechnungsnummer auf das unten angegebene Konto.\nDer Rechnungsbetrag ist bis zum [%ZAHLUNGSZIEL%] fällig.\n\nMit freundlichen Grüßen\n[%KONTAKTPERSON%]",
+    "Bitte überweisen Sie den Rechnungsbetrag unter Angabe der Rechnungsnummer auf das unten angegebene Konto.\nDer Rechnungsbetrag ist bis zum [%ZAHLUNGSZIEL%] fällig.\n\nMit freundlichen Grüßen\n\n[%KONTAKTPERSON%]",
   );
 
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -671,6 +676,12 @@ export default function InvoiceCreateModal({
   const [submitError, setSubmitError] = useState(null);
   const isEditMode = Boolean(invoiceData?.id);
   const isDraftEditMode = Boolean(invoiceData?.id && !invoiceData?.is_finalized);
+  const formatTemplateCandidateDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const parsed = new Date(dateStr);
+    if (Number.isNaN(parsed.getTime())) return dateStr;
+    return parsed.toLocaleDateString("de-DE");
+  };
 
   // Reset form to initial state
   // 폼 초기화 함수
@@ -691,6 +702,10 @@ export default function InvoiceCreateModal({
     setItems([{ ...initialItems[0], id: Date.now() }]);
     setPriceMode("BRUTTO");
     setGlobalAdjustments([]);
+    setTemplateCandidates([]);
+    setSelectedTemplateInvoiceId("");
+    setIsLoadingTemplateCandidates(false);
+    setIsApplyingTemplate(false);
     setIsPreviewLoading(false);
     setIsSubmitting(false);
     setShowDeleteConfirm(false);
@@ -1006,11 +1021,113 @@ export default function InvoiceCreateModal({
     }
   };
 
+  const fetchTemplateCandidates = useCallback(async (studentId) => {
+    if (!studentId) {
+      setTemplateCandidates([]);
+      setSelectedTemplateInvoiceId("");
+      return;
+    }
+
+    setIsLoadingTemplateCandidates(true);
+    try {
+      const response = await api.get("/api/invoices/template_candidates/", {
+        params: {
+          student: studentId,
+          limit: 10,
+        },
+      });
+      const candidates = Array.isArray(response.data) ? response.data : [];
+      setTemplateCandidates(candidates);
+      // Keep placeholder selected until user explicitly chooses one.
+      setSelectedTemplateInvoiceId("");
+      setErrors((prev) => ({
+        ...prev,
+        template_invoice: null,
+      }));
+    } catch (err) {
+      console.error("Failed to fetch invoice template candidates", err);
+      setTemplateCandidates([]);
+      setSelectedTemplateInvoiceId("");
+      setErrors((prev) => ({
+        ...prev,
+        template_invoice: null,
+      }));
+    } finally {
+      setIsLoadingTemplateCandidates(false);
+    }
+  }, []);
+
+  const handleLoadTemplate = async () => {
+    if (!recipientId || isApplyingTemplate) return;
+    if (!selectedTemplateInvoiceId) {
+      setErrors((prev) => ({
+        ...prev,
+        template_invoice: "Bitte wählen Sie zuerst eine Vorlage aus.",
+      }));
+      return;
+    }
+
+    setIsApplyingTemplate(true);
+    setSubmitError(null);
+    setErrors((prev) => ({
+      ...prev,
+      template_invoice: null,
+    }));
+
+    try {
+      const invoiceRes = await api.get(`/api/invoices/${selectedTemplateInvoiceId}/`);
+
+      const templateInvoice = invoiceRes.data;
+      const activePriceMode = priceMode || "BRUTTO";
+
+      const mappedItems =
+        templateInvoice?.items?.length > 0
+          ? templateInvoice.items.map((item, index) => {
+              const taxRate = Number(item.vat_rate || 0) / 100;
+              const displayPrice =
+                activePriceMode === "BRUTTO"
+                  ? Number(item.unit_price || 0) * (1 + taxRate)
+                  : Number(item.unit_price || 0);
+              const displayDiscount =
+                item.discount_unit === "CURRENCY" &&
+                activePriceMode === "BRUTTO"
+                  ? Number(item.discount_value || 0) * (1 + taxRate)
+                  : Number(item.discount_value || 0);
+
+              return {
+                id: item.id || `${templateInvoice.id}-item-${index}`,
+                name: item.description || "",
+                quantity:
+                  item.unit === "FLAT_RATE"
+                    ? ""
+                    : String(Number(item.quantity || 0) || ""),
+                unit: UNIT_LABEL_MAPPING[item.unit] || "Stk",
+                price: displayPrice ? String(displayPrice) : "",
+                tax: Number(item.vat_rate ?? taxConfig.vat_rate),
+                discount: displayDiscount ? String(displayDiscount) : "",
+                discountUnit:
+                  item.discount_unit === "CURRENCY" ? "EUR" : "%",
+              };
+            })
+          : [{ ...initialItems[0], id: Date.now() }];
+      // Apply only header text and line items.
+      // Keep current student address and current date/delivery/due fields unchanged.
+      setIntroText(templateInvoice?.header_text || "");
+      setItems(mappedItems);
+    } catch (err) {
+      console.error("Failed to apply invoice template", err);
+      setSubmitError("Vorlagendaten konnten nicht geladen werden.");
+    } finally {
+      setIsApplyingTemplate(false);
+    }
+  };
+
   // Handle recipient selection and populate address fields
   // 수신자 선택 처리 및 주소 필드 자동 완성
   const handleRecipientChange = (e) => {
     const id = Number(e.target.value);
     setRecipientId(id);
+    setErrors((prev) => ({ ...prev, template_invoice: null }));
     if (errors.recipient) {
       setErrors((prev) => ({ ...prev, recipient: null }));
     }
@@ -1034,6 +1151,13 @@ export default function InvoiceCreateModal({
       newText = newText.replace(/Name:/g, `Name: ${studentName}`);
 
       setIntroText(newText);
+
+      if (!isEditMode) {
+        fetchTemplateCandidates(id);
+      }
+    } else {
+      setTemplateCandidates([]);
+      setSelectedTemplateInvoiceId("");
     }
   };
 
@@ -1537,6 +1661,80 @@ export default function InvoiceCreateModal({
                   </div>
                   <ErrorMessage message={errors.recipient} />
                 </div>
+
+                {!isEditMode && recipientId !== "" && (
+                  <div className="space-y-1">
+                    <label
+                      className={cn(
+                        LABEL_CLASS,
+                        errors.template_invoice
+                          ? "text-destructive dark:text-destructive"
+                          : "",
+                      )}
+                    >
+                      Vorherige Rechnungsdaten
+                    </label>
+                    {isLoadingTemplateCandidates ? (
+                      <div className="h-10 px-3 rounded-lg border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted flex items-center text-xs text-slate-500 dark:text-muted-foreground">
+                        <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                        Vorlagen werden geladen...
+                      </div>
+                    ) : templateCandidates.length === 0 ? (
+                      <div className="h-10 px-3 rounded-lg border border-dashed border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted flex items-center text-xs text-slate-500 dark:text-muted-foreground">
+                        Fuer diesen Kontakt gibt es keine finalisierte Rechnung.
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <select
+                            className={cn(
+                              "flex h-10 w-full rounded-lg border px-3 py-2 text-sm ring-offset-background focus-visible:outline-none appearance-none cursor-pointer",
+                              CUSTOM_INPUT_STYLE,
+                              selectedTemplateInvoiceId === ""
+                                ? "text-slate-400 dark:text-muted-foreground/60"
+                                : "",
+                            )}
+                            value={selectedTemplateInvoiceId}
+                            onChange={(e) => {
+                              setSelectedTemplateInvoiceId(e.target.value);
+                              setSubmitError(null);
+                              if (errors.template_invoice) {
+                                setErrors((prev) => ({
+                                  ...prev,
+                                  template_invoice: null,
+                                }));
+                              }
+                            }}
+                          >
+                            <option value="" disabled hidden>
+                              Vorlage auswählen
+                            </option>
+                            {templateCandidates.map((candidate) => (
+                              <option
+                                key={candidate.id}
+                                value={candidate.id}
+                                className="text-slate-800 dark:text-foreground"
+                              >
+                                {`${candidate.full_invoice_code} - ${formatTemplateCandidateDate(candidate.invoice_date || candidate.created_at)}`}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-muted-foreground/60">
+                            <ChevronDown className="w-5 h-5" />
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          className={CANCEL_BUTTON_STYLE}
+                          onClick={handleLoadTemplate}
+                        >
+                          Daten laden
+                        </Button>
+                      </div>
+                    )}
+                    <ErrorMessage message={errors.template_invoice} />
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <div className="flex justify-between items-end mb-1.5 min-h-5">

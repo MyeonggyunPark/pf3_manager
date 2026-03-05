@@ -375,6 +375,13 @@ const koCommon = {
   invoice_editor_delete_col: "열 삭제",
   invoice_editor_merge_help: "*여러 셀 병합: Shift+클릭 또는 드래그로 셀 영역 선택",
   invoice_editor_delete_table: "표 삭제",
+  invoice_template_load_label: "이전 영수증 데이터 불러오기",
+  invoice_template_load_loading: "불러오기 가능한 영수증을 조회 중입니다...",
+  invoice_template_load_empty: "선택한 수신자에 대한 확정 영수증이 없습니다.",
+  invoice_template_load_select_placeholder: "불러올 영수증 선택",
+  invoice_template_load_apply: "데이터 불러오기",
+  invoice_template_load_error:
+    "영수증 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
 
   // [DeleteReceiptModal]
   // [영수증 삭제 모달]

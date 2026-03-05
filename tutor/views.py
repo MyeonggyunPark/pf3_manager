@@ -60,6 +60,7 @@ from .serializers import (
     TodoSerializer,
     BusinessProfileSerializer,
     InvoiceSerializer,
+    InvoiceTemplateCandidateSerializer,
 )
 
 
@@ -1216,6 +1217,35 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 {"detail": _("Geschäftsprofil nicht gefunden.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+    @action(detail=False, methods=["get"])
+    def template_candidates(self, request):
+        """
+        Return finalized invoice candidates for a selected student.
+        Used to load previous invoice content as a template.
+
+        선택된 학생의 확정 영수증 후보 목록을 반환합니다.
+        과거 영수증 내용을 템플릿처럼 불러올 때 사용합니다.
+        """
+        student_id = request.query_params.get("student")
+        if not student_id:
+            return Response([], status=status.HTTP_200_OK)
+
+        try:
+            limit = int(request.query_params.get("limit", 10))
+        except (TypeError, ValueError):
+            limit = 10
+
+        limit = max(1, min(limit, 50))
+
+        candidates = (
+            self.get_queryset()
+            .filter(student_id=student_id, is_finalized=True)
+            .order_by("-invoice_date", "-created_at")[:limit]
+        )
+
+        serializer = InvoiceTemplateCandidateSerializer(candidates, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["post"])
     @transaction.atomic
